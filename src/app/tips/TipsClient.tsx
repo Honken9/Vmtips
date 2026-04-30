@@ -15,7 +15,7 @@ import { BonusTipsSection } from '@/components/BonusTipsSection'
 import { RandomizeOverlay } from '@/components/RandomizeOverlay'
 import { format, isPast } from 'date-fns'
 import { sv } from 'date-fns/locale'
-import { Lock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Loader2, Dices, Settings } from 'lucide-react'
+import { Lock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Loader2, Dices, Settings as SettingsIcon } from 'lucide-react'
 
 interface Props {
   profile: Profile
@@ -362,7 +362,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
               style={{ background: 'transparent', border: '1px solid #374151' }}
               title="Inställningar för slumpning"
             >
-              <Settings size={16} />
+              <SettingsIcon size={16} />
             </button>
           </div>
         )}
@@ -373,7 +373,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
         <div className="rounded-xl p-5 space-y-4" style={{ background: '#111827', border: '1px solid #1f2937' }}>
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-white flex items-center gap-2">
-              <Settings size={16} className="text-amber-400" />
+              <SettingsIcon size={16} className="text-amber-400" />
               Slumpningsinställningar
             </h3>
             <button
