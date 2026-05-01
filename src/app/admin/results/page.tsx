@@ -70,6 +70,8 @@ export default function AdminResultsPage() {
 
       // Lås automatiskt tips för matchen (läge B)
       await supabase.rpc('lock_predictions_at_kickoff')
+      // Auto-backup (server gör rate limiting)
+      fetch('/api/backup?reason=admin-result-save', { method: 'POST' }).catch(() => {})
     }
 
     setSaving(null)

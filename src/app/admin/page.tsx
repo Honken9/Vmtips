@@ -111,6 +111,18 @@ export default async function AdminDashboard() {
           <div className="font-semibold text-white mb-1">→ Turneringsinställningar</div>
           <div className="text-sm text-gray-400">Byt läge (A/B), justera poängsystem, lås tips</div>
         </Link>
+        <Link href="/admin/bonus"
+          className="rounded-xl p-5 hover:bg-white/5 transition-colors"
+          style={{ background: '#111827', border: '1px solid #1f2937' }}>
+          <div className="font-semibold text-white mb-1">→ Bonustips</div>
+          <div className="text-sm text-gray-400">Bekräfta bonusresultat (vinnare, skyttekung osv.)</div>
+        </Link>
+        <Link href="/admin/backups"
+          className="rounded-xl p-5 hover:bg-white/5 transition-colors"
+          style={{ background: '#111827', border: '1px solid #1f2937' }}>
+          <div className="font-semibold text-white mb-1">→ Backups</div>
+          <div className="text-sm text-gray-400">Snapshots av all data – ladda ner, återställ, manuell backup</div>
+        </Link>
       </div>
     </div>
   )

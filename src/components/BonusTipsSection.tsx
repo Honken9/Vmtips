@@ -100,6 +100,7 @@ export function BonusTipsSection({ userId, teams, bonus, bonusResults, locked }:
     setSaving(null)
     setSaved(prev => new Set(prev).add(field))
     setTimeout(() => setSaved(prev => { const s = new Set(prev); s.delete(field); return s }), 2000)
+    fetch('/api/backup?reason=user-bonus-save', { method: 'POST' }).catch(() => {})
   }, [vals, supabase, userId])
 
   const sortedTeams = [...teams].sort((a, b) => {

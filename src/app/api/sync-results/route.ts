@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createSnapshot } from '@/lib/backup'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -212,6 +213,8 @@ export async function POST() {
   // Lås tips för matcher som nu har avsparkat
   if (updated > 0) {
     await admin.rpc('lock_predictions_at_kickoff')
+    // Auto-backup (rate-limited internt)
+    await createSnapshot('sync-results').catch(() => {})
   }
 
   return NextResponse.json({

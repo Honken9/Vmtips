@@ -228,6 +228,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
     setSaving(null)
     setSaved(prev => new Set(prev).add(matchId))
     setTimeout(() => setSaved(prev => { const s = new Set(prev); s.delete(matchId); return s }), 2000)
+    fetch('/api/backup?reason=user-tip-save', { method: 'POST' }).catch(() => {})
   }, [preds, supabase, userId])
 
   async function handleRandomizeAll(overwrite: boolean) {
@@ -269,6 +270,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
     const minDelay = new Promise(resolve => setTimeout(resolve, randomizeDuration * 1000))
 
     await Promise.all([savePromise, minDelay])
+    fetch('/api/backup?reason=user-randomize-save', { method: 'POST' }).catch(() => {})
 
     // Avslöja resultaten samtidigt som overlayen försvinner
     setPreds(prev => {
