@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Match, Stage, STAGE_LABELS } from '@/lib/types'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
-import { CheckCircle, Loader2, Save } from 'lucide-react'
+import { CheckCircle, Loader2, Save, RefreshCw } from 'lucide-react'
 
 const STAGE_ORDER: Stage[] = ['group', 'r32', 'r16', 'qf', 'sf', '3rd', 'final']
 
@@ -17,6 +17,8 @@ export default function AdminResultsPage() {
   const [saved, setSaved] = useState<Set<number>>(new Set())
   const [filter, setFilter] = useState<'all' | 'pending' | 'done'>('pending')
   const [activeStage, setActiveStage] = useState<Stage>('group')
+  const [syncing, setSyncing] = useState(false)
+  const [syncMessage, setSyncMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
   useEffect(() => {
     supabase
@@ -49,13 +51,18 @@ export default function AdminResultsPage() {
 
     const { error } = await supabase
       .from('matches')
-      .update({ home_score: homeScore, away_score: awayScore, result_confirmed: true })
+      .update({
+        home_score: homeScore,
+        away_score: awayScore,
+        result_confirmed: true,
+        manually_edited: true,
+      })
       .eq('id', matchId)
 
     if (!error) {
       setMatches(prev => prev.map(m =>
         m.id === matchId
-          ? { ...m, home_score: homeScore, away_score: awayScore, result_confirmed: true }
+          ? { ...m, home_score: homeScore, away_score: awayScore, result_confirmed: true, manually_edited: true }
           : m
       ))
       setSaved(prev => new Set(prev).add(matchId))
@@ -72,13 +79,61 @@ export default function AdminResultsPage() {
     setSaving(matchId)
     await supabase
       .from('matches')
-      .update({ home_score: null, away_score: null, result_confirmed: false })
+      .update({
+        home_score: null,
+        away_score: null,
+        result_confirmed: false,
+        manually_edited: false,
+      })
       .eq('id', matchId)
     setMatches(prev => prev.map(m =>
-      m.id === matchId ? { ...m, home_score: null, away_score: null, result_confirmed: false } : m
+      m.id === matchId
+        ? { ...m, home_score: null, away_score: null, result_confirmed: false, manually_edited: false }
+        : m
     ))
     setScores(prev => ({ ...prev, [matchId]: { home: '', away: '' } }))
     setSaving(null)
+  }
+
+  async function syncFromApi() {
+    setSyncing(true)
+    setSyncMessage(null)
+    try {
+      const res = await fetch('/api/sync-results', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) {
+        setSyncMessage({ type: 'err', text: data.error || 'Synk misslyckades' })
+      } else {
+        const parts = [
+          `${data.updated} uppdaterade`,
+          `${data.skipped_manual} hoppade (manuellt redigerade)`,
+          `${data.skipped_unchanged} oförändrade`,
+        ]
+        if (data.unmatched?.length) parts.push(`${data.unmatched.length} omappade`)
+        setSyncMessage({ type: 'ok', text: parts.join(' · ') })
+
+        // Ladda om matcher
+        const { data: refreshed } = await supabase
+          .from('matches')
+          .select('*, home_team:teams!matches_home_team_id_fkey(*), away_team:teams!matches_away_team_id_fkey(*)')
+          .order('kickoff_at')
+        const m = (refreshed ?? []) as Match[]
+        setMatches(m)
+        const s: Record<number, { home: string; away: string }> = {}
+        m.forEach(match => {
+          s[match.id] = {
+            home: match.home_score != null ? String(match.home_score) : '',
+            away: match.away_score != null ? String(match.away_score) : '',
+          }
+        })
+        setScores(s)
+      }
+    } catch (err) {
+      setSyncMessage({ type: 'err', text: String(err) })
+    } finally {
+      setSyncing(false)
+      setTimeout(() => setSyncMessage(null), 8000)
+    }
   }
 
   const stageMatches = matches.filter(m => m.stage === activeStage)
@@ -92,11 +147,41 @@ export default function AdminResultsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Mata in resultat</h1>
-        <p className="text-gray-400 text-sm mt-1">
-          {confirmedTotal} av {matches.length} matcher med bekräftat resultat
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Mata in resultat</h1>
+          <p className="text-gray-400 text-sm mt-1">
+            {confirmedTotal} av {matches.length} matcher med bekräftat resultat
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <button
+            onClick={syncFromApi}
+            disabled={syncing}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+            style={{
+              background: 'rgba(59,130,246,0.15)',
+              color: '#60a5fa',
+              border: '1px solid rgba(59,130,246,0.3)',
+            }}
+            title="Hämta avklarade resultat från football-data.org"
+          >
+            {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+            {syncing ? 'Synkar…' : 'Synka från football-data.org'}
+          </button>
+          {syncMessage && (
+            <div
+              className="text-xs px-3 py-1.5 rounded-lg max-w-xs text-right"
+              style={{
+                background: syncMessage.type === 'ok' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                color: syncMessage.type === 'ok' ? '#4ade80' : '#f87171',
+                border: `1px solid ${syncMessage.type === 'ok' ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)'}`,
+              }}
+            >
+              {syncMessage.text}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Stage-tabs */}

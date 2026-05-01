@@ -54,6 +54,8 @@ export interface Match {
   home_score: number | null
   away_score: number | null
   result_confirmed: boolean
+  manually_edited?: boolean
+  external_id?: number | null
   home_team?: Team
   away_team?: Team
 }
