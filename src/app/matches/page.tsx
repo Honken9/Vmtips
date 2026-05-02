@@ -178,26 +178,23 @@ function KnockoutMatchRow({ match, isLast }: { match: Match; isLast: boolean }) 
   const time = format(new Date(match.kickoff_at), 'HH:mm', { locale: sv })
 
   return (
-    <div className={`flex items-center gap-4 px-5 py-4 ${!isLast ? 'border-b' : ''}`}
+    <div className={`flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3 sm:py-4 ${!isLast ? 'border-b' : ''}`}
       style={{ borderColor: '#1f2937', background: '#111827' }}>
-      {/* Datum */}
-      <div className="text-xs text-gray-500 shrink-0 w-24">
-        <div>{date}</div>
+      <div className="text-[11px] sm:text-xs text-gray-500 shrink-0 w-16 sm:w-24 leading-tight">
+        <div className="truncate">{date}</div>
         <div className="text-amber-400 font-medium">{time}</div>
       </div>
-      {/* Hemma */}
-      <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
+      <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
         <span className="text-sm font-medium text-white truncate">{homeName}</span>
         {homeFlag && <span className="text-lg shrink-0">{homeFlag}</span>}
       </div>
-      {/* Score */}
-      <div className="shrink-0 w-20 text-center">
+      <div className="shrink-0 w-14 sm:w-20 text-center">
         {match.result_confirmed ? (
           <div className="flex items-center justify-center gap-1">
             <span className="text-white font-bold">{match.home_score}</span>
             <span className="text-gray-500">–</span>
             <span className="text-white font-bold">{match.away_score}</span>
-            <CheckCircle size={12} className="text-green-500 ml-1" />
+            <CheckCircle size={12} className="text-green-500 ml-1 hidden sm:inline" />
           </div>
         ) : (
           <div className="flex items-center justify-center gap-1 text-gray-500">
@@ -206,8 +203,7 @@ function KnockoutMatchRow({ match, isLast }: { match: Match; isLast: boolean }) 
           </div>
         )}
       </div>
-      {/* Borta */}
-      <div className="flex items-center gap-2 flex-1 min-w-0">
+      <div className="flex items-center gap-1.5 flex-1 min-w-0">
         {awayFlag && <span className="text-lg shrink-0">{awayFlag}</span>}
         <span className="text-sm font-medium text-white truncate">{awayName}</span>
       </div>

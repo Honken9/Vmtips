@@ -59,7 +59,7 @@ export default async function RootLayout({
     <html lang="sv">
       <body>
         <Navigation profile={profile} pool={pool} />
-        <main className="max-w-6xl mx-auto px-4 py-8">
+        <main className="max-w-6xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
           {children}
         </main>
       </body>

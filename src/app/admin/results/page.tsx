@@ -243,80 +243,75 @@ export default function AdminResultsPage() {
             return (
               <div
                 key={match.id}
-                className={`flex items-center gap-4 px-5 py-4 ${i > 0 ? 'border-t' : ''} ${
+                className={`px-3 sm:px-5 py-3 sm:py-4 ${i > 0 ? 'border-t' : ''} ${
                   match.result_confirmed ? 'opacity-60 hover:opacity-100' : ''
                 } transition-opacity`}
                 style={{ borderColor: '#1f2937', background: match.result_confirmed ? 'rgba(34,197,94,0.03)' : undefined }}
               >
-                {/* Datum */}
-                <div className="text-xs text-gray-500 w-28 shrink-0">{kickoff}</div>
+                <div className="sm:hidden text-xs text-gray-500 mb-2">{kickoff}</div>
 
-                {/* Hemmalag */}
-                <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-                  <span className="text-sm font-medium text-white truncate">{homeName}</span>
-                  <span className="text-lg">{homeFlag}</span>
-                </div>
+                <div className="flex items-center gap-2 sm:gap-4 flex-wrap sm:flex-nowrap">
+                  <div className="hidden sm:block text-xs text-gray-500 w-28 shrink-0">{kickoff}</div>
 
-                {/* Inmatning */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <input
-                    type="number"
-                    min="0"
-                    max="99"
-                    value={val.home}
-                    onChange={e => setScores(s => ({ ...s, [match.id]: { ...s[match.id], home: e.target.value } }))}
-                    placeholder="–"
-                    className="w-12 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-amber-400/50"
-                    style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
-                  />
-                  <span className="text-gray-600 font-bold">–</span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="99"
-                    value={val.away}
-                    onChange={e => setScores(s => ({ ...s, [match.id]: { ...s[match.id], away: e.target.value } }))}
-                    placeholder="–"
-                    className="w-12 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-amber-400/50"
-                    style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
-                  />
-                </div>
+                  <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
+                    <span className="text-sm font-medium text-white truncate">{homeName}</span>
+                    <span className="text-lg shrink-0">{homeFlag}</span>
+                  </div>
 
-                {/* Bortalag */}
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className="text-lg">{awayFlag}</span>
-                  <span className="text-sm font-medium text-white truncate">{awayName}</span>
-                </div>
+                  <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      max="99"
+                      value={val.home}
+                      onChange={e => setScores(s => ({ ...s, [match.id]: { ...s[match.id], home: e.target.value } }))}
+                      placeholder="–"
+                      className="w-10 sm:w-12 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                      style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
+                    />
+                    <span className="text-gray-600 font-bold">–</span>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      max="99"
+                      value={val.away}
+                      onChange={e => setScores(s => ({ ...s, [match.id]: { ...s[match.id], away: e.target.value } }))}
+                      placeholder="–"
+                      className="w-10 sm:w-12 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                      style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
+                    />
+                  </div>
 
-                {/* Spara */}
-                <div className="flex items-center gap-2 shrink-0">
-                  {match.result_confirmed && (
-                    <button
-                      onClick={() => clearResult(match.id)}
-                      className="text-xs text-gray-500 hover:text-red-400 transition-colors px-2 py-1"
-                    >
-                      Rensa
-                    </button>
-                  )}
-                  <button
-                    onClick={() => saveResult(match.id)}
-                    disabled={isSaving || val.home === '' || val.away === ''}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40"
-                    style={{
-                      background: isSaved ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)',
-                      color: isSaved ? '#22c55e' : '#f59e0b',
-                      border: `1px solid ${isSaved ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)'}`,
-                    }}
-                  >
-                    {isSaving ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : isSaved ? (
-                      <CheckCircle size={14} />
-                    ) : (
-                      <Save size={14} />
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <span className="text-lg shrink-0">{awayFlag}</span>
+                    <span className="text-sm font-medium text-white truncate">{awayName}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0 mt-2 sm:mt-0 w-full sm:w-auto justify-end">
+                    {match.result_confirmed && (
+                      <button
+                        onClick={() => clearResult(match.id)}
+                        className="text-xs text-gray-500 hover:text-red-400 px-2 py-1"
+                      >
+                        Rensa
+                      </button>
                     )}
-                    {isSaved ? 'Sparat!' : 'Spara'}
-                  </button>
+                    <button
+                      onClick={() => saveResult(match.id)}
+                      disabled={isSaving || val.home === '' || val.away === ''}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40"
+                      style={{
+                        background: isSaved ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)',
+                        color: isSaved ? '#22c55e' : '#f59e0b',
+                        border: `1px solid ${isSaved ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)'}`,
+                      }}
+                    >
+                      {isSaving ? <Loader2 size={14} className="animate-spin" /> : isSaved ? <CheckCircle size={14} /> : <Save size={14} />}
+                      {isSaved ? 'Sparat!' : 'Spara'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )

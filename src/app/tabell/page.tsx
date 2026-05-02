@@ -184,33 +184,43 @@ export default async function LeaderboardPage() {
               return (
                 <div
                   key={p.match_id}
-                  className={`flex items-center gap-4 px-5 py-3 ${i > 0 ? 'border-t' : ''}`}
+                  className={`px-3 sm:px-5 py-3 ${i > 0 ? 'border-t' : ''}`}
                   style={{ borderColor: '#1f2937', background: '#111827' }}
                 >
-                  <div className="text-xs text-gray-500 w-28 shrink-0">{kickoff}</div>
-                  <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-                    <span className="text-sm text-white truncate">{home?.name ?? '?'}</span>
-                    <span className="text-base">{home?.flag ?? '🏴'}</span>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="text-[11px] sm:text-xs text-gray-500 w-16 sm:w-28 shrink-0 leading-tight">
+                      {kickoff}
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
+                      <span className="text-sm text-white truncate">{home?.name ?? '?'}</span>
+                      <span className="text-base shrink-0">{home?.flag ?? '🏴'}</span>
+                    </div>
+                    <div className="shrink-0 w-14 sm:w-20 text-center">
+                      <span className="text-amber-400 font-bold">
+                        {p.pred_home}–{p.pred_away}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                      <span className="text-base shrink-0">{away?.flag ?? '🏴'}</span>
+                      <span className="text-sm text-white truncate">{away?.name ?? '?'}</span>
+                    </div>
+                    <div className="hidden sm:flex flex-col items-end shrink-0 w-32">
+                      <div className="text-xs text-gray-500">
+                        {p.votes} av {p.total} ({sharePct}%)
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-800 rounded-full mt-1 overflow-hidden">
+                        <div className="h-full bg-amber-400 rounded-full" style={{ width: `${sharePct}%` }} />
+                      </div>
+                    </div>
                   </div>
-                  <div className="shrink-0 w-20 text-center">
-                    <span className="text-amber-400 font-bold">
-                      {p.pred_home} – {p.pred_away}
+                  {/* Vote-bar på egen rad på mobil */}
+                  <div className="sm:hidden mt-2 flex items-center gap-2">
+                    <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-full bg-amber-400 rounded-full" style={{ width: `${sharePct}%` }} />
+                    </div>
+                    <span className="text-[10px] text-gray-500 shrink-0">
+                      {p.votes}/{p.total}
                     </span>
-                  </div>
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <span className="text-base">{away?.flag ?? '🏴'}</span>
-                    <span className="text-sm text-white truncate">{away?.name ?? '?'}</span>
-                  </div>
-                  <div className="hidden sm:flex flex-col items-end shrink-0 w-32">
-                    <div className="text-xs text-gray-500">
-                      {p.votes} av {p.total} ({sharePct}%)
-                    </div>
-                    <div className="w-full h-1.5 bg-gray-800 rounded-full mt-1 overflow-hidden">
-                      <div
-                        className="h-full bg-amber-400 rounded-full"
-                        style={{ width: `${sharePct}%` }}
-                      />
-                    </div>
                   </div>
                 </div>
               )

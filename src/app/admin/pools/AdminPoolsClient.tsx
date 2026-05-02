@@ -166,7 +166,7 @@ export function AdminPoolsClient({
       )}
 
       {/* Skapa ny pool */}
-      <div className="rounded-xl p-4 flex gap-2 items-end" style={{ background: '#111827', border: '1px solid #1f2937' }}>
+      <div className="rounded-xl p-4 flex flex-col sm:flex-row gap-2 sm:items-end" style={{ background: '#111827', border: '1px solid #1f2937' }}>
         <div className="flex-1">
           <label className="block text-xs text-gray-500 mb-1">Skapa ny pool</label>
           <input
@@ -182,7 +182,7 @@ export function AdminPoolsClient({
         <button
           onClick={createPool}
           disabled={creating || !newName.trim()}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-black gold-gradient disabled:opacity-40"
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-black gold-gradient disabled:opacity-40 w-full sm:w-auto"
         >
           {creating ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
           Skapa
@@ -199,16 +199,16 @@ export function AdminPoolsClient({
               className="rounded-xl overflow-hidden"
               style={{ background: '#111827', border: '1px solid #1f2937' }}
             >
-              <div className="px-5 py-4 flex items-center gap-4 flex-wrap" style={{ background: '#1a2233' }}>
+              <div className="px-3 sm:px-5 py-3 sm:py-4 flex items-center gap-2 sm:gap-4 flex-wrap" style={{ background: '#1a2233' }}>
                 <input
                   type="text"
                   defaultValue={pool.name}
                   onBlur={e => {
                     if (e.target.value !== pool.name) renamePool(pool.id, e.target.value)
                   }}
-                  className="flex-1 min-w-[180px] text-lg font-bold bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 rounded px-2"
+                  className="flex-1 min-w-[140px] text-base sm:text-lg font-bold bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 rounded px-2"
                 />
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <code className="px-2 py-1 rounded text-amber-400 font-mono text-sm tracking-wider"
                     style={{ background: 'rgba(245,158,11,0.1)' }}>
                     {pool.invite_code}
@@ -240,7 +240,7 @@ export function AdminPoolsClient({
                 </div>
               </div>
 
-              <div className="px-5 py-3">
+              <div className="px-3 sm:px-5 py-3">
                 <div className="text-xs text-gray-500 mb-2">
                   {members.length === 0 ? 'Inga medlemmar' : `${members.length} medlemmar`}
                 </div>

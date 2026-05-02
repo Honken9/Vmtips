@@ -364,56 +364,76 @@ function TodaysMatchRow({
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 ${!isLast ? 'border-b' : ''}`}
+      className={`px-3 sm:px-4 py-3 ${!isLast ? 'border-b' : ''}`}
       style={{ borderColor: '#1f2937', background: '#111827' }}
     >
-      <div className="text-xs text-gray-500 shrink-0 w-12 text-center">
-        <div className="text-amber-400 font-medium">{time}</div>
-        {isLive && (
-          <div className="text-[10px] text-red-400 font-bold mt-0.5 animate-pulse">LIVE</div>
-        )}
-      </div>
-      <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
-        <span className="text-sm text-white truncate">{homeName}</span>
-        {homeFlag && <span className="text-base">{homeFlag}</span>}
-      </div>
-      <div className="shrink-0 w-16 text-center">
-        {match.result_confirmed ? (
-          <span className="text-white font-bold text-sm">
-            {match.home_score} – {match.away_score}
-          </span>
-        ) : (
-          <span className="text-gray-600 text-xs font-medium px-2 py-0.5 rounded"
-            style={{ background: '#1f2937' }}>
-            <Clock size={10} className="inline mr-1" />
-            vs
-          </span>
-        )}
-      </div>
-      <div className="flex items-center gap-1.5 flex-1 min-w-0">
-        {awayFlag && <span className="text-base">{awayFlag}</span>}
-        <span className="text-sm text-white truncate">{awayName}</span>
-      </div>
-      {/* Mitt tips + arena */}
-      <div className="hidden md:flex flex-col items-end shrink-0 w-32 text-xs">
-        {myPred ? (
-          <div className="flex items-center gap-1 text-gray-400">
-            <span>Tips:</span>
-            <span className="text-amber-400 font-bold">
-              {myPred.pred_home}–{myPred.pred_away}
+      <div className="flex items-center gap-2 sm:gap-3">
+        <div className="text-xs text-gray-500 shrink-0 w-11 sm:w-12 text-center">
+          <div className="text-amber-400 font-medium">{time}</div>
+          {isLive && (
+            <div className="text-[10px] text-red-400 font-bold mt-0.5 animate-pulse">LIVE</div>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
+          <span className="text-sm text-white truncate">{homeName}</span>
+          {homeFlag && <span className="text-base shrink-0">{homeFlag}</span>}
+        </div>
+        <div className="shrink-0 w-14 sm:w-16 text-center">
+          {match.result_confirmed ? (
+            <span className="text-white font-bold text-sm">
+              {match.home_score}–{match.away_score}
             </span>
-            {myPred.locked && <CheckCircle size={10} className="text-green-500" />}
-          </div>
+          ) : (
+            <span className="text-gray-600 text-xs font-medium px-2 py-0.5 rounded"
+              style={{ background: '#1f2937' }}>
+              <Clock size={10} className="inline mr-1" />
+              vs
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          {awayFlag && <span className="text-base shrink-0">{awayFlag}</span>}
+          <span className="text-sm text-white truncate">{awayName}</span>
+        </div>
+        <div className="hidden md:flex flex-col items-end shrink-0 w-32 text-xs">
+          {myPred ? (
+            <div className="flex items-center gap-1 text-gray-400">
+              <span>Tips:</span>
+              <span className="text-amber-400 font-bold">
+                {myPred.pred_home}–{myPred.pred_away}
+              </span>
+              {myPred.locked && <CheckCircle size={10} className="text-green-500" />}
+            </div>
+          ) : (
+            <Link href="/tips" className="text-gray-500 hover:text-amber-400 transition-colors">
+              Inget tips än
+            </Link>
+          )}
+          {match.venue && (
+            <div className="text-gray-600 flex items-center gap-1 mt-0.5 truncate max-w-full">
+              <MapPin size={9} />
+              <span className="truncate">{match.venue}</span>
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Tips/venue – egen rad på mobilen */}
+      <div className="md:hidden flex items-center justify-between gap-2 mt-2 pl-13 text-xs">
+        {myPred ? (
+          <span className="text-gray-400">
+            Tips: <span className="text-amber-400 font-bold">{myPred.pred_home}–{myPred.pred_away}</span>
+            {myPred.locked && <CheckCircle size={10} className="text-green-500 inline ml-1" />}
+          </span>
         ) : (
-          <Link href="/tips" className="text-gray-500 hover:text-amber-400 transition-colors">
-            Inget tips än
+          <Link href="/tips" className="text-gray-500 hover:text-amber-400">
+            Inget tips än →
           </Link>
         )}
         {match.venue && (
-          <div className="text-gray-600 flex items-center gap-1 mt-0.5 truncate max-w-full">
-            <MapPin size={9} />
+          <span className="text-gray-600 flex items-center gap-1 truncate min-w-0">
+            <MapPin size={9} className="shrink-0" />
             <span className="truncate">{match.venue}</span>
-          </div>
+          </span>
         )}
       </div>
     </div>
