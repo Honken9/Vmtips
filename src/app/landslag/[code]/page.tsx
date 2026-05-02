@@ -1,0 +1,368 @@
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { Team } from '@/lib/types'
+import { fetchCountry, fetchTeamFootball, type SquadPlayer } from '@/lib/team-data'
+import { getFacts } from '@/lib/team-facts'
+import { ArrowLeft, MapPin, Users, User, Trophy, Star, Calendar, Globe2, ShieldCheck } from 'lucide-react'
+
+export const revalidate = 3600
+
+const POSITION_ORDER: Record<string, number> = {
+  Goalkeeper: 0,
+  Defence: 1,
+  Defender: 1,
+  Midfield: 2,
+  Midfielder: 2,
+  Offence: 3,
+  Forward: 3,
+  Attacker: 3,
+}
+
+const POSITION_LABELS: Record<string, string> = {
+  Goalkeeper: 'Målvakt',
+  Defence: 'Försvar',
+  Defender: 'Försvar',
+  Midfield: 'Mittfält',
+  Midfielder: 'Mittfält',
+  Offence: 'Anfall',
+  Forward: 'Anfall',
+  Attacker: 'Anfall',
+}
+
+function age(dob: string | null): number | null {
+  if (!dob) return null
+  const birth = new Date(dob)
+  if (isNaN(birth.getTime())) return null
+  const diffMs = Date.now() - birth.getTime()
+  return Math.floor(diffMs / (365.25 * 24 * 3600 * 1000))
+}
+
+function nfmt(n: number | null | undefined): string {
+  if (n == null) return '–'
+  return n.toLocaleString('sv-SE')
+}
+
+export default async function LandslagDetail({
+  params,
+}: {
+  params: Promise<{ code: string }>
+}) {
+  const { code: rawCode } = await params
+  const code = rawCode.toUpperCase()
+
+  const supabase = await createClient()
+  const { data: teamData } = await supabase
+    .from('teams')
+    .select('*')
+    .eq('code', code)
+    .maybeSingle()
+  if (!teamData) notFound()
+  const team = teamData as Team
+
+  const [country, football] = await Promise.all([
+    fetchCountry(team.code),
+    fetchTeamFootball(team.code),
+  ])
+  const facts = getFacts(team.code)
+
+  const groupedSquad = (football?.squad ?? []).slice().sort((a, b) => {
+    const pa = POSITION_ORDER[a.position ?? ''] ?? 99
+    const pb = POSITION_ORDER[b.position ?? ''] ?? 99
+    if (pa !== pb) return pa - pb
+    if ((a.shirtNumber ?? 99) !== (b.shirtNumber ?? 99)) {
+      return (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99)
+    }
+    return a.name.localeCompare(b.name)
+  })
+
+  return (
+    <div className="space-y-6">
+      <Link
+        href="/landslag"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-amber-400 transition-colors"
+      >
+        <ArrowLeft size={14} />
+        Alla landslag
+      </Link>
+
+      {/* Hero */}
+      <div
+        className="rounded-2xl p-5 sm:p-6 flex items-center gap-4 sm:gap-6"
+        style={{
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+          border: '1px solid #1f2937',
+        }}
+      >
+        <div className="text-5xl sm:text-7xl shrink-0 leading-none">{team.flag}</div>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white truncate">{team.name}</h1>
+          <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
+            {team.group_name && (
+              <span className="px-2 py-1 rounded-full bg-amber-400/15 text-amber-400 font-medium">
+                Grupp {team.group_name}
+              </span>
+            )}
+            <span className="px-2 py-1 rounded-full bg-gray-700/50 text-gray-300 font-mono">
+              {team.code}
+            </span>
+            {facts?.nickname && (
+              <span className="px-2 py-1 rounded-full bg-indigo-500/15 text-indigo-300">
+                &ldquo;{facts.nickname}&rdquo;
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Statistik-rad */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <StatBox
+          icon={<Trophy size={18} />}
+          label="VM-titlar"
+          value={facts?.worldCupTitles != null ? String(facts.worldCupTitles) : '–'}
+          color="gold"
+        />
+        <StatBox
+          icon={<Star size={18} />}
+          label="Bästa VM-resultat"
+          value={
+            facts?.worldCupTitles
+              ? `Vinnare ${facts.worldCupYears?.[facts.worldCupYears.length - 1] ?? ''}`.trim()
+              : facts?.bestResult ?? '–'
+          }
+          color="blue"
+          small
+        />
+        <StatBox
+          icon={<Users size={18} />}
+          label="Trupp"
+          value={
+            football && football.squad.length > 0 ? `${football.squad.length} spelare` : 'Ej publicerad'
+          }
+          color="green"
+          small
+        />
+        <StatBox
+          icon={<ShieldCheck size={18} />}
+          label="Förbundskapten"
+          value={football?.coachName ?? '–'}
+          color="purple"
+          small
+        />
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Landsfakta */}
+        <section>
+          <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+            <Globe2 size={18} className="text-amber-400" />
+            Om landet
+          </h2>
+          {country ? (
+            <div className="rounded-xl p-5 space-y-3" style={{ background: '#111827', border: '1px solid #1f2937' }}>
+              <Row icon={<MapPin size={14} />} label="Huvudstad" value={country.capital ?? '–'} />
+              <Row icon={<Users size={14} />} label="Befolkning" value={nfmt(country.population)} />
+              <Row
+                icon={<Globe2 size={14} />}
+                label="Region"
+                value={[country.region, country.subregion].filter(Boolean).join(' · ') || '–'}
+              />
+              <Row
+                icon={<Star size={14} />}
+                label="Yta"
+                value={country.area != null ? `${nfmt(country.area)} km²` : '–'}
+              />
+              <Row
+                icon={<User size={14} />}
+                label="Språk"
+                value={country.languages.length > 0 ? country.languages.join(', ') : '–'}
+              />
+              <Row icon={<Trophy size={14} />} label="Valuta" value={country.currency ?? '–'} />
+            </div>
+          ) : (
+            <div className="rounded-xl p-5 text-sm text-gray-500"
+              style={{ background: '#111827', border: '1px solid #1f2937' }}>
+              Kunde inte hämta landsfakta just nu.
+            </div>
+          )}
+        </section>
+
+        {/* Roliga fakta */}
+        <section>
+          <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+            <Star size={18} className="text-amber-400" />
+            Visste du att…
+          </h2>
+          <div className="rounded-xl p-5 space-y-3 text-sm text-gray-300"
+            style={{ background: '#111827', border: '1px solid #1f2937' }}>
+            {facts?.facts && facts.facts.length > 0 ? (
+              <ul className="space-y-2 list-none">
+                {facts.facts.map((f, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="text-amber-400 shrink-0">•</span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-500">Inga särskilda fakta tillagda för {team.name} än.</p>
+            )}
+            {facts?.worldCupYears && facts.worldCupYears.length > 0 && (
+              <div className="pt-3 border-t" style={{ borderColor: '#1f2937' }}>
+                <div className="text-xs text-gray-500 mb-1">VM-titlar</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {facts.worldCupYears.map(y => (
+                    <span
+                      key={y}
+                      className="px-2 py-0.5 rounded text-xs font-bold bg-amber-400/15 text-amber-400"
+                    >
+                      {y}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* Trupp */}
+      <section>
+        <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+          <Users size={18} className="text-amber-400" />
+          Trupp
+          {football && football.squad.length > 0 && (
+            <span className="text-xs text-gray-500 font-normal">
+              ({football.squad.length} spelare)
+            </span>
+          )}
+        </h2>
+        {!football || football.squad.length === 0 ? (
+          <div className="rounded-xl p-6 text-sm text-gray-500"
+            style={{ background: '#111827', border: '1px solid #1f2937' }}>
+            Truppen är inte publicerad än. VM-trupperna offentliggörs vanligtvis ett par veckor
+            innan turneringen startar.
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {(['Goalkeeper', 'Defender', 'Midfielder', 'Forward'] as const).map(posKey => {
+              const players = groupedSquad.filter(p => {
+                const norm = (p.position ?? '').replace(/^Defence$/, 'Defender')
+                  .replace(/^Midfield$/, 'Midfielder')
+                  .replace(/^Offence$/, 'Forward')
+                  .replace(/^Attacker$/, 'Forward')
+                return norm === posKey
+              })
+              if (players.length === 0) return null
+              return (
+                <div
+                  key={posKey}
+                  className="rounded-xl overflow-hidden"
+                  style={{ background: '#111827', border: '1px solid #1f2937' }}
+                >
+                  <div
+                    className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-amber-400"
+                    style={{ background: '#1a2233' }}
+                  >
+                    {POSITION_LABELS[posKey]} ({players.length})
+                  </div>
+                  <div className="divide-y" style={{ borderColor: '#1f2937' }}>
+                    {players.map(p => (
+                      <PlayerRow key={p.id} p={p} />
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+            {/* Ej kategoriserade */}
+            {groupedSquad.filter(p => !POSITION_ORDER[p.position ?? '']).length > 0 && (
+              <div
+                className="rounded-xl overflow-hidden"
+                style={{ background: '#111827', border: '1px solid #1f2937' }}
+              >
+                <div
+                  className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400"
+                  style={{ background: '#1a2233' }}
+                >
+                  Övriga
+                </div>
+                <div className="divide-y" style={{ borderColor: '#1f2937' }}>
+                  {groupedSquad
+                    .filter(p => !POSITION_ORDER[p.position ?? ''])
+                    .map(p => (
+                      <PlayerRow key={p.id} p={p} />
+                    ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+    </div>
+  )
+}
+
+function StatBox({
+  icon,
+  label,
+  value,
+  color,
+  small,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+  color: 'gold' | 'blue' | 'green' | 'purple'
+  small?: boolean
+}) {
+  const colors = {
+    gold: 'text-amber-400 bg-amber-400/10',
+    blue: 'text-blue-400 bg-blue-400/10',
+    green: 'text-green-400 bg-green-400/10',
+    purple: 'text-purple-400 bg-purple-400/10',
+  }
+  return (
+    <div className="rounded-xl p-4" style={{ background: '#111827', border: '1px solid #1f2937' }}>
+      <div className={`inline-flex p-2 rounded-lg ${colors[color]} mb-3`}>{icon}</div>
+      <div className={`font-bold text-white truncate ${small ? 'text-base' : 'text-2xl'}`}>{value}</div>
+      <div className="text-xs text-gray-500 mt-0.5">{label}</div>
+    </div>
+  )
+}
+
+function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between text-sm gap-3">
+      <span className="text-gray-500 flex items-center gap-2 shrink-0">
+        {icon}
+        {label}
+      </span>
+      <span className="text-white text-right truncate">{value}</span>
+    </div>
+  )
+}
+
+function PlayerRow({ p }: { p: SquadPlayer }) {
+  const a = age(p.dateOfBirth)
+  return (
+    <div className="flex items-center gap-3 px-3 sm:px-4 py-2.5 hover:bg-white/5 transition-colors">
+      <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold"
+        style={{ background: '#1f2937', color: '#f59e0b' }}>
+        {p.shirtNumber ?? '–'}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium text-white truncate">{p.name}</div>
+        <div className="text-xs text-gray-500 truncate">
+          {[a != null ? `${a} år` : null, p.nationality]
+            .filter(Boolean)
+            .join(' · ') || ' '}
+        </div>
+      </div>
+      <Calendar size={12} className="text-gray-600 shrink-0" />
+      <span className="text-xs text-gray-500 shrink-0 hidden sm:inline">
+        {p.dateOfBirth?.slice(0, 10) ?? '–'}
+      </span>
+    </div>
+  )
+}
