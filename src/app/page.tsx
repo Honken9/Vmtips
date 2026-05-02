@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { TrophyLogo } from '@/components/TrophyLogo'
+import { MatchCountdown } from '@/components/MatchCountdown'
 import { LeaderboardEntry, Match, Prediction, Settings, Profile, Pool } from '@/lib/types'
 import { stockholmToday, isMatchOnStockholmDate } from '@/lib/stats'
 import { fetchNews } from '@/lib/rss'
@@ -76,6 +77,12 @@ export default async function HomePage() {
 
   const ymd = stockholmToday()
   const todaysMatches = matches.filter(m => isMatchOnStockholmDate(m.kickoff_at, ymd))
+
+  // Nästa kommande match (inte avgjord, kickoff i framtiden)
+  const nowMs = Date.now()
+  const upcomingMatch = matches
+    .filter(m => !m.result_confirmed && new Date(m.kickoff_at).getTime() > nowMs)
+    .sort((a, b) => a.kickoff_at.localeCompare(b.kickoff_at))[0]
   const myPredByMatch = new Map(myPreds.map(p => [p.match_id, p]))
   const myEntry = user ? entries.find(e => e.user_id === user.id) ?? null : null
   const myRank = myEntry ? entries.findIndex(e => e.user_id === user!.id) + 1 : null
@@ -121,6 +128,17 @@ export default async function HomePage() {
           style={{ background: 'radial-gradient(circle, #f59e0b 0%, transparent 70%)' }}
         />
       </div>
+
+      {/* Nedräkning till nästa match */}
+      {upcomingMatch && (
+        <MatchCountdown
+          targetIso={upcomingMatch.kickoff_at}
+          homeName={upcomingMatch.home_team?.name ?? upcomingMatch.home_placeholder ?? '?'}
+          awayName={upcomingMatch.away_team?.name ?? upcomingMatch.away_placeholder ?? '?'}
+          homeFlag={upcomingMatch.home_team?.flag}
+          awayFlag={upcomingMatch.away_team?.flag}
+        />
+      )}
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Vänster kolumn: Dagens matcher + nyheter */}
