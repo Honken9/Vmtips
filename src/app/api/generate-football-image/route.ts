@@ -111,6 +111,25 @@ export async function POST(request: NextRequest) {
   // Admin-klient för storage & DB (kringgår RLS)
   const admin = createAdminClient()
 
+  // Rate limit: max 1 generering per 30 sek per användare.
+  // Skyddar mot kostnadsspam mot Gemini.
+  const RATE_LIMIT_MS = 30_000
+  const { data: existing } = await admin
+    .from('profiles')
+    .select('last_avatar_generated_at')
+    .eq('id', user.id)
+    .single()
+  if (existing?.last_avatar_generated_at) {
+    const elapsed = Date.now() - new Date(existing.last_avatar_generated_at).getTime()
+    if (elapsed < RATE_LIMIT_MS) {
+      const wait = Math.ceil((RATE_LIMIT_MS - elapsed) / 1000)
+      return NextResponse.json(
+        { error: `Vänta ${wait} sekunder innan nästa generering.` },
+        { status: 429 }
+      )
+    }
+  }
+
   const formData = await request.formData()
   const imageFile = formData.get('image') as File | null
   if (!imageFile) return NextResponse.json({ error: 'No image' }, { status: 400 })
@@ -229,7 +248,13 @@ export async function POST(request: NextRequest) {
     const avatarUrl = publicData.publicUrl + `?t=${Date.now()}`
 
     // Uppdatera profilen
-    await admin.from('profiles').update({ avatar_url: avatarUrl }).eq('id', user.id)
+    await admin
+      .from('profiles')
+      .update({
+        avatar_url: avatarUrl,
+        last_avatar_generated_at: new Date().toISOString(),
+      })
+      .eq('id', user.id)
 
     return NextResponse.json({ avatarUrl })
 
