@@ -30,6 +30,16 @@ export interface Profile {
   tips_locked_at: string | null
   created_at: string
   avatar_url?: string | null
+  pool_id?: number | null
+}
+
+export interface Pool {
+  id: number
+  name: string
+  description: string | null
+  invite_code: string
+  created_by: string | null
+  created_at: string
 }
 
 export interface Team {
@@ -75,6 +85,7 @@ export interface Prediction {
 export interface LeaderboardEntry {
   user_id: string
   display_name: string
+  pool_id: number | null
   tips_locked: boolean
   predictions_graded: number
   correct_results: number

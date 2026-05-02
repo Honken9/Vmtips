@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { FootballAvatarUpload } from '@/components/FootballAvatarUpload'
-import { User } from 'lucide-react'
+import { ChangePool } from './ChangePool'
+import type { Pool } from '@/lib/types'
+import { User, Users } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +18,12 @@ export default async function ProfilPage() {
     .eq('id', user.id)
     .single()
 
-  if (!profile) redirect('/tips')
+  if (!profile) redirect('/select-pool')
+
+  const { data: pool } = profile.pool_id
+    ? await supabase.from('pools').select('*').eq('id', profile.pool_id).single()
+    : { data: null }
+  const currentPool = pool as Pool | null
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
@@ -34,6 +41,33 @@ export default async function ProfilPage() {
         currentAvatar={profile.avatar_url ?? null}
         displayName={profile.display_name}
       />
+
+      {/* Pool */}
+      <div className="rounded-xl p-5 space-y-3" style={{ border: '1px solid #1f2937', background: '#0f172a' }}>
+        <h2 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
+          <Users size={14} className="text-amber-400" />
+          Tipspool
+        </h2>
+        {currentPool ? (
+          <>
+            <div className="flex items-baseline justify-between">
+              <span className="text-lg font-bold text-white">{currentPool.name}</span>
+              <span className="text-xs text-gray-500 font-mono tracking-wider">
+                {currentPool.invite_code}
+              </span>
+            </div>
+            {currentPool.description && (
+              <p className="text-xs text-gray-500">{currentPool.description}</p>
+            )}
+            <p className="text-xs text-gray-500">
+              Bjud in andra med koden ovan. Du tävlar bara mot andra i samma pool.
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-gray-400">Du tillhör ingen pool än.</p>
+        )}
+        <ChangePool currentPoolId={profile.pool_id ?? null} />
+      </div>
 
       <div className="rounded-xl p-5 space-y-3" style={{ border: '1px solid #1f2937', background: '#0f172a' }}>
         <h2 className="text-sm font-semibold text-gray-300">Kontoinformation</h2>

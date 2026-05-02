@@ -5,15 +5,21 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { TrophyLogo } from '@/components/TrophyLogo'
-import { Loader2, CheckCircle } from 'lucide-react'
+import { Loader2, CheckCircle, Users, Plus } from 'lucide-react'
+import { generateInviteCode, normalizeInviteCode } from '@/lib/invite-code'
+
+type PoolMode = 'join' | 'create'
 
 export default function RegisterPage() {
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [poolMode, setPoolMode] = useState<PoolMode>('join')
+  const [inviteCode, setInviteCode] = useState('')
+  const [poolName, setPoolName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
+  const [success, setSuccess] = useState<{ poolName: string; inviteCode: string } | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -25,10 +31,41 @@ export default function RegisterPage() {
       setError('Lösenordet måste vara minst 6 tecken')
       return
     }
+    if (poolMode === 'join' && !inviteCode.trim()) {
+      setError('Ange en invite-kod eller välj "Skapa ny pool"')
+      return
+    }
+    if (poolMode === 'create' && !poolName.trim()) {
+      setError('Ange ett poolnamn')
+      return
+    }
 
     setLoading(true)
 
-    const { data, error } = await supabase.auth.signUp({
+    // 1. Validera/skapa pool INNAN användaren skapas
+    let targetPoolId: number | null = null
+    let targetPoolName = ''
+    let targetInviteCode = ''
+
+    if (poolMode === 'join') {
+      const code = normalizeInviteCode(inviteCode)
+      const { data: pool, error: poolErr } = await supabase
+        .from('pools')
+        .select('id, name, invite_code')
+        .eq('invite_code', code)
+        .single()
+      if (poolErr || !pool) {
+        setError('Hittade ingen pool med den koden. Dubbelkolla med arrangören.')
+        setLoading(false)
+        return
+      }
+      targetPoolId = pool.id
+      targetPoolName = pool.name
+      targetInviteCode = pool.invite_code
+    }
+
+    // 2. Skapa användaren
+    const { data, error: signErr } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -36,24 +73,63 @@ export default function RegisterPage() {
       },
     })
 
+    if (signErr) {
+      setError(
+        signErr.message === 'User already registered'
+          ? 'Den e-postadressen är redan registrerad'
+          : `Fel: ${signErr.message}`
+      )
+      setLoading(false)
+      return
+    }
+
+    // 3. Om pool ska skapas: gör det nu (som inloggad eller via metadata efter callback)
+    // Vi behöver session för att skapa rad. Om e-post-bekräftelse är på får användaren
+    // skapa poolen efter login istället – då sparar vi i metadata och hanterar i callback.
+    if (poolMode === 'create' && data.session && data.user) {
+      const code = generateInviteCode()
+      const { data: newPool, error: poolErr } = await supabase
+        .from('pools')
+        .insert({
+          name: poolName.trim(),
+          invite_code: code,
+          created_by: data.user.id,
+        })
+        .select()
+        .single()
+      if (poolErr || !newPool) {
+        setError(`Konto skapat men poolen kunde inte sparas: ${poolErr?.message ?? '?'}`)
+        setLoading(false)
+        return
+      }
+      targetPoolId = newPool.id
+      targetPoolName = newPool.name
+      targetInviteCode = newPool.invite_code
+    }
+
+    // 4. Sätt pool_id på profilen (kräver inloggad session)
+    if (data.session && data.user && targetPoolId != null) {
+      await supabase
+        .from('profiles')
+        .update({ pool_id: targetPoolId })
+        .eq('id', data.user.id)
+    }
+
     setLoading(false)
 
-    if (error) {
-      setError(error.message === 'User already registered'
-        ? 'Den e-postadressen är redan registrerad'
-        : `Fel: ${error.message}`)
-      return
-    }
-
-    // Om session finns direkt → inloggad utan e-postbekräftelse
     if (data.session) {
-      router.push('/tips')
-      router.refresh()
+      // Inloggad direkt
+      if (poolMode === 'create' && targetInviteCode) {
+        setSuccess({ poolName: targetPoolName, inviteCode: targetInviteCode })
+      } else {
+        router.push('/')
+        router.refresh()
+      }
       return
     }
 
-    // Annars → e-postbekräftelse krävs
-    setSuccess(true)
+    // E-postbekräftelse krävs – pool sätts efter callback (TODO i callback)
+    setSuccess({ poolName: targetPoolName, inviteCode: targetInviteCode })
   }
 
   if (success) {
@@ -62,22 +138,29 @@ export default function RegisterPage() {
         <div className="w-full max-w-md text-center">
           <div className="rounded-2xl p-8" style={{ background: '#111827', border: '1px solid #1f2937' }}>
             <CheckCircle size={48} className="text-amber-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">Kolla din e-post!</h2>
-            <p className="text-gray-400 mb-4">
-              Vi har skickat en bekräftelselänk till <span className="text-white">{email}</span>.
-              Klicka på länken för att aktivera ditt konto.
-            </p>
+            <h2 className="text-xl font-bold text-white mb-2">Klart!</h2>
+            {success.poolName && (
+              <p className="text-gray-300 mb-4">
+                Du är med i poolen <span className="text-amber-400 font-semibold">{success.poolName}</span>.
+              </p>
+            )}
+            {poolMode === 'create' && success.inviteCode && (
+              <div className="rounded-xl p-4 mb-4" style={{ background: '#1f2937', border: '1px solid #374151' }}>
+                <div className="text-xs text-gray-400 mb-1">Bjud in andra med koden:</div>
+                <div className="text-2xl font-bold tracking-wider text-amber-400 font-mono">
+                  {success.inviteCode}
+                </div>
+              </div>
+            )}
             <p className="text-sm text-gray-500">
-              Vill du slippa detta?{' '}
-              <a
-                href="https://supabase.com/dashboard/project/jofhsqykluusfupmrkih/auth/providers"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-amber-400 hover:underline"
-              >
-                Stäng av e-postbekräftelse i Supabase
-              </a>
+              Om du fick ett mail – klicka på bekräftelselänken där först.
             </p>
+            <Link
+              href="/"
+              className="inline-block mt-4 px-4 py-2 rounded-lg gold-gradient text-black font-medium text-sm"
+            >
+              Till startsidan
+            </Link>
           </div>
         </div>
       </div>
@@ -85,7 +168,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center">
+    <div className="min-h-[80vh] flex items-center justify-center py-8">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
@@ -136,6 +219,74 @@ export default function RegisterPage() {
                 className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all"
                 style={{ background: '#1f2937', border: '1px solid #374151' }}
               />
+            </div>
+
+            {/* Pool-val */}
+            <div className="pt-4 border-t" style={{ borderColor: '#1f2937' }}>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Tipspool</label>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setPoolMode('join')}
+                  className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    poolMode === 'join'
+                      ? 'text-amber-400 bg-amber-400/10'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                  style={{
+                    background: poolMode === 'join' ? undefined : '#1f2937',
+                    border: `1px solid ${poolMode === 'join' ? 'rgba(245,158,11,0.3)' : '#374151'}`,
+                  }}
+                >
+                  <Users size={14} />
+                  Gå med
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPoolMode('create')}
+                  className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    poolMode === 'create'
+                      ? 'text-amber-400 bg-amber-400/10'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                  style={{
+                    background: poolMode === 'create' ? undefined : '#1f2937',
+                    border: `1px solid ${poolMode === 'create' ? 'rgba(245,158,11,0.3)' : '#374151'}`,
+                  }}
+                >
+                  <Plus size={14} />
+                  Skapa ny
+                </button>
+              </div>
+
+              {poolMode === 'join' ? (
+                <input
+                  type="text"
+                  value={inviteCode}
+                  onChange={e => setInviteCode(e.target.value.toUpperCase())}
+                  required
+                  placeholder="Invite-kod (t.ex. XK4P9M)"
+                  maxLength={12}
+                  className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 font-mono tracking-wider uppercase focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                  style={{ background: '#1f2937', border: '1px solid #374151' }}
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={poolName}
+                  onChange={e => setPoolName(e.target.value)}
+                  required
+                  placeholder="Poolnamn (t.ex. Familjen)"
+                  maxLength={40}
+                  className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                  style={{ background: '#1f2937', border: '1px solid #374151' }}
+                />
+              )}
+              <p className="text-xs text-gray-500 mt-1.5">
+                {poolMode === 'join'
+                  ? 'Få koden av personen som arrangerar din tipstävling.'
+                  : 'En invite-kod genereras automatiskt – dela den med dina kompisar.'}
+              </p>
             </div>
 
             {error && (

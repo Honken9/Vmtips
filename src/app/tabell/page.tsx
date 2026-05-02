@@ -1,6 +1,8 @@
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { LeaderboardTable } from '@/components/LeaderboardTable'
-import { LeaderboardEntry, Match, Prediction, Settings, Profile } from '@/lib/types'
+import { LeaderboardEntry, Match, Prediction, Settings, Profile, Pool } from '@/lib/types'
 import { calcDailyWinner, popularPicks, topExactScorer, stockholmToday } from '@/lib/stats'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
@@ -11,12 +13,29 @@ export const revalidate = 30
 export default async function LeaderboardPage() {
   const supabase = await createClient()
 
+  // Aktuell användare → vilken pool ska visas?
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/login')
+
+  const { data: meProfile } = await supabase
+    .from('profiles')
+    .select('pool_id, is_admin')
+    .eq('id', user.id)
+    .single()
+  if (!meProfile?.pool_id) redirect('/select-pool')
+
+  const poolId = meProfile.pool_id
+  const isAdmin = meProfile.is_admin === true
+
   const [
-    { data: leaderboard },
+    { data: leaderboardRaw },
     { data: settings },
     { data: matchesRaw },
     { data: predictionsRaw },
     { data: profilesRaw },
+    { data: pool },
   ] = await Promise.all([
     supabase.from('leaderboard').select('*'),
     supabase.from('settings').select('*').single(),
@@ -25,8 +44,22 @@ export default async function LeaderboardPage() {
       .select('*, home_team:teams!matches_home_team_id_fkey(*), away_team:teams!matches_away_team_id_fkey(*)')
       .order('kickoff_at'),
     supabase.from('predictions').select('*'),
-    supabase.from('profiles').select('id, display_name'),
+    supabase.from('profiles').select('id, display_name, pool_id'),
+    supabase.from('pools').select('*').eq('id', poolId).single(),
   ])
+
+  // Filtrera till bara medlemmar i samma pool
+  const leaderboard = (leaderboardRaw ?? []).filter(
+    (e: LeaderboardEntry) => e.pool_id === poolId
+  )
+  const memberIds = new Set(
+    (profilesRaw ?? [])
+      .filter((p: Pick<Profile, 'id' | 'pool_id'>) => p.pool_id === poolId)
+      .map((p: Pick<Profile, 'id'>) => p.id)
+  )
+  const predictionsInPool = (predictionsRaw ?? []).filter((p: Prediction) =>
+    memberIds.has(p.user_id)
+  )
 
   const s: Settings = settings ?? {
     id: 1,
@@ -39,10 +72,13 @@ export default async function LeaderboardPage() {
     updated_at: new Date().toISOString(),
   }
 
-  const entries = (leaderboard ?? []) as LeaderboardEntry[]
+  const entries = leaderboard as LeaderboardEntry[]
   const matches = (matchesRaw ?? []) as Match[]
-  const predictions = (predictionsRaw ?? []) as Prediction[]
-  const profiles = (profilesRaw ?? []) as Pick<Profile, 'id' | 'display_name'>[]
+  const predictions = predictionsInPool
+  const profiles = ((profilesRaw ?? []).filter(
+    (p: Pick<Profile, 'pool_id'>) => p.pool_id === poolId
+  )) as Pick<Profile, 'id' | 'display_name'>[]
+  const currentPool = pool as Pool | null
 
   const totalMatches = matches.length
   const completedMatches = matches.filter(m => m.result_confirmed).length
@@ -66,11 +102,23 @@ export default async function LeaderboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Tabell & statistik</h1>
-        <p className="text-gray-400 text-sm mt-1">
-          {entries.length} deltagare · {completedMatches} av {totalMatches} matcher avgjorda
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Tabell & statistik</h1>
+          <p className="text-gray-400 text-sm mt-1">
+            <span className="text-amber-400 font-medium">{currentPool?.name ?? 'Pool'}</span>
+            {' · '}
+            {entries.length} deltagare · {completedMatches} av {totalMatches} matcher avgjorda
+          </p>
+        </div>
+        {isAdmin && (
+          <Link
+            href="/admin/pools"
+            className="text-xs text-gray-400 hover:text-amber-400 transition-colors"
+          >
+            Hantera pools →
+          </Link>
+        )}
       </div>
 
       {/* Statistik-kort */}

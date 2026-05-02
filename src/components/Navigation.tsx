@@ -4,16 +4,17 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { TrophyLogo } from './TrophyLogo'
 import { createClient } from '@/lib/supabase/client'
-import { Profile } from '@/lib/types'
+import { Profile, Pool } from '@/lib/types'
 import { LogOut, LayoutDashboard, Target, Trophy, ShieldCheck, Menu, X, Home } from 'lucide-react'
 import { useState } from 'react'
 import Image from 'next/image'
 
 interface Props {
   profile: Profile | null
+  pool?: Pool | null
 }
 
-export function Navigation({ profile }: Props) {
+export function Navigation({ profile, pool }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -89,6 +90,11 @@ export function Navigation({ profile }: Props) {
                     <span className="text-white font-medium group-hover:text-amber-400 transition-colors">
                       {profile.display_name}
                     </span>
+                    {pool && (
+                      <span className="ml-2 text-xs text-indigo-300 bg-indigo-500/15 px-2 py-0.5 rounded-full">
+                        {pool.name}
+                      </span>
+                    )}
                     {profile.tips_locked && (
                       <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
                         Tips inlämnade

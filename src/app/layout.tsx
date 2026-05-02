@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { createClient } from '@/lib/supabase/server'
 import { Navigation } from '@/components/Navigation'
-import { Profile } from '@/lib/types'
+import { Profile, Pool } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,10 +45,20 @@ export default async function RootLayout({
     }
   }
 
+  let pool: Pool | null = null
+  if (profile?.pool_id) {
+    const { data } = await supabase
+      .from('pools')
+      .select('*')
+      .eq('id', profile.pool_id)
+      .single()
+    pool = data ?? null
+  }
+
   return (
     <html lang="sv">
       <body>
-        <Navigation profile={profile} />
+        <Navigation profile={profile} pool={pool} />
         <main className="max-w-6xl mx-auto px-4 py-8">
           {children}
         </main>

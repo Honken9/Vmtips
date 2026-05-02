@@ -1,7 +1,8 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { TrophyLogo } from '@/components/TrophyLogo'
-import { LeaderboardEntry, Match, Prediction, Settings, Profile } from '@/lib/types'
+import { LeaderboardEntry, Match, Prediction, Settings, Profile, Pool } from '@/lib/types'
 import { stockholmToday, isMatchOnStockholmDate } from '@/lib/stats'
 import { fetchNews } from '@/lib/rss'
 import { format, formatDistanceToNow } from 'date-fns'
@@ -17,11 +18,21 @@ export default async function HomePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Om inloggad men saknar pool → tvinga val
+  if (user) {
+    const { data: meProfile } = await supabase
+      .from('profiles')
+      .select('pool_id')
+      .eq('id', user.id)
+      .single()
+    if (!meProfile?.pool_id) redirect('/select-pool')
+  }
+
   // Hämta allt parallellt
   const [
     { data: settings },
     { data: matchesRaw },
-    { data: leaderboard },
+    { data: leaderboardRaw },
     { data: myPredsRaw },
     { data: profileRaw },
     news,
@@ -41,6 +52,19 @@ export default async function HomePage() {
     fetchNews(5),
   ])
 
+  const profile = profileRaw as Profile | null
+  const poolId = profile?.pool_id ?? null
+
+  // Hämta poolnamn (om användaren har en pool)
+  const { data: pool } = poolId
+    ? await supabase.from('pools').select('*').eq('id', poolId).single()
+    : { data: null }
+  const currentPool = pool as Pool | null
+
+  // Filtrera leaderboard till medlemmar i samma pool (eller all data om utloggad)
+  const allEntries = (leaderboardRaw ?? []) as LeaderboardEntry[]
+  const entries = poolId ? allEntries.filter(e => e.pool_id === poolId) : allEntries
+
   const s: Settings = settings ?? {
     id: 1, tournament_mode: 'B', mode_a_global_lock: false,
     points_correct_result: 3, points_exact_score: 5,
@@ -48,9 +72,7 @@ export default async function HomePage() {
     updated_at: new Date().toISOString(),
   }
   const matches = (matchesRaw ?? []) as Match[]
-  const entries = (leaderboard ?? []) as LeaderboardEntry[]
   const myPreds = (myPredsRaw ?? []) as Prediction[]
-  const profile = profileRaw as Profile | null
 
   const ymd = stockholmToday()
   const todaysMatches = matches.filter(m => isMatchOnStockholmDate(m.kickoff_at, ymd))
@@ -76,11 +98,22 @@ export default async function HomePage() {
               ? `Välkommen tillbaka, ${profile.display_name}.`
               : 'Välkommen till VM-tipset! Tippa alla matcher och följ din placering live.'}
           </p>
-          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
-            style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
-            {s.tournament_mode === 'A'
-              ? '📋 Läge A – Tips lämnas in innan turneringen'
-              : '⚡ Läge B – Tips per match, låses vid avspark'}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
+              style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
+              {s.tournament_mode === 'A'
+                ? '📋 Läge A – Tips lämnas in innan turneringen'
+                : '⚡ Läge B – Tips per match, låses vid avspark'}
+            </div>
+            {currentPool && (
+              <Link
+                href="/profil"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium hover:bg-white/10 transition-colors"
+                style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}
+              >
+                Pool: <span className="text-white">{currentPool.name}</span>
+              </Link>
+            )}
           </div>
         </div>
         <div
