@@ -46,7 +46,7 @@ export default async function AdminDashboard() {
           { icon: <CheckSquare size={20} />, label: 'Tips totalt', value: totalPredictions, sub: 'prediktioner', color: 'green' },
           { icon: <Trophy size={20} />, label: 'Poängsystem', value: `${s?.points_correct_result}/${s?.points_exact_score}`, sub: 'rätt/exakt', color: 'gold' },
         ].map(({ icon, label, value, sub, color }) => {
-          const colors = { blue: 'text-blue-400 bg-blue-400/10', gold: 'text-amber-400 bg-amber-400/10', green: 'text-green-400 bg-green-400/10' }
+          const colors = { blue: 'text-blue-400 bg-blue-400/10', gold: 'text-amber-400 bg-amber-400/10', green: 'text-emerald-400 bg-emerald-400/10' }
           return (
             <div key={label} className="rounded-xl p-4" style={{ background: '#111827', border: '1px solid #1f2937' }}>
               <div className={`inline-flex p-2 rounded-lg ${colors[color as keyof typeof colors]} mb-3`}>{icon}</div>

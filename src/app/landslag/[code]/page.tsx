@@ -80,7 +80,7 @@ export default async function LandslagDetail({
     <div className="space-y-6">
       <Link
         href="/landslag"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-amber-400 transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-emerald-400 transition-colors"
       >
         <ArrowLeft size={14} />
         Alla landslag
@@ -90,7 +90,7 @@ export default async function LandslagDetail({
       <div
         className="rounded-2xl p-5 sm:p-6 flex items-center gap-4 sm:gap-6"
         style={{
-          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+          background: 'linear-gradient(135deg, #0c2823 0%, #14202e 50%, #0a3d2a 100%)',
           border: '1px solid #1f2937',
         }}
       >
@@ -99,7 +99,7 @@ export default async function LandslagDetail({
           <h1 className="text-2xl sm:text-3xl font-bold text-white truncate">{team.name}</h1>
           <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">
             {team.group_name && (
-              <span className="px-2 py-1 rounded-full bg-amber-400/15 text-amber-400 font-medium">
+              <span className="px-2 py-1 rounded-full bg-emerald-400/15 text-emerald-400 font-medium">
                 Grupp {team.group_name}
               </span>
             )}
@@ -156,7 +156,7 @@ export default async function LandslagDetail({
         {/* Landsfakta */}
         <section>
           <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-            <Globe2 size={18} className="text-amber-400" />
+            <Globe2 size={18} className="text-emerald-400" />
             Om landet
           </h2>
           {country ? (
@@ -191,7 +191,7 @@ export default async function LandslagDetail({
         {/* Roliga fakta */}
         <section>
           <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-            <Star size={18} className="text-amber-400" />
+            <Star size={18} className="text-emerald-400" />
             Visste du att…
           </h2>
           <div className="rounded-xl p-5 space-y-3 text-sm text-gray-300"
@@ -200,7 +200,7 @@ export default async function LandslagDetail({
               <ul className="space-y-2 list-none">
                 {facts.facts.map((f, i) => (
                   <li key={i} className="flex gap-2">
-                    <span className="text-amber-400 shrink-0">•</span>
+                    <span className="text-emerald-400 shrink-0">•</span>
                     <span>{f}</span>
                   </li>
                 ))}
@@ -230,7 +230,7 @@ export default async function LandslagDetail({
       {/* Trupp */}
       <section>
         <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-          <Users size={18} className="text-amber-400" />
+          <Users size={18} className="text-emerald-400" />
           Trupp
           {football && football.squad.length > 0 && (
             <span className="text-xs text-gray-500 font-normal">
@@ -262,7 +262,7 @@ export default async function LandslagDetail({
                   style={{ background: '#111827', border: '1px solid #1f2937' }}
                 >
                   <div
-                    className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-amber-400"
+                    className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-emerald-400"
                     style={{ background: '#1a2233' }}
                   >
                     {POSITION_LABELS[posKey]} ({players.length})
@@ -319,7 +319,7 @@ function StatBox({
   const colors = {
     gold: 'text-amber-400 bg-amber-400/10',
     blue: 'text-blue-400 bg-blue-400/10',
-    green: 'text-green-400 bg-green-400/10',
+    green: 'text-emerald-400 bg-emerald-400/10',
     purple: 'text-purple-400 bg-purple-400/10',
   }
   return (
@@ -348,7 +348,7 @@ function PlayerRow({ p }: { p: SquadPlayer }) {
   return (
     <div className="flex items-center gap-3 px-3 sm:px-4 py-2.5 hover:bg-white/5 transition-colors">
       <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-sm font-bold"
-        style={{ background: '#1f2937', color: '#f59e0b' }}>
+        style={{ background: '#1f2937', color: '#10b981' }}>
         {p.shirtNumber ?? '–'}
       </div>
       <div className="flex-1 min-w-0">

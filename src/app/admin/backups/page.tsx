@@ -115,7 +115,7 @@ export default function AdminBackupsPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Database size={22} className="text-amber-400" />
+            <Database size={22} className="text-emerald-400" />
             Backups
           </h1>
           <p className="text-gray-400 text-sm mt-1 max-w-2xl">
@@ -138,9 +138,9 @@ export default function AdminBackupsPage() {
             disabled={creating}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50"
             style={{
-              background: 'rgba(245,158,11,0.15)',
-              color: '#f59e0b',
-              border: '1px solid rgba(245,158,11,0.3)',
+              background: 'rgba(16,185,129,0.15)',
+              color: '#10b981',
+              border: '1px solid rgba(16,185,129,0.3)',
             }}
           >
             {creating ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}

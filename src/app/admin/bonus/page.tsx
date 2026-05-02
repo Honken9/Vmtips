@@ -56,7 +56,7 @@ export default function AdminBonusPage() {
 
       <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1f2937' }}>
         <div className="px-5 py-4 flex items-center gap-3" style={{ background: '#1f2937' }}>
-          <Star size={18} className="text-amber-400" />
+          <Star size={18} className="text-emerald-400" />
           <span className="font-bold text-white">Rätt svar (5p per kategori)</span>
         </div>
 
@@ -71,7 +71,7 @@ export default function AdminBonusPage() {
               value={results.top_scorer ?? ''}
               onChange={e => setResults(r => ({ ...r, top_scorer: e.target.value }))}
               placeholder="T.ex. Erling Haaland"
-              className="w-full max-w-sm px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+              className="w-full max-w-sm px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
               style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
             />
           </div>
@@ -84,7 +84,7 @@ export default function AdminBonusPage() {
             <select
               value={results.most_yellow_team_id ?? ''}
               onChange={e => setResults(r => ({ ...r, most_yellow_team_id: e.target.value ? parseInt(e.target.value) : null }))}
-              className="w-full max-w-sm px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+              className="w-full max-w-sm px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
               style={{ background: '#1f2937', border: '1px solid #374151', color: results.most_yellow_team_id ? '#f9fafb' : '#6b7280' }}
             >
               <option value="">– Välj lag –</option>
@@ -106,7 +106,7 @@ export default function AdminBonusPage() {
               value={results.total_goals ?? ''}
               onChange={e => setResults(r => ({ ...r, total_goals: e.target.value ? parseInt(e.target.value) : null }))}
               placeholder="T.ex. 172"
-              className="w-40 px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+              className="w-40 px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
               style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
             />
           </div>

@@ -131,7 +131,7 @@ export function ChangePool({ currentPoolId }: { currentPoolId: number | null }) 
             onChange={e => setInviteCode(e.target.value.toUpperCase())}
             placeholder="XK4P9M"
             maxLength={12}
-            className="flex-1 px-3 py-2 rounded-lg text-sm text-white font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+            className="flex-1 px-3 py-2 rounded-lg text-sm text-white font-mono tracking-wider focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
             style={{ background: '#1f2937', border: '1px solid #374151' }}
             autoFocus
           />
@@ -142,7 +142,7 @@ export function ChangePool({ currentPoolId }: { currentPoolId: number | null }) 
             onChange={e => setPoolName(e.target.value)}
             placeholder="t.ex. Familjen"
             maxLength={40}
-            className="flex-1 px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+            className="flex-1 px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
             style={{ background: '#1f2937', border: '1px solid #374151' }}
             autoFocus
           />

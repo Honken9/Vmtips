@@ -94,7 +94,7 @@ export default async function HomePage() {
       <div
         className="rounded-2xl p-8 relative overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+          background: 'linear-gradient(135deg, #0c2823 0%, #14202e 50%, #0a3d2a 100%)',
           border: '1px solid #1f2937',
         }}
       >
@@ -107,7 +107,7 @@ export default async function HomePage() {
           </p>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
-              style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}>
+              style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
               {s.tournament_mode === 'A'
                 ? '📋 Läge A – Tips lämnas in innan turneringen'
                 : '⚡ Läge B – Tips per match, låses vid avspark'}
@@ -125,7 +125,7 @@ export default async function HomePage() {
         </div>
         <div
           className="absolute right-0 top-0 w-64 h-64 opacity-5"
-          style={{ background: 'radial-gradient(circle, #f59e0b 0%, transparent 70%)' }}
+          style={{ background: 'radial-gradient(circle, #10b981 0%, transparent 70%)' }}
         />
       </div>
 
@@ -148,10 +148,10 @@ export default async function HomePage() {
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Calendar size={20} className="text-amber-400" />
+                <Calendar size={20} className="text-emerald-400" />
                 Dagens matcher
               </h2>
-              <Link href="/matches" className="text-xs text-gray-400 hover:text-amber-400 transition-colors">
+              <Link href="/matches" className="text-xs text-gray-400 hover:text-emerald-400 transition-colors">
                 Alla matcher →
               </Link>
             </div>
@@ -180,7 +180,7 @@ export default async function HomePage() {
           {/* Nyhetsfeed */}
           <section>
             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <Newspaper size={20} className="text-amber-400" />
+              <Newspaper size={20} className="text-emerald-400" />
               Nyheter
             </h2>
             {news.length === 0 ? (
@@ -196,7 +196,7 @@ export default async function HomePage() {
                     href={n.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block rounded-xl p-4 hover:border-amber-400/40 transition-colors group"
+                    className="block rounded-xl p-4 hover:border-emerald-400/40 transition-colors group"
                     style={{ background: '#111827', border: '1px solid #1f2937' }}
                   >
                     <div className="flex gap-4">
@@ -210,7 +210,7 @@ export default async function HomePage() {
                       )}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-semibold text-white group-hover:text-amber-400 transition-colors line-clamp-2">
+                          <h3 className="font-semibold text-white group-hover:text-emerald-400 transition-colors line-clamp-2">
                             {n.title}
                           </h3>
                           <ExternalLink size={14} className="text-gray-600 shrink-0 mt-1" />
@@ -243,7 +243,7 @@ export default async function HomePage() {
           {/* Min statistik */}
           <section>
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Target size={18} className="text-amber-400" />
+              <Target size={18} className="text-emerald-400" />
               Din statistik
             </h2>
             {!user ? (
@@ -262,7 +262,7 @@ export default async function HomePage() {
                 style={{ background: '#111827', border: '1px solid #1f2937' }}>
                 <div>
                   <div className="text-xs text-gray-500">Placering</div>
-                  <div className="text-3xl font-bold text-amber-400">
+                  <div className="text-3xl font-bold text-emerald-400">
                     {myRank ? `#${myRank}` : '–'}
                     <span className="text-sm text-gray-500 font-normal"> av {entries.length}</span>
                   </div>
@@ -285,10 +285,10 @@ export default async function HomePage() {
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Trophy size={18} className="text-amber-400" />
+                <Trophy size={18} className="text-emerald-400" />
                 Topp 3
               </h2>
-              <Link href="/tabell" className="text-xs text-gray-400 hover:text-amber-400 transition-colors">
+              <Link href="/tabell" className="text-xs text-gray-400 hover:text-emerald-400 transition-colors">
                 Hela tabellen →
               </Link>
             </div>
@@ -314,7 +314,7 @@ export default async function HomePage() {
 function MiniStat({ label, value, highlight }: { label: string; value: number; highlight?: boolean }) {
   return (
     <div>
-      <div className={`text-xl font-bold ${highlight ? 'text-amber-400' : 'text-white'}`}>{value}</div>
+      <div className={`text-xl font-bold ${highlight ? 'text-emerald-400' : 'text-white'}`}>{value}</div>
       <div className="text-xs text-gray-500 mt-0.5">{label}</div>
     </div>
   )
@@ -344,7 +344,9 @@ function Top3Row({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
         </div>
       </div>
       <div className="text-right shrink-0">
-        <div className="text-lg font-bold text-amber-400">{entry.total_points}</div>
+        <div className={`text-lg font-bold ${rank === 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+          {entry.total_points}
+        </div>
         <div className="text-[10px] text-gray-500 uppercase tracking-wider">poäng</div>
       </div>
     </div>
@@ -388,7 +390,7 @@ function TodaysMatchRow({
     >
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="text-xs text-gray-500 shrink-0 w-11 sm:w-12 text-center">
-          <div className="text-amber-400 font-medium">{time}</div>
+          <div className="text-emerald-400 font-medium">{time}</div>
           {isLive && (
             <div className="text-[10px] text-red-400 font-bold mt-0.5 animate-pulse">LIVE</div>
           )}
@@ -418,13 +420,13 @@ function TodaysMatchRow({
           {myPred ? (
             <div className="flex items-center gap-1 text-gray-400">
               <span>Tips:</span>
-              <span className="text-amber-400 font-bold">
+              <span className="text-emerald-400 font-bold">
                 {myPred.pred_home}–{myPred.pred_away}
               </span>
               {myPred.locked && <CheckCircle size={10} className="text-green-500" />}
             </div>
           ) : (
-            <Link href="/tips" className="text-gray-500 hover:text-amber-400 transition-colors">
+            <Link href="/tips" className="text-gray-500 hover:text-emerald-400 transition-colors">
               Inget tips än
             </Link>
           )}
@@ -440,11 +442,11 @@ function TodaysMatchRow({
       <div className="md:hidden flex items-center justify-between gap-2 mt-2 pl-13 text-xs">
         {myPred ? (
           <span className="text-gray-400">
-            Tips: <span className="text-amber-400 font-bold">{myPred.pred_home}–{myPred.pred_away}</span>
+            Tips: <span className="text-emerald-400 font-bold">{myPred.pred_home}–{myPred.pred_away}</span>
             {myPred.locked && <CheckCircle size={10} className="text-green-500 inline ml-1" />}
           </span>
         ) : (
-          <Link href="/tips" className="text-gray-500 hover:text-amber-400">
+          <Link href="/tips" className="text-gray-500 hover:text-emerald-400">
             Inget tips än →
           </Link>
         )}

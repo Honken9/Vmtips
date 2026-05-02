@@ -56,7 +56,7 @@ export function Navigation({ profile, pool }: Props) {
                   href={href}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     active
-                      ? 'text-amber-400 bg-amber-400/10'
+                      ? 'text-emerald-400 bg-emerald-400/10'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
@@ -88,7 +88,7 @@ export function Navigation({ profile, pool }: Props) {
                     )}
                   </div>
                   <div className="text-sm">
-                    <span className="text-white font-medium group-hover:text-amber-400 transition-colors">
+                    <span className="text-white font-medium group-hover:text-emerald-400 transition-colors">
                       {profile.display_name}
                     </span>
                     {pool && (
@@ -142,7 +142,7 @@ export function Navigation({ profile, pool }: Props) {
                   onClick={() => setMobileOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                     active
-                      ? 'text-amber-400 bg-amber-400/10'
+                      ? 'text-emerald-400 bg-emerald-400/10'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
@@ -157,7 +157,7 @@ export function Navigation({ profile, pool }: Props) {
                   href="/profil"
                   onClick={() => setMobileOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                    pathname === '/profil' ? 'text-amber-400 bg-amber-400/10' : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    pathname === '/profil' ? 'text-emerald-400 bg-emerald-400/10' : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <div className="relative w-5 h-5 rounded-full overflow-hidden flex-shrink-0">
@@ -184,7 +184,7 @@ export function Navigation({ profile, pool }: Props) {
               <Link
                 href="/auth/login"
                 onClick={() => setMobileOpen(false)}
-                className="block px-4 py-3 text-sm font-medium text-amber-400"
+                className="block px-4 py-3 text-sm font-medium text-emerald-400"
               >
                 Logga in
               </Link>

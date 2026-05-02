@@ -45,7 +45,7 @@ export default async function ProfilPage() {
       {/* Pool */}
       <div className="rounded-xl p-5 space-y-3" style={{ border: '1px solid #1f2937', background: '#0f172a' }}>
         <h2 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
-          <Users size={14} className="text-amber-400" />
+          <Users size={14} className="text-emerald-400" />
           Tipspool
         </h2>
         {currentPool ? (
@@ -82,7 +82,7 @@ export default async function ProfilPage() {
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Status</span>
-            <span className={profile.tips_locked ? 'text-green-400' : 'text-amber-400'}>
+            <span className={profile.tips_locked ? 'text-green-400' : 'text-emerald-400'}>
               {profile.tips_locked ? '🔒 Tips inlämnade' : '✏️ Kan fortfarande tippa'}
             </span>
           </div>

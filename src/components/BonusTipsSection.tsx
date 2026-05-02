@@ -124,14 +124,14 @@ export function BonusTipsSection({ userId, teams, bonus, bonusResults, locked }:
       {/* Header */}
       <div className="px-5 py-4 flex items-center justify-between" style={{ background: '#111827' }}>
         <div className="flex items-center gap-3">
-          <Star size={18} className="text-amber-400" />
+          <Star size={18} className="text-emerald-400" />
           <span className="font-bold text-white">Bonustips</span>
           <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#1f2937', color: '#9ca3af' }}>
             5p per rätt svar
           </span>
         </div>
         {bonusResults?.confirmed && earnedBonus > 0 && (
-          <span className="text-sm font-bold text-amber-400">+{earnedBonus}p</span>
+          <span className="text-sm font-bold text-emerald-400">+{earnedBonus}p</span>
         )}
       </div>
 
@@ -170,7 +170,7 @@ export function BonusTipsSection({ userId, teams, bonus, bonusResults, locked }:
                       placeholder="Skriv spelarnamn…"
                       onChange={e => setVals(v => ({ ...v, [cat.field]: e.target.value }))}
                       onBlur={() => save(cat.field)}
-                      className="w-full max-w-xs px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                      className="w-full max-w-xs px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                       style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
                     />
                   ) : cat.type === 'team' ? (
@@ -180,7 +180,7 @@ export function BonusTipsSection({ userId, teams, bonus, bonusResults, locked }:
                         setVals(v => ({ ...v, [cat.field]: e.target.value }))
                       }}
                       onBlur={() => save(cat.field)}
-                      className="w-full max-w-xs px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                      className="w-full max-w-xs px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                       style={{ background: '#1f2937', border: '1px solid #374151', color: val ? '#f9fafb' : '#6b7280' }}
                     >
                       <option value="">– Välj lag –</option>
@@ -199,14 +199,14 @@ export function BonusTipsSection({ userId, teams, bonus, bonusResults, locked }:
                       placeholder="Antal mål…"
                       onChange={e => setVals(v => ({ ...v, [cat.field]: e.target.value }))}
                       onBlur={() => save(cat.field)}
-                      className="w-36 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                      className="w-36 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                       style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
                     />
                   )}
 
                   {/* Spara-indikator */}
                   <div className="mt-1.5 h-4 flex items-center gap-1.5">
-                    {isSaving && <Loader2 size={12} className="animate-spin text-amber-400" />}
+                    {isSaving && <Loader2 size={12} className="animate-spin text-emerald-400" />}
                     {!isSaving && isJustSaved && (
                       <>
                         <CheckCircle size={12} className="text-green-400" />

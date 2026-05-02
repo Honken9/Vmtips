@@ -135,7 +135,7 @@ export function AdminPoolsClient({
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Users size={22} className="text-amber-400" />
+            <Users size={22} className="text-emerald-400" />
             Pools
           </h1>
           <p className="text-gray-400 text-sm mt-1">
@@ -175,7 +175,7 @@ export function AdminPoolsClient({
             onChange={e => setNewName(e.target.value)}
             placeholder="Poolnamn (t.ex. Kollegor)"
             maxLength={40}
-            className="w-full px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+            className="w-full px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
             style={{ background: '#1f2937', border: '1px solid #374151' }}
           />
         </div>
@@ -206,11 +206,11 @@ export function AdminPoolsClient({
                   onBlur={e => {
                     if (e.target.value !== pool.name) renamePool(pool.id, e.target.value)
                   }}
-                  className="flex-1 min-w-[140px] text-base sm:text-lg font-bold bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50 rounded px-2"
+                  className="flex-1 min-w-[140px] text-base sm:text-lg font-bold bg-transparent text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50 rounded px-2"
                 />
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <code className="px-2 py-1 rounded text-amber-400 font-mono text-sm tracking-wider"
-                    style={{ background: 'rgba(245,158,11,0.1)' }}>
+                  <code className="px-2 py-1 rounded text-emerald-400 font-mono text-sm tracking-wider"
+                    style={{ background: 'rgba(16,185,129,0.1)' }}>
                     {pool.invite_code}
                   </code>
                   <button
@@ -263,7 +263,7 @@ export function AdminPoolsClient({
                             moveUser(m.id, e.target.value ? Number(e.target.value) : null)
                           }
                           disabled={busy === `move-${m.id}`}
-                          className="text-xs px-2 py-1 rounded bg-transparent text-gray-400 hover:text-white focus:outline-none focus:ring-1 focus:ring-amber-400/50 disabled:opacity-40"
+                          className="text-xs px-2 py-1 rounded bg-transparent text-gray-400 hover:text-white focus:outline-none focus:ring-1 focus:ring-emerald-400/50 disabled:opacity-40"
                           style={{ border: '1px solid #374151' }}
                         >
                           {pools.map(p => (
@@ -292,8 +292,8 @@ export function AdminPoolsClient({
       </div>
 
       {orphans.length > 0 && (
-        <div className="rounded-xl p-4" style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.25)' }}>
-          <h3 className="text-sm font-semibold text-amber-400 mb-2">
+        <div className="rounded-xl p-4" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.25)' }}>
+          <h3 className="text-sm font-semibold text-emerald-400 mb-2">
             {orphans.length} användare utan pool
           </h3>
           <div className="space-y-1">

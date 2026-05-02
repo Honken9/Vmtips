@@ -5,12 +5,14 @@
 @tailwind utilities;
 
 :root {
-  --bg: #0a0e1a;
-  --surface: #111827;
-  --surface2: #1f2937;
+  --bg: #0b1320;
+  --surface: #14202e;
+  --surface2: #1f2f3f;
+  --green: #10b981;
+  --green-dark: #059669;
   --gold: #f59e0b;
   --gold-dark: #d97706;
-  --border: #374151;
+  --border: #334155;
 }
 
 * {
@@ -19,16 +21,20 @@
 
 body {
   background-color: var(--bg);
-  color: #f9fafb;
+  color: #f1f5f9;
   font-family: 'Inter', system-ui, sans-serif;
   min-height: 100vh;
+  background-image:
+    radial-gradient(circle at 0% 0%, rgba(16, 185, 129, 0.07), transparent 45%),
+    radial-gradient(circle at 100% 0%, rgba(16, 185, 129, 0.04), transparent 45%);
+  background-attachment: fixed;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--surface); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
 /* Input number utan pilar */
 input[type='number']::-webkit-outer-spin-button,
@@ -38,12 +44,26 @@ input[type='number']::-webkit-inner-spin-button {
 }
 input[type='number'] { -moz-appearance: textfield; }
 
-/* Guldgradient */
+/* Primär gradient – grön (CTA, aktivt läge, hero-accenter) */
+.green-gradient {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+/* Sekundär gradient – guld (medaljer, segrar, premiumkänsla) */
 .gold-gradient {
   background: linear-gradient(135deg, #f59e0b, #d97706);
 }
 
 /* Animationer */
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+}
+
+.animate-pulse-green {
+  animation: pulse-green 2s infinite;
+}
+
 @keyframes pulse-gold {
   0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
   50% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }

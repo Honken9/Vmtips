@@ -267,7 +267,7 @@ export default function AdminResultsPage() {
                       value={val.home}
                       onChange={e => setScores(s => ({ ...s, [match.id]: { ...s[match.id], home: e.target.value } }))}
                       placeholder="–"
-                      className="w-10 sm:w-12 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                      className="w-10 sm:w-12 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                       style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
                     />
                     <span className="text-gray-600 font-bold">–</span>
@@ -279,7 +279,7 @@ export default function AdminResultsPage() {
                       value={val.away}
                       onChange={e => setScores(s => ({ ...s, [match.id]: { ...s[match.id], away: e.target.value } }))}
                       placeholder="–"
-                      className="w-10 sm:w-12 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                      className="w-10 sm:w-12 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                       style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
                     />
                   </div>
@@ -303,9 +303,9 @@ export default function AdminResultsPage() {
                       disabled={isSaving || val.home === '' || val.away === ''}
                       className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40"
                       style={{
-                        background: isSaved ? 'rgba(34,197,94,0.15)' : 'rgba(245,158,11,0.15)',
-                        color: isSaved ? '#22c55e' : '#f59e0b',
-                        border: `1px solid ${isSaved ? 'rgba(34,197,94,0.3)' : 'rgba(245,158,11,0.3)'}`,
+                        background: isSaved ? 'rgba(34,197,94,0.15)' : 'rgba(16,185,129,0.15)',
+                        color: isSaved ? '#22c55e' : '#10b981',
+                        border: `1px solid ${isSaved ? 'rgba(34,197,94,0.3)' : 'rgba(16,185,129,0.3)'}`,
                       }}
                     >
                       {isSaving ? <Loader2 size={14} className="animate-spin" /> : isSaved ? <CheckCircle size={14} /> : <Save size={14} />}

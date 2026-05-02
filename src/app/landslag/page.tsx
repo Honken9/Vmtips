@@ -20,7 +20,7 @@ export default async function LandslagPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <Globe size={22} className="text-amber-400" />
+          <Globe size={22} className="text-emerald-400" />
           Landslag
         </h1>
         <p className="text-gray-400 text-sm mt-1">
@@ -42,7 +42,7 @@ export default async function LandslagPage() {
                 className="px-4 py-2.5 flex items-center justify-between"
                 style={{ background: 'linear-gradient(135deg, #1f2937, #1a1a2e)' }}
               >
-                <span className="font-bold text-amber-400">Grupp {group}</span>
+                <span className="font-bold text-emerald-400">Grupp {group}</span>
                 <span className="text-xs text-gray-500">{groupTeams.length} lag</span>
               </div>
               <div className="divide-y" style={{ borderColor: '#1f2937' }}>

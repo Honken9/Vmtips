@@ -106,7 +106,7 @@ export default async function LeaderboardPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Tabell & statistik</h1>
           <p className="text-gray-400 text-sm mt-1">
-            <span className="text-amber-400 font-medium">{currentPool?.name ?? 'Pool'}</span>
+            <span className="text-emerald-400 font-medium">{currentPool?.name ?? 'Pool'}</span>
             {' · '}
             {entries.length} deltagare · {completedMatches} av {totalMatches} matcher avgjorda
           </p>
@@ -114,7 +114,7 @@ export default async function LeaderboardPage() {
         {isAdmin && (
           <Link
             href="/admin/pools"
-            className="text-xs text-gray-400 hover:text-amber-400 transition-colors"
+            className="text-xs text-gray-400 hover:text-emerald-400 transition-colors"
           >
             Hantera pools →
           </Link>
@@ -196,7 +196,7 @@ export default async function LeaderboardPage() {
                       <span className="text-base shrink-0">{home?.flag ?? '🏴'}</span>
                     </div>
                     <div className="shrink-0 w-14 sm:w-20 text-center">
-                      <span className="text-amber-400 font-bold">
+                      <span className="text-emerald-400 font-bold">
                         {p.pred_home}–{p.pred_away}
                       </span>
                     </div>
@@ -209,14 +209,14 @@ export default async function LeaderboardPage() {
                         {p.votes} av {p.total} ({sharePct}%)
                       </div>
                       <div className="w-full h-1.5 bg-gray-800 rounded-full mt-1 overflow-hidden">
-                        <div className="h-full bg-amber-400 rounded-full" style={{ width: `${sharePct}%` }} />
+                        <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${sharePct}%` }} />
                       </div>
                     </div>
                   </div>
                   {/* Vote-bar på egen rad på mobil */}
                   <div className="sm:hidden mt-2 flex items-center gap-2">
                     <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-amber-400 rounded-full" style={{ width: `${sharePct}%` }} />
+                      <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${sharePct}%` }} />
                     </div>
                     <span className="text-[10px] text-gray-500 shrink-0">
                       {p.votes}/{p.total}
@@ -248,7 +248,7 @@ function StatBox({
   const colors = {
     blue: 'text-blue-400 bg-blue-400/10',
     gold: 'text-amber-400 bg-amber-400/10',
-    green: 'text-green-400 bg-green-400/10',
+    green: 'text-emerald-400 bg-emerald-400/10',
     purple: 'text-purple-400 bg-purple-400/10',
   }
   return (

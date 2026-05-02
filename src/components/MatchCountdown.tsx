@@ -59,11 +59,11 @@ export function MatchCountdown({ targetIso, homeName, awayName, homeFlag, awayFl
     <div
       className="rounded-2xl px-4 sm:px-6 py-5 sm:py-6"
       style={{
-        background: 'linear-gradient(135deg, #0f3460 0%, #16213e 50%, #1a1a2e 100%)',
+        background: 'linear-gradient(135deg, #0a3d2a 0%, #14202e 50%, #0c2823 100%)',
         border: '1px solid #1f2937',
       }}
     >
-      <div className="flex items-center gap-2 text-amber-400 text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3">
+      <div className="flex items-center gap-2 text-emerald-400 text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3">
         <Clock size={14} />
         <span>Nedräkning till nästa match</span>
       </div>

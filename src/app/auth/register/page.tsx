@@ -137,17 +137,17 @@ export default function RegisterPage() {
       <div className="min-h-[80vh] flex items-center justify-center">
         <div className="w-full max-w-md text-center">
           <div className="rounded-2xl p-8" style={{ background: '#111827', border: '1px solid #1f2937' }}>
-            <CheckCircle size={48} className="text-amber-400 mx-auto mb-4" />
+            <CheckCircle size={48} className="text-emerald-400 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-white mb-2">Klart!</h2>
             {success.poolName && (
               <p className="text-gray-300 mb-4">
-                Du är med i poolen <span className="text-amber-400 font-semibold">{success.poolName}</span>.
+                Du är med i poolen <span className="text-emerald-400 font-semibold">{success.poolName}</span>.
               </p>
             )}
             {poolMode === 'create' && success.inviteCode && (
               <div className="rounded-xl p-4 mb-4" style={{ background: '#1f2937', border: '1px solid #374151' }}>
                 <div className="text-xs text-gray-400 mb-1">Bjud in andra med koden:</div>
-                <div className="text-2xl font-bold tracking-wider text-amber-400 font-mono">
+                <div className="text-2xl font-bold tracking-wider text-emerald-400 font-mono">
                   {success.inviteCode}
                 </div>
               </div>
@@ -190,7 +190,7 @@ export default function RegisterPage() {
                 required
                 placeholder="Ditt namn i tabellen"
                 maxLength={30}
-                className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all"
+                className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-all"
                 style={{ background: '#1f2937', border: '1px solid #374151' }}
               />
             </div>
@@ -203,7 +203,7 @@ export default function RegisterPage() {
                 onChange={e => setEmail(e.target.value)}
                 required
                 placeholder="du@exempel.se"
-                className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all"
+                className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-all"
                 style={{ background: '#1f2937', border: '1px solid #374151' }}
               />
             </div>
@@ -216,7 +216,7 @@ export default function RegisterPage() {
                 onChange={e => setPassword(e.target.value)}
                 required
                 placeholder="Minst 6 tecken"
-                className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all"
+                className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-all"
                 style={{ background: '#1f2937', border: '1px solid #374151' }}
               />
             </div>
@@ -230,12 +230,12 @@ export default function RegisterPage() {
                   onClick={() => setPoolMode('join')}
                   className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     poolMode === 'join'
-                      ? 'text-amber-400 bg-amber-400/10'
+                      ? 'text-emerald-400 bg-emerald-400/10'
                       : 'text-gray-400 hover:text-white'
                   }`}
                   style={{
                     background: poolMode === 'join' ? undefined : '#1f2937',
-                    border: `1px solid ${poolMode === 'join' ? 'rgba(245,158,11,0.3)' : '#374151'}`,
+                    border: `1px solid ${poolMode === 'join' ? 'rgba(16,185,129,0.3)' : '#374151'}`,
                   }}
                 >
                   <Users size={14} />
@@ -246,12 +246,12 @@ export default function RegisterPage() {
                   onClick={() => setPoolMode('create')}
                   className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     poolMode === 'create'
-                      ? 'text-amber-400 bg-amber-400/10'
+                      ? 'text-emerald-400 bg-emerald-400/10'
                       : 'text-gray-400 hover:text-white'
                   }`}
                   style={{
                     background: poolMode === 'create' ? undefined : '#1f2937',
-                    border: `1px solid ${poolMode === 'create' ? 'rgba(245,158,11,0.3)' : '#374151'}`,
+                    border: `1px solid ${poolMode === 'create' ? 'rgba(16,185,129,0.3)' : '#374151'}`,
                   }}
                 >
                   <Plus size={14} />
@@ -267,7 +267,7 @@ export default function RegisterPage() {
                   required
                   placeholder="Invite-kod (t.ex. XK4P9M)"
                   maxLength={12}
-                  className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 font-mono tracking-wider uppercase focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                  className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 font-mono tracking-wider uppercase focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                   style={{ background: '#1f2937', border: '1px solid #374151' }}
                 />
               ) : (
@@ -278,7 +278,7 @@ export default function RegisterPage() {
                   required
                   placeholder="Poolnamn (t.ex. Familjen)"
                   maxLength={40}
-                  className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                  className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                   style={{ background: '#1f2937', border: '1px solid #374151' }}
                 />
               )}
@@ -307,7 +307,7 @@ export default function RegisterPage() {
 
           <p className="mt-6 text-center text-sm text-gray-400">
             Har du redan ett konto?{' '}
-            <Link href="/auth/login" className="text-amber-400 hover:text-amber-300 font-medium">
+            <Link href="/auth/login" className="text-emerald-400 hover:text-emerald-300 font-medium">
               Logga in
             </Link>
           </p>

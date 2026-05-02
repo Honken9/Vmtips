@@ -42,7 +42,7 @@ export function LeaderboardTable({ entries }: Props) {
               <tr
                 key={entry.user_id}
                 className="border-t transition-colors hover:bg-white/5"
-                style={{ borderColor: '#1f2937', background: i === 0 ? 'rgba(245,158,11,0.05)' : undefined }}
+                style={{ borderColor: '#1f2937', background: i === 0 ? 'rgba(245,158,11,0.06)' : undefined }}
               >
                 <td className="px-4 py-3.5">
                   {isTop3 ? (
@@ -68,7 +68,7 @@ export function LeaderboardTable({ entries }: Props) {
                   <span className="text-amber-400 text-sm font-medium">{entry.exact_scores}</span>
                 </td>
                 <td className="px-4 py-3.5 text-right">
-                  <span className={`text-lg font-bold ${i === 0 ? 'text-amber-400' : 'text-white'}`}>
+                  <span className={`text-lg font-bold ${i === 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
                     {entry.total_points}
                   </span>
                   <span className="text-gray-500 text-xs ml-1">p</span>

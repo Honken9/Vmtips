@@ -81,7 +81,7 @@ export function RandomizeOverlay({
         style={{
           background: 'linear-gradient(135deg, #0f172a, #1e1b4b)',
           border: '1px solid #374151',
-          boxShadow: '0 0 60px rgba(245,158,11,0.3)',
+          boxShadow: '0 0 60px rgba(16,185,129,0.3)',
         }}>
         {/* Animerad fotboll */}
         <div className="text-7xl mb-6 inline-block animate-bounce-football">
@@ -113,9 +113,9 @@ export function RandomizeOverlay({
 
         {/* Studsande prickar */}
         <div className="flex justify-center gap-2 mt-6">
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce-dot" style={{ animationDelay: '0s' }} />
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce-dot" style={{ animationDelay: '0.15s' }} />
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-bounce-dot" style={{ animationDelay: '0.3s' }} />
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce-dot" style={{ animationDelay: '0s' }} />
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce-dot" style={{ animationDelay: '0.15s' }} />
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce-dot" style={{ animationDelay: '0.3s' }} />
         </div>
       </div>
 

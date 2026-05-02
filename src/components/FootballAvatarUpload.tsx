@@ -177,7 +177,7 @@ export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChang
     <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1f2937' }}>
       {/* Header */}
       <div className="px-5 py-4 flex items-center gap-3" style={{ background: '#1f2937' }}>
-        <Sparkles size={18} className="text-amber-400" />
+        <Sparkles size={18} className="text-emerald-400" />
         <span className="font-bold text-white">AI-profilbild</span>
         <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#111827', color: '#9ca3af' }}>
           fotbollsproffs
@@ -220,8 +220,8 @@ export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChang
           onClick={() => fileRef.current?.click()}
           className="cursor-pointer rounded-xl flex flex-col items-center justify-center gap-3 py-8 transition-all"
           style={{
-            border: `2px dashed ${dragOver ? '#f59e0b' : preview ? '#6366f1' : '#374151'}`,
-            background: dragOver ? 'rgba(245,158,11,0.05)' : preview ? 'rgba(99,102,241,0.05)' : '#111827',
+            border: `2px dashed ${dragOver ? '#10b981' : preview ? '#6366f1' : '#374151'}`,
+            background: dragOver ? 'rgba(16,185,129,0.05)' : preview ? 'rgba(99,102,241,0.05)' : '#111827',
           }}
         >
           {preview ? (
@@ -259,13 +259,13 @@ export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChang
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
-                <Shirt size={12} className="text-amber-400" />
+                <Shirt size={12} className="text-emerald-400" />
                 Favoritlag
               </label>
               <select
                 value={team}
                 onChange={e => setTeam(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                className="w-full px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                 style={{ background: '#1f2937', border: '1px solid #374151' }}
               >
                 {TEAMS.map(t => (
@@ -276,13 +276,13 @@ export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChang
 
             <div>
               <label className="text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
-                <Activity size={12} className="text-amber-400" />
+                <Activity size={12} className="text-emerald-400" />
                 Rörelse
               </label>
               <select
                 value={pose}
                 onChange={e => setPose(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                className="w-full px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                 style={{ background: '#1f2937', border: '1px solid #374151' }}
               >
                 {POSES.map(p => (
@@ -293,13 +293,13 @@ export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChang
 
             <div>
               <label className="text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
-                <MapPin size={12} className="text-amber-400" />
+                <MapPin size={12} className="text-emerald-400" />
                 Arena
               </label>
               <select
                 value={arena}
                 onChange={e => setArena(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                className="w-full px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                 style={{ background: '#1f2937', border: '1px solid #374151' }}
               >
                 {ARENAS.map(a => (
@@ -317,7 +317,7 @@ export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChang
             disabled={generating}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-60"
             style={{
-              background: generating ? '#374151' : 'linear-gradient(135deg, #f59e0b, #ef4444)',
+              background: generating ? '#374151' : 'linear-gradient(135deg, #10b981, #ef4444)',
               color: '#000',
             }}
           >

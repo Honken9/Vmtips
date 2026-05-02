@@ -83,7 +83,7 @@ export default function AdminSettingsPage() {
               onClick={() => setSettings(s => s ? { ...s, tournament_mode: mode } : s)}
               className={`text-left p-4 rounded-xl border-2 transition-all ${
                 settings.tournament_mode === mode
-                  ? 'border-amber-400/60 bg-amber-400/5'
+                  ? 'border-emerald-400/60 bg-emerald-400/5'
                   : 'border-transparent hover:border-white/10'
               }`}
               style={settings.tournament_mode !== mode ? { background: '#1f2937' } : undefined}
@@ -92,7 +92,7 @@ export default function AdminSettingsPage() {
                 <span className="text-xl">{icon}</span>
                 <span className="font-semibold text-white">{title}</span>
                 {settings.tournament_mode === mode && (
-                  <span className="ml-auto text-xs text-amber-400 font-medium">Aktivt</span>
+                  <span className="ml-auto text-xs text-emerald-400 font-medium">Aktivt</span>
                 )}
               </div>
               <p className="text-sm text-gray-400 ml-8">{desc}</p>
@@ -121,7 +121,7 @@ export default function AdminSettingsPage() {
                   max="99"
                   value={settings[key]}
                   onChange={e => setSettings(s => s ? { ...s, [key]: parseInt(e.target.value) || 0 } : s)}
-                  className="w-20 px-3 py-2 rounded-lg text-center text-white font-bold focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                  className="w-20 px-3 py-2 rounded-lg text-center text-white font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                   style={{ background: '#1f2937', border: '1px solid #374151' }}
                 />
                 <span className="text-sm text-gray-500">{hint}</span>

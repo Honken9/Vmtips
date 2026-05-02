@@ -93,14 +93,14 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
       <div className="min-h-[80vh] flex items-center justify-center">
         <div className="w-full max-w-md text-center">
           <div className="rounded-2xl p-8" style={{ background: '#111827', border: '1px solid #1f2937' }}>
-            <CheckCircle size={48} className="text-amber-400 mx-auto mb-4" />
+            <CheckCircle size={48} className="text-emerald-400 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-white mb-2">Poolen är skapad!</h2>
             <p className="text-gray-300 mb-4">
-              <span className="text-amber-400 font-semibold">{success.name}</span> är igång.
+              <span className="text-emerald-400 font-semibold">{success.name}</span> är igång.
             </p>
             <div className="rounded-xl p-4 mb-4" style={{ background: '#1f2937', border: '1px solid #374151' }}>
               <div className="text-xs text-gray-400 mb-1">Bjud in andra med koden:</div>
-              <div className="text-3xl font-bold tracking-wider text-amber-400 font-mono">
+              <div className="text-3xl font-bold tracking-wider text-emerald-400 font-mono">
                 {success.code}
               </div>
             </div>
@@ -137,11 +137,11 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
               type="button"
               onClick={() => setMode('join')}
               className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                mode === 'join' ? 'text-amber-400 bg-amber-400/10' : 'text-gray-400 hover:text-white'
+                mode === 'join' ? 'text-emerald-400 bg-emerald-400/10' : 'text-gray-400 hover:text-white'
               }`}
               style={{
                 background: mode === 'join' ? undefined : '#1f2937',
-                border: `1px solid ${mode === 'join' ? 'rgba(245,158,11,0.3)' : '#374151'}`,
+                border: `1px solid ${mode === 'join' ? 'rgba(16,185,129,0.3)' : '#374151'}`,
               }}
             >
               <Users size={14} />
@@ -151,11 +151,11 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
               type="button"
               onClick={() => setMode('create')}
               className={`flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                mode === 'create' ? 'text-amber-400 bg-amber-400/10' : 'text-gray-400 hover:text-white'
+                mode === 'create' ? 'text-emerald-400 bg-emerald-400/10' : 'text-gray-400 hover:text-white'
               }`}
               style={{
                 background: mode === 'create' ? undefined : '#1f2937',
-                border: `1px solid ${mode === 'create' ? 'rgba(245,158,11,0.3)' : '#374151'}`,
+                border: `1px solid ${mode === 'create' ? 'rgba(16,185,129,0.3)' : '#374151'}`,
               }}
             >
               <Plus size={14} />
@@ -177,7 +177,7 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
                   placeholder="t.ex. XK4P9M"
                   maxLength={12}
                   autoFocus
-                  className="w-full px-4 py-3 rounded-lg text-white font-mono tracking-wider uppercase placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                  className="w-full px-4 py-3 rounded-lg text-white font-mono tracking-wider uppercase placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                   style={{ background: '#1f2937', border: '1px solid #374151' }}
                 />
                 <p className="text-xs text-gray-500 mt-1.5">
@@ -197,7 +197,7 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
                   placeholder="t.ex. Familjen Andersson"
                   maxLength={40}
                   autoFocus
-                  className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                  className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                   style={{ background: '#1f2937', border: '1px solid #374151' }}
                 />
                 <p className="text-xs text-gray-500 mt-1.5">

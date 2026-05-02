@@ -56,7 +56,7 @@ export default function LoginPage() {
                 onChange={e => setEmail(e.target.value)}
                 required
                 placeholder="du@exempel.se"
-                className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all"
+                className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-all"
                 style={{ background: '#1f2937', border: '1px solid #374151' }}
               />
             </div>
@@ -69,7 +69,7 @@ export default function LoginPage() {
                 onChange={e => setPassword(e.target.value)}
                 required
                 placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all"
+                className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-all"
                 style={{ background: '#1f2937', border: '1px solid #374151' }}
               />
             </div>
@@ -92,7 +92,7 @@ export default function LoginPage() {
 
           <p className="mt-6 text-center text-sm text-gray-400">
             Inget konto?{' '}
-            <Link href="/auth/register" className="text-amber-400 hover:text-amber-300 font-medium">
+            <Link href="/auth/register" className="text-emerald-400 hover:text-emerald-300 font-medium">
               Registrera dig
             </Link>
           </p>

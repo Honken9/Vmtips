@@ -375,7 +375,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
         <div className="rounded-xl p-5 space-y-4" style={{ background: '#111827', border: '1px solid #1f2937' }}>
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-white flex items-center gap-2">
-              <SettingsIcon size={16} className="text-amber-400" />
+              <SettingsIcon size={16} className="text-emerald-400" />
               Slumpningsinställningar
             </h3>
             <button
@@ -390,7 +390,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
           <div>
             <label className="flex items-center justify-between text-sm font-medium text-gray-300 mb-2">
               <span>Spänningens längd</span>
-              <span className="text-amber-400 font-bold">{randomizeDuration} sek</span>
+              <span className="text-emerald-400 font-bold">{randomizeDuration} sek</span>
             </label>
             <input
               type="range" min="3" max="60" step="1"
@@ -422,7 +422,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
                   }}
                   placeholder={`Fras ${i + 1} (t.ex. "🦁 Kungen brölar…")`}
                   maxLength={80}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                  className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                   style={{ background: '#1f2937', border: '1px solid #374151' }}
                 />
               ))}
@@ -449,7 +449,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
                   <span className="text-white">{tippedMatches}</span>
                   <span className="text-gray-500"> / {totalLockableMatches} matcher tippade</span>
                 </div>
-                <span className="text-amber-400 font-bold">{progressPct}%</span>
+                <span className="text-emerald-400 font-bold">{progressPct}%</span>
               </div>
               <div className="w-full h-2 rounded-full bg-white/10 mb-4">
                 <div className="h-2 rounded-full transition-all gold-gradient" style={{ width: `${progressPct}%` }} />
@@ -615,7 +615,7 @@ function MatchRow({
     : 'pending'
 
   const resultBg: Record<string, string> = {
-    exact: 'rgba(245,158,11,0.06)',
+    exact: 'rgba(16,185,129,0.06)',
     correct: 'rgba(34,197,94,0.05)',
     wrong: 'rgba(239,68,68,0.04)',
     pending: 'transparent',
@@ -663,7 +663,7 @@ function MatchRow({
               onBlur={onBlur}
               disabled={isHomeUnknown && isAwayUnknown}
               placeholder="–"
-              className="w-10 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all disabled:opacity-30"
+              className="w-10 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-all disabled:opacity-30"
               style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
             />
             <span className="text-gray-600 font-bold">–</span>
@@ -674,7 +674,7 @@ function MatchRow({
               onBlur={onBlur}
               disabled={isHomeUnknown && isAwayUnknown}
               placeholder="–"
-              className="w-10 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-amber-400/50 transition-all disabled:opacity-30"
+              className="w-10 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-all disabled:opacity-30"
               style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
             />
           </>
@@ -682,7 +682,7 @@ function MatchRow({
 
         {/* Spara-indikator */}
         <div className="w-5 shrink-0">
-          {saving && <Loader2 size={14} className="animate-spin text-amber-400" />}
+          {saving && <Loader2 size={14} className="animate-spin text-emerald-400" />}
           {!saving && justSaved && <CheckCircle size={14} className="text-green-400" />}
           {locked && !saving && !justSaved && <Lock size={12} className="text-gray-600" />}
         </div>
@@ -699,7 +699,7 @@ function MatchRow({
       {/* Resultatindikator */}
       {result !== 'pending' && (
         <div className="shrink-0 hidden sm:block">
-          {result === 'exact'   && <span className="text-xs font-semibold text-amber-400">⭐ Exakt</span>}
+          {result === 'exact'   && <span className="text-xs font-semibold text-emerald-400">⭐ Exakt</span>}
           {result === 'correct' && <span className="text-xs font-semibold text-green-400">✓ Rätt</span>}
           {result === 'wrong'   && <span className="text-xs font-semibold text-red-400">✗ Fel</span>}
         </div>

@@ -55,7 +55,7 @@ export default async function MatchesPage() {
                   {/* Grupprubrik */}
                   <div className="px-4 py-3 flex items-center justify-between"
                     style={{ background: 'linear-gradient(135deg, #1f2937, #1a1a2e)' }}>
-                    <span className="font-bold text-amber-400 text-lg">Grupp {group}</span>
+                    <span className="font-bold text-emerald-400 text-lg">Grupp {group}</span>
                     <span className="text-xs text-gray-500">
                       {gMatches.filter(m => m.result_confirmed).length}/{gMatches.length} klara
                     </span>
@@ -182,7 +182,7 @@ function KnockoutMatchRow({ match, isLast }: { match: Match; isLast: boolean }) 
       style={{ borderColor: '#1f2937', background: '#111827' }}>
       <div className="text-[11px] sm:text-xs text-gray-500 shrink-0 w-16 sm:w-24 leading-tight">
         <div className="truncate">{date}</div>
-        <div className="text-amber-400 font-medium">{time}</div>
+        <div className="text-emerald-400 font-medium">{time}</div>
       </div>
       <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
         <span className="text-sm font-medium text-white truncate">{homeName}</span>

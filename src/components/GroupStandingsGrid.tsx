@@ -25,7 +25,7 @@ export function GroupStandingsGrid({ standings, best8ThirdIds }: Props) {
             Vidare (top 2)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'rgba(245,158,11,0.3)' }} />
+            <span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'rgba(16,185,129,0.3)' }} />
             Bästa trea
           </span>
         </div>
@@ -48,7 +48,7 @@ export function GroupStandingsGrid({ standings, best8ThirdIds }: Props) {
               {/* Header */}
               <div className="px-4 py-2.5 flex items-center justify-between"
                 style={{ background: 'linear-gradient(135deg, #1f2937, #1a1a2e)' }}>
-                <span className="font-bold text-amber-400">Grupp {g}</span>
+                <span className="font-bold text-emerald-400">Grupp {g}</span>
                 <span className="text-xs text-gray-500">{tipped}/6 matcher</span>
               </div>
 
@@ -69,8 +69,8 @@ export function GroupStandingsGrid({ standings, best8ThirdIds }: Props) {
               {rows.map((row, i) => {
                 const advances = i < 2
                 const isBestThird = i === 2 && best8ThirdIds.has(row.team.id)
-                const bg = advances ? 'rgba(34,197,94,0.07)' : isBestThird ? 'rgba(245,158,11,0.07)' : 'transparent'
-                const posColor = advances ? '#22c55e' : isBestThird ? '#f59e0b' : '#4b5563'
+                const bg = advances ? 'rgba(34,197,94,0.07)' : isBestThird ? 'rgba(16,185,129,0.07)' : 'transparent'
+                const posColor = advances ? '#22c55e' : isBestThird ? '#10b981' : '#4b5563'
 
                 return (
                   <div key={row.team.id}
