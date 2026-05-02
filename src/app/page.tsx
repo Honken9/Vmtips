@@ -137,6 +137,7 @@ export default async function HomePage() {
           awayName={upcomingMatch.away_team?.name ?? upcomingMatch.away_placeholder ?? '?'}
           homeFlag={upcomingMatch.home_team?.flag}
           awayFlag={upcomingMatch.away_team?.flag}
+          venue={upcomingMatch.venue}
         />
       )}
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Clock } from 'lucide-react'
+import { Clock, Calendar, MapPin } from 'lucide-react'
 
 interface Props {
   targetIso: string
@@ -9,6 +9,25 @@ interface Props {
   awayName?: string
   homeFlag?: string
   awayFlag?: string
+  venue?: string | null
+}
+
+function formatStockholm(iso: string): string {
+  // T.ex. "torsdag 11 juni 2026, 21:00"
+  const d = new Date(iso)
+  const date = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Europe/Stockholm',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(d)
+  const time = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Europe/Stockholm',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d)
+  return `${date}, kl ${time}`
 }
 
 function diffParts(targetMs: number, now: number) {
@@ -22,7 +41,7 @@ function diffParts(targetMs: number, now: number) {
   }
 }
 
-export function MatchCountdown({ targetIso, homeName, awayName, homeFlag, awayFlag }: Props) {
+export function MatchCountdown({ targetIso, homeName, awayName, homeFlag, awayFlag, venue }: Props) {
   const targetMs = new Date(targetIso).getTime()
   const [now, setNow] = useState(() => Date.now())
 
@@ -46,11 +65,11 @@ export function MatchCountdown({ targetIso, homeName, awayName, homeFlag, awayFl
     >
       <div className="flex items-center gap-2 text-amber-400 text-xs sm:text-sm font-semibold uppercase tracking-wider mb-3">
         <Clock size={14} />
-        <span>Nedräkning till första matchen</span>
+        <span>Nedräkning till nästa match</span>
       </div>
 
       {(homeName || awayName) && (
-        <div className="text-white text-sm sm:text-base mb-3 truncate" suppressHydrationWarning>
+        <div className="text-white text-sm sm:text-base mb-2 truncate" suppressHydrationWarning>
           {homeFlag && <span className="mr-1">{homeFlag}</span>}
           <span className="font-medium">{homeName ?? '?'}</span>
           <span className="mx-2 text-gray-500">vs</span>
@@ -58,6 +77,20 @@ export function MatchCountdown({ targetIso, homeName, awayName, homeFlag, awayFl
           {awayFlag && <span className="ml-1">{awayFlag}</span>}
         </div>
       )}
+
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-300 mb-4">
+        <span className="inline-flex items-center gap-1.5">
+          <Calendar size={12} className="text-gray-500" />
+          {formatStockholm(targetIso)}
+          <span className="text-gray-500">(svensk tid)</span>
+        </span>
+        {venue && (
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin size={12} className="text-gray-500" />
+            {venue}
+          </span>
+        )}
+      </div>
 
       <div className="grid grid-cols-4 gap-2 sm:gap-4" suppressHydrationWarning>
         <Cell value={days} label="Dagar" />
