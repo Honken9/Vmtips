@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { createClient } from '@/lib/supabase/server'
 import { Navigation } from '@/components/Navigation'
+import { MusicToggle } from '@/components/MusicToggle'
 import { Profile, Pool } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
@@ -78,6 +79,7 @@ export default async function RootLayout({
         <main className="max-w-6xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
           {children}
         </main>
+        <MusicToggle />
       </body>
     </html>
   )
