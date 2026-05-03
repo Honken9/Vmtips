@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { createClient } from '@/lib/supabase/server'
 import { Navigation } from '@/components/Navigation'
@@ -9,6 +9,22 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'VM-Tips 2026',
   description: 'FIFA World Cup 2026 – Tipstävling',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: 'VM-Tips',
+    statusBarStyle: 'black-translucent',
+  },
+  icons: {
+    icon: '/vm2026-logo.avif',
+    apple: '/vm2026-logo.avif',
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#10b981',
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default async function RootLayout({

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { TrophyLogo } from './TrophyLogo'
 import { createClient } from '@/lib/supabase/client'
 import { Profile, Pool } from '@/lib/types'
-import { LogOut, LayoutDashboard, Target, Trophy, ShieldCheck, Menu, X, Home, Globe } from 'lucide-react'
+import { LogOut, LayoutDashboard, Target, Trophy, ShieldCheck, Menu, X, Home, Globe, BarChart3, BookOpen } from 'lucide-react'
 import { useState } from 'react'
 import Image from 'next/image'
 
@@ -29,9 +29,11 @@ export function Navigation({ profile, pool }: Props) {
   const links = [
     { href: '/', label: 'Hem', icon: Home },
     { href: '/tabell', label: 'Tabell', icon: Trophy },
+    { href: '/statistik', label: 'Statistik', icon: BarChart3 },
     { href: '/matches', label: 'Matcher', icon: LayoutDashboard },
     { href: '/landslag', label: 'Landslag', icon: Globe },
     ...(profile ? [{ href: '/tips', label: 'Mina tips', icon: Target }] : []),
+    { href: '/regler', label: 'Regler', icon: BookOpen },
     ...(profile?.is_admin ? [{ href: '/admin', label: 'Admin', icon: ShieldCheck }] : []),
   ]
 

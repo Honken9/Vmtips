@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { LeaderboardEntry } from '@/lib/types'
 import { Lock } from 'lucide-react'
 
@@ -52,14 +53,17 @@ export function LeaderboardTable({ entries }: Props) {
                   )}
                 </td>
                 <td className="px-4 py-3.5">
-                  <div className="flex items-center gap-2">
-                    <span className={`font-semibold ${i === 0 ? 'text-amber-400' : 'text-white'}`}>
+                  <Link
+                    href={`/spelare/${entry.user_id}`}
+                    className="flex items-center gap-2 group"
+                  >
+                    <span className={`font-semibold group-hover:underline ${i === 0 ? 'text-amber-400' : 'text-white'}`}>
                       {entry.display_name}
                     </span>
                     {entry.tips_locked && (
                       <Lock size={12} className="text-green-500" />
                     )}
-                  </div>
+                  </Link>
                 </td>
                 <td className="px-4 py-3.5 text-right hidden sm:table-cell">
                   <span className="text-gray-300 text-sm">{entry.correct_results}</span>

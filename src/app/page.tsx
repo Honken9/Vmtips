@@ -332,8 +332,9 @@ function Top3Row({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
       ? 'rgba(156,163,175,0.06)'
       : 'rgba(251,146,60,0.05)'
   return (
-    <div
-      className="flex items-center gap-3 rounded-xl px-4 py-3"
+    <Link
+      href={`/spelare/${entry.user_id}`}
+      className="flex items-center gap-3 rounded-xl px-4 py-3 hover:brightness-125 transition-all"
       style={{ background: bg, border: '1px solid #1f2937' }}
     >
       <div className="shrink-0">{icons[rank]}</div>
@@ -349,7 +350,7 @@ function Top3Row({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
         </div>
         <div className="text-[10px] text-gray-500 uppercase tracking-wider">poäng</div>
       </div>
-    </div>
+    </Link>
   )
 }
 
