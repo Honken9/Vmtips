@@ -68,7 +68,7 @@ export default function AdminSettingsPage() {
             {
               mode: 'A' as TournamentMode,
               title: 'Läge A – Allt på en gång',
-              desc: 'Deltagarna tippar alla matcher och lämnar in. Tips kan inte ändras efter inlämning. Perfekt för klassiskt poolformat.',
+              desc: 'Deltagarna tippar alla matcher och lämnar in. Tips kan inte ändras efter inlämning. Perfekt för klassiskt ligaformat.',
               icon: '📋',
             },
             {

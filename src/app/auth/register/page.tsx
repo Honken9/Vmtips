@@ -32,11 +32,11 @@ export default function RegisterPage() {
       return
     }
     if (poolMode === 'join' && !inviteCode.trim()) {
-      setError('Ange en invite-kod eller välj "Skapa ny pool"')
+      setError('Ange en invite-kod eller välj "Skapa ny liga"')
       return
     }
     if (poolMode === 'create' && !poolName.trim()) {
-      setError('Ange ett poolnamn')
+      setError('Ange ett liganamn')
       return
     }
 
@@ -55,7 +55,7 @@ export default function RegisterPage() {
         .eq('invite_code', code)
         .single()
       if (poolErr || !pool) {
-        setError('Hittade ingen pool med den koden. Dubbelkolla med arrangören.')
+        setError('Hittade ingen liga med den koden. Dubbelkolla med arrangören.')
         setLoading(false)
         return
       }
@@ -98,7 +98,7 @@ export default function RegisterPage() {
         .select()
         .single()
       if (poolErr || !newPool) {
-        setError(`Konto skapat men poolen kunde inte sparas: ${poolErr?.message ?? '?'}`)
+        setError(`Konto skapat men ligan kunde inte sparas: ${poolErr?.message ?? '?'}`)
         setLoading(false)
         return
       }
@@ -141,7 +141,7 @@ export default function RegisterPage() {
             <h2 className="text-xl font-bold text-white mb-2">Klart!</h2>
             {success.poolName && (
               <p className="text-gray-300 mb-4">
-                Du är med i poolen <span className="text-emerald-400 font-semibold">{success.poolName}</span>.
+                Du är med i ligan <span className="text-emerald-400 font-semibold">{success.poolName}</span>.
               </p>
             )}
             {poolMode === 'create' && success.inviteCode && (
@@ -223,7 +223,7 @@ export default function RegisterPage() {
 
             {/* Pool-val */}
             <div className="pt-4 border-t" style={{ borderColor: '#1f2937' }}>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Tipspool</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Tipsliga</label>
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button
                   type="button"
@@ -276,7 +276,7 @@ export default function RegisterPage() {
                   value={poolName}
                   onChange={e => setPoolName(e.target.value)}
                   required
-                  placeholder="Poolnamn (t.ex. Familjen)"
+                  placeholder="Liganamn (t.ex. Familjen)"
                   maxLength={40}
                   className="w-full px-4 py-3 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                   style={{ background: '#1f2937', border: '1px solid #374151' }}

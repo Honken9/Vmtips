@@ -46,7 +46,7 @@ export default async function ProfilPage() {
       <div className="rounded-xl p-5 space-y-3" style={{ border: '1px solid #1f2937', background: '#0f172a' }}>
         <h2 className="text-sm font-semibold text-gray-300 flex items-center gap-2">
           <Users size={14} className="text-emerald-400" />
-          Tipspool
+          Tipsliga
         </h2>
         {currentPool ? (
           <>
@@ -64,7 +64,7 @@ export default async function ProfilPage() {
             </p>
           </>
         ) : (
-          <p className="text-sm text-gray-400">Du tillhör ingen pool än.</p>
+          <p className="text-sm text-gray-400">Du tillhör ingen liga än.</p>
         )}
         <ChangePool currentPoolId={profile.pool_id ?? null} />
       </div>

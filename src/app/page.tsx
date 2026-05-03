@@ -56,7 +56,7 @@ export default async function HomePage() {
   const profile = profileRaw as Profile | null
   const poolId = profile?.pool_id ?? null
 
-  // Hämta poolnamn (om användaren har en pool)
+  // Hämta liganamn (om användaren har en pool)
   const { data: pool } = poolId
     ? await supabase.from('pools').select('*').eq('id', poolId).single()
     : { data: null }

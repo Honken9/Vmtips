@@ -28,7 +28,7 @@ export function ChangePool({ currentPoolId }: { currentPoolId: number | null }) 
       .eq('invite_code', code)
       .single()
     if (poolErr || !pool) {
-      setError('Hittade ingen pool med den koden.')
+      setError('Hittade ingen liga med den koden.')
       setLoading(false)
       return
     }
@@ -72,7 +72,7 @@ export function ChangePool({ currentPoolId }: { currentPoolId: number | null }) 
       .select('id')
       .single()
     if (insErr || !pool) {
-      setError(insErr?.message ?? 'Kunde inte skapa poolen')
+      setError(insErr?.message ?? 'Kunde inte skapa ligan')
       setLoading(false)
       return
     }
@@ -99,7 +99,7 @@ export function ChangePool({ currentPoolId }: { currentPoolId: number | null }) 
           style={{ background: '#1f2937', border: '1px solid #374151' }}
         >
           <RefreshCw size={12} />
-          Byt pool
+          Byt liga
         </button>
         <button
           onClick={() => setMode('create')}

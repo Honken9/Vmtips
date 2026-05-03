@@ -106,7 +106,7 @@ export default async function LeaderboardPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Tabell & statistik</h1>
           <p className="text-gray-400 text-sm mt-1">
-            <span className="text-emerald-400 font-medium">{currentPool?.name ?? 'Pool'}</span>
+            <span className="text-emerald-400 font-medium">{currentPool?.name ?? 'Liga'}</span>
             {' · '}
             {entries.length} deltagare · {completedMatches} av {totalMatches} matcher avgjorda
           </p>
@@ -116,7 +116,7 @@ export default async function LeaderboardPage() {
             href="/admin/pools"
             className="text-xs text-gray-400 hover:text-emerald-400 transition-colors"
           >
-            Hantera pools →
+            Hantera ligor →
           </Link>
         )}
       </div>

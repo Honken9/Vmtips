@@ -45,7 +45,7 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
         .eq('invite_code', code)
         .single()
       if (poolErr || !pool) {
-        setError('Hittade ingen pool med den koden.')
+        setError('Hittade ingen liga med den koden.')
         setLoading(false)
         return
       }
@@ -60,7 +60,7 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
         .select()
         .single()
       if (poolErr || !pool) {
-        setError(`Kunde inte skapa poolen: ${poolErr?.message ?? '?'}`)
+        setError(`Kunde inte skapa ligan: ${poolErr?.message ?? '?'}`)
         setLoading(false)
         return
       }
@@ -127,7 +127,7 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
             <TrophyLogo size="md" />
           </div>
           <p className="text-gray-300">
-            {displayName ? `Hej ${displayName}!` : 'Hej!'} Välj en pool att tävla i.
+            {displayName ? `Hej ${displayName}!` : 'Hej!'} Välj en liga att tävla i.
           </p>
         </div>
 
@@ -187,7 +187,7 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
             ) : (
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                  Poolnamn
+                  Liganamn
                 </label>
                 <input
                   type="text"

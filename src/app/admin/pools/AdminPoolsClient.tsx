@@ -65,7 +65,7 @@ export function AdminPoolsClient({
       return
     }
     setNewName('')
-    flash('ok', `Pool skapad med kod ${code}`)
+    flash('ok', `Liga skapad med kod ${code}`)
     await refreshAll()
   }
 
@@ -73,8 +73,8 @@ export function AdminPoolsClient({
     const memberCount = membersByPool.get(id)?.length ?? 0
     const ok = window.confirm(
       memberCount > 0
-        ? `Radera poolen? ${memberCount} medlemmar förlorar sin poolkoppling och måste välja ny pool.`
-        : 'Radera poolen?'
+        ? `Radera ligan? ${memberCount} medlemmar förlorar sin ligakoppling och måste välja ny liga.`
+        : 'Radera ligan?'
     )
     if (!ok) return
     setBusy(`del-${id}`)
@@ -84,7 +84,7 @@ export function AdminPoolsClient({
       flash('err', error.message)
       return
     }
-    flash('ok', 'Pool raderad')
+    flash('ok', 'Liga raderad')
     await refreshAll()
   }
 
@@ -136,7 +136,7 @@ export function AdminPoolsClient({
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Users size={22} className="text-emerald-400" />
-            Pools
+            Ligor
           </h1>
           <p className="text-gray-400 text-sm mt-1">
             Skapa, byt namn, radera, regenerera invite-kod, eller flytta enskilda användare.
@@ -165,15 +165,15 @@ export function AdminPoolsClient({
         </div>
       )}
 
-      {/* Skapa ny pool */}
+      {/* Skapa ny liga */}
       <div className="rounded-xl p-4 flex flex-col sm:flex-row gap-2 sm:items-end" style={{ background: '#111827', border: '1px solid #1f2937' }}>
         <div className="flex-1">
-          <label className="block text-xs text-gray-500 mb-1">Skapa ny pool</label>
+          <label className="block text-xs text-gray-500 mb-1">Skapa ny liga</label>
           <input
             type="text"
             value={newName}
             onChange={e => setNewName(e.target.value)}
-            placeholder="Poolnamn (t.ex. Kollegor)"
+            placeholder="Liganamn (t.ex. Kollegor)"
             maxLength={40}
             className="w-full px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
             style={{ background: '#1f2937', border: '1px solid #374151' }}
@@ -229,7 +229,7 @@ export function AdminPoolsClient({
                     onClick={() => deletePool(pool.id)}
                     disabled={busy === `del-${pool.id}`}
                     className="text-red-400 hover:text-red-300 p-1.5 rounded disabled:opacity-40"
-                    title="Radera pool"
+                    title="Radera liga"
                   >
                     {busy === `del-${pool.id}` ? (
                       <Loader2 size={14} className="animate-spin" />

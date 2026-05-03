@@ -93,22 +93,22 @@ export default async function ReglerPage() {
       </Section>
 
       {/* Pools */}
-      <Section icon={<Users size={18} />} title="Pools (tipsligor)">
+      <Section icon={<Users size={18} />} title="Ligor">
         <p className="text-sm text-gray-300 mb-3">
           Varje deltagare tävlar i en pool – du tävlar bara mot andra i samma pool.
         </p>
         <ul className="space-y-2 text-sm text-gray-300">
           <li className="flex gap-2">
             <span className="text-emerald-400 shrink-0">→</span>
-            <span>Skapa egen pool och få en 6-tecken invite-kod att dela med kompisar.</span>
+            <span>Skapa egen liga och få en 6-tecken invite-kod att dela med kompisar.</span>
           </li>
           <li className="flex gap-2">
             <span className="text-emerald-400 shrink-0">→</span>
-            <span>Eller gå med i en befintlig pool genom att klistra in koden vid registrering.</span>
+            <span>Eller gå med i en befintlig liga genom att klistra in koden vid registrering.</span>
           </li>
           <li className="flex gap-2">
             <span className="text-emerald-400 shrink-0">→</span>
-            <span>Du kan byta pool när som helst på <strong>Min profil</strong>.</span>
+            <span>Du kan byta liga när som helst på <strong>Min profil</strong>.</span>
           </li>
         </ul>
       </Section>

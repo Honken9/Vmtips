@@ -144,7 +144,7 @@ export default async function StatistikPage() {
           </h1>
           <p className="text-gray-400 text-sm mt-1">
             <span className="text-emerald-400 font-medium">
-              {(pool as { name?: string } | null)?.name ?? 'Pool'}
+              {(pool as { name?: string } | null)?.name ?? 'Liga'}
             </span>{' '}
             · all data uppdateras live från databasen
           </p>
@@ -371,7 +371,7 @@ export default async function StatistikPage() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
-              Topp 5 i poolen
+              Topp 5 i ligan
             </h2>
             <Link href="/tabell" className="text-xs text-gray-400 hover:text-emerald-400">
               Hela tabellen →

@@ -126,7 +126,7 @@ export default async function AdminDashboard() {
         <Link href="/admin/pools"
           className="rounded-xl p-5 hover:bg-white/5 transition-colors"
           style={{ background: '#111827', border: '1px solid #1f2937' }}>
-          <div className="font-semibold text-white mb-1">→ Pools</div>
+          <div className="font-semibold text-white mb-1">→ Ligor</div>
           <div className="text-sm text-gray-400">Hantera tipsligor – skapa, byt namn, flytta medlemmar</div>
         </Link>
       </div>
