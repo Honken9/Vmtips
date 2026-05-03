@@ -112,13 +112,19 @@ export async function POST(request: NextRequest) {
   const admin = createAdminClient()
 
   // Rate limit: max 1 generering per 30 sek per användare.
-  // Skyddar mot kostnadsspam mot Gemini.
+  // Plus blockera dubbel-trigger om en generering redan pågår.
   const RATE_LIMIT_MS = 30_000
   const { data: existing } = await admin
     .from('profiles')
-    .select('last_avatar_generated_at')
+    .select('last_avatar_generated_at, avatar_generating')
     .eq('id', user.id)
     .single()
+  if (existing?.avatar_generating === true) {
+    return NextResponse.json(
+      { error: 'En generering pågår redan. Vänta tills den är klar.' },
+      { status: 429 }
+    )
+  }
   if (existing?.last_avatar_generated_at) {
     const elapsed = Date.now() - new Date(existing.last_avatar_generated_at).getTime()
     if (elapsed < RATE_LIMIT_MS) {
@@ -151,6 +157,16 @@ export async function POST(request: NextRequest) {
   if (!apiKey) {
     return NextResponse.json({ error: 'GEMINI_API_KEY saknas i .env.local' }, { status: 500 })
   }
+
+  // Markera att en generering pågår – UI:t kan visa spinner som
+  // överlever sidbyte/scroll/refresh.
+  await admin
+    .from('profiles')
+    .update({
+      avatar_generating: true,
+      last_avatar_generated_at: new Date().toISOString(),
+    })
+    .eq('id', user.id)
 
   try {
     // Läs in bilden som base64
@@ -247,13 +263,10 @@ export async function POST(request: NextRequest) {
 
     const avatarUrl = publicData.publicUrl + `?t=${Date.now()}`
 
-    // Uppdatera profilen
+    // Uppdatera profilen – avatar_generating clearas i finally-blocket
     await admin
       .from('profiles')
-      .update({
-        avatar_url: avatarUrl,
-        last_avatar_generated_at: new Date().toISOString(),
-      })
+      .update({ avatar_url: avatarUrl })
       .eq('id', user.id)
 
     return NextResponse.json({ avatarUrl })
@@ -262,5 +275,11 @@ export async function POST(request: NextRequest) {
     console.error('Gemini error:', err)
     const message = err instanceof Error ? err.message : 'Okänt fel'
     return NextResponse.json({ error: `AI-generering misslyckades: ${message}` }, { status: 500 })
+  } finally {
+    // Säkerställer att vi alltid släpper låset, oavsett success/error/early return
+    await admin
+      .from('profiles')
+      .update({ avatar_generating: false })
+      .eq('id', user.id)
   }
 }

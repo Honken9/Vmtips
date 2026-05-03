@@ -1,12 +1,16 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { Loader2, Sparkles, CheckCircle, AlertCircle, Camera, Shirt, Activity, MapPin } from 'lucide-react'
 import Image from 'next/image'
 
 interface Props {
   currentAvatar: string | null
   displayName: string
+  userId: string
+  initialGenerating: boolean
   onAvatarChange?: (url: string) => void
 }
 
@@ -113,9 +117,11 @@ const ARENAS = [
   { value: 'Tele2 Arena', label: '🇸🇪 Tele2 Arena (Stockholm)', desc: 'Tele2 Arena in Stockholm Sweden, modern multipurpose stadium with green pitch' },
 ]
 
-export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChange }: Props) {
+export function FootballAvatarUpload({ currentAvatar, displayName, userId, initialGenerating, onAvatarChange }: Props) {
+  const router = useRouter()
+  const supabase = createClient()
   const [preview, setPreview] = useState<string | null>(null)
-  const [generating, setGenerating] = useState(false)
+  const [generating, setGenerating] = useState(initialGenerating)
   const [generatedAvatar, setGeneratedAvatar] = useState<string | null>(currentAvatar)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -124,6 +130,30 @@ export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChang
   const [pose, setPose] = useState(POSES[0].value)
   const [arena, setArena] = useState(ARENAS[0].value)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // Pollar profilen var 4:e sek när en generering pågår – när
+  // avatar_generating flippar till false visas den nya bilden direkt.
+  useEffect(() => {
+    if (!generating) return
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('avatar_url, avatar_generating')
+        .eq('id', userId)
+        .single()
+      if (data && data.avatar_generating === false) {
+        setGenerating(false)
+        if (data.avatar_url && data.avatar_url !== generatedAvatar) {
+          setGeneratedAvatar(data.avatar_url)
+          setSuccess(true)
+          onAvatarChange?.(data.avatar_url)
+          setTimeout(() => setSuccess(false), 4000)
+        }
+        router.refresh()
+      }
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [generating, userId, supabase, generatedAvatar, onAvatarChange, router])
 
   const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -147,8 +177,8 @@ export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChang
   async function handleGenerate() {
     const file = fileRef.current?.files?.[0]
     if (!file) return
-    setGenerating(true)
     setError(null)
+    setGenerating(true)
 
     const form = new FormData()
     form.append('image', file)
@@ -156,19 +186,23 @@ export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChang
     form.append('pose', pose)
     form.append('arena', arena)
 
-    try {
-      const res = await fetch('/api/generate-football-image', { method: 'POST', body: form })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Något gick fel')
-      setGeneratedAvatar(data.avatarUrl)
-      setSuccess(true)
-      onAvatarChange?.(data.avatarUrl)
-      setTimeout(() => setSuccess(false), 4000)
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Något gick fel')
-    } finally {
-      setGenerating(false)
-    }
+    // Fire-and-forget: servern fortsätter köra även om vi navigerar
+    // bort eller stänger fliken. Status pollas via avatar_generating.
+    fetch('/api/generate-football-image', { method: 'POST', body: form })
+      .then(async res => {
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          // Om servern svarade direkt med ett valideringsfel innan
+          // avatar_generating sattes (t.ex. för stor fil) – återställ.
+          if (res.status === 400 || res.status === 401) {
+            setGenerating(false)
+          }
+          setError(data.error || 'Något gick fel')
+        }
+      })
+      .catch(() => {
+        // Ignoreras – polling sköter status
+      })
   }
 
   const initials = displayName.slice(0, 2).toUpperCase()
@@ -212,7 +246,33 @@ export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChang
           </div>
         </div>
 
-        {/* Upload-zon */}
+        {/* "Skapar bilden..."-overlay – ersätter hela upload-blocket
+            tills servern är klar. Pollar var 4:e sek så användaren kan
+            scrolla, byta sida eller refreshna utan att förlora status. */}
+        {generating && (
+          <div
+            className="rounded-xl flex flex-col items-center justify-center gap-4 py-10 px-5 text-center"
+            style={{
+              border: '2px dashed rgba(16,185,129,0.4)',
+              background: 'rgba(16,185,129,0.06)',
+            }}
+          >
+            <div className="relative">
+              <Loader2 size={36} className="animate-spin text-emerald-400" />
+              <Sparkles size={14} className="absolute -top-1 -right-1 text-amber-400 animate-pulse" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">Bilden skapas…</p>
+              <p className="text-xs text-gray-400 mt-1">
+                Tar ungefär 30–60 sekunder. Du kan scrolla runt eller byta sida –
+                bilden dyker upp här när den är klar.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Upload-zon (visas inte under pågående generering) */}
+        {!generating && (
         <div
           onDrop={handleDrop}
           onDragOver={e => { e.preventDefault(); setDragOver(true) }}
@@ -245,6 +305,7 @@ export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChang
             </>
           )}
         </div>
+        )}
 
         <input
           ref={fileRef}
@@ -255,7 +316,7 @@ export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChang
         />
 
         {/* Anpassa-sektion: lag, pose, arena */}
-        {preview && (
+        {preview && !generating && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
@@ -311,27 +372,17 @@ export function FootballAvatarUpload({ currentAvatar, displayName, onAvatarChang
         )}
 
         {/* Generera-knapp */}
-        {preview && (
+        {preview && !generating && (
           <button
             onClick={handleGenerate}
-            disabled={generating}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all"
             style={{
-              background: generating ? '#374151' : 'linear-gradient(135deg, #10b981, #ef4444)',
+              background: 'linear-gradient(135deg, #10b981, #ef4444)',
               color: '#000',
             }}
           >
-            {generating ? (
-              <>
-                <Loader2 size={16} className="animate-spin text-white" />
-                <span className="text-white">Genererar fotbollsproffs… (kan ta 30–60 sek)</span>
-              </>
-            ) : (
-              <>
-                <Sparkles size={16} />
-                Gör mig till fotbollsproffs!
-              </>
-            )}
+            <Sparkles size={16} />
+            Gör mig till fotbollsproffs!
           </button>
         )}
 

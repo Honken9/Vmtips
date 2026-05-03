@@ -40,6 +40,8 @@ export default async function ProfilPage() {
       <FootballAvatarUpload
         currentAvatar={profile.avatar_url ?? null}
         displayName={profile.display_name}
+        userId={user.id}
+        initialGenerating={profile.avatar_generating === true}
       />
 
       {/* Pool */}

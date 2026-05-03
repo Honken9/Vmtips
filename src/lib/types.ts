@@ -30,6 +30,7 @@ export interface Profile {
   tips_locked_at: string | null
   created_at: string
   avatar_url?: string | null
+  avatar_generating?: boolean
   pool_id?: number | null
 }
 
