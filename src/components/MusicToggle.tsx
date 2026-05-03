@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Music, X } from 'lucide-react'
 
 const SPOTIFY_EMBED =
-  'https://open.spotify.com/embed/album/6SVY7GMw6KZxOSduyXSeoi?utm_source=generator&theme=0&autoplay=1'
+  'https://open.spotify.com/embed/track/3iAJRvvn8pywXZtvBNNP71?utm_source=generator&theme=0&autoplay=1'
 
 const STORAGE_KEY = 'vm-tips:music-dismissed'
 
@@ -70,7 +70,7 @@ export function MusicToggle() {
           <iframe
             src={SPOTIFY_EMBED}
             width="100%"
-            height="380"
+            height="152"
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
             loading="eager"
             style={{ border: 0, display: 'block' }}

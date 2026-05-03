@@ -95,7 +95,7 @@ export default async function ReglerPage() {
       {/* Pools */}
       <Section icon={<Users size={18} />} title="Ligor">
         <p className="text-sm text-gray-300 mb-3">
-          Varje deltagare tävlar i en pool – du tävlar bara mot andra i samma pool.
+          Varje deltagare tävlar i en liga – du tävlar bara mot andra i samma liga.
         </p>
         <ul className="space-y-2 text-sm text-gray-300">
           <li className="flex gap-2">

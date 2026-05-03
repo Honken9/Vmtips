@@ -154,7 +154,7 @@ export default async function StatistikPage() {
       {/* Översikts-kort */}
       <section>
         <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3">
-          Pool i siffror
+          Ligan i siffror
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <Stat icon={<Users size={18} />} label="Deltagare" value={totalUsers.toString()} color="green" />
