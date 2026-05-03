@@ -3,10 +3,9 @@
 -- Kör i Supabase SQL Editor. Skriver INGET till databasen.
 -- ============================================================
 --
--- Fix från förra versionen: Postgres cache:ade random() i lateral-
--- subqueryn så alla matcher hamnade på samma resultat. Använder nu
--- deterministisk pseudo-slump (modulo + primtal) som varierar per
--- (user_id, match_id) — samma resultat varje körning.
+-- Använder Postgres hashtext() för deterministisk pseudo-slump per
+-- (user, match) — varje spelare får unika prediktioner istället för
+-- att hamna i samma ekvivalensklass som modulär aritmetik gav.
 --
 -- Scoringregler (samma som leaderboard-vyn):
 --   • Rätt tecken (1/X/2) → 3p
@@ -22,24 +21,21 @@ with
     from generate_series(1, 50) i
   ),
 
-  -- Matchresultat – deterministiskt från match.id
-  -- Värden i intervallet 0-4 med viss spread tack vare primtals-multipliers
   sim_results as (
     select
       m.id as match_id,
-      ((m.id * 7  + 3) % 5)::int as home_score,
-      ((m.id * 11 + 5) % 5)::int as away_score
+      (abs(hashtext('home:' || m.id::text)) % 5)::int as home_score,
+      (abs(hashtext('away:' || m.id::text)) % 5)::int as away_score
     from public.matches m
   ),
 
-  -- Tippade resultat – deterministiskt från (user_id, match_id)
   sim_predictions as (
     select
       u.user_id,
       u.name,
       m.id as match_id,
-      ((u.user_id * 13 + m.id * 17 + 1) % 5)::int as pred_home,
-      ((u.user_id * 19 + m.id * 23 + 7) % 5)::int as pred_away
+      (abs(hashtext('ph:' || u.user_id::text || ':' || m.id::text)) % 5)::int as pred_home,
+      (abs(hashtext('pa:' || u.user_id::text || ':' || m.id::text)) % 5)::int as pred_away
     from fake_users u
     cross join public.matches m
   ),
