@@ -2,12 +2,17 @@
 
 interface Props {
   size?: 'sm' | 'md' | 'lg'
-  byline?: string
 }
 
-export function TrophyLogo({ size = 'md', byline }: Props) {
+export function TrophyLogo({ size = 'md' }: Props) {
   const sizes = { sm: 36, md: 56, lg: 88 }
   const px = sizes[size]
+  const wordmarkClass =
+    size === 'lg' ? 'text-3xl' : size === 'md' ? 'text-xl' : 'text-base'
+  const bylineClass =
+    size === 'lg' ? 'text-3xl' : size === 'md' ? 'text-xl' : 'text-base'
+  const subtitleClass =
+    size === 'lg' ? 'text-sm mt-1' : 'text-xs mt-0.5'
 
   return (
     <div className="flex items-center gap-3">
@@ -23,27 +28,18 @@ export function TrophyLogo({ size = 'md', byline }: Props) {
 
       <div className="min-w-0">
         <div
-          className={`font-black tracking-tight leading-none text-emerald-400 ${
-            size === 'lg' ? 'text-3xl' : size === 'md' ? 'text-xl' : 'text-base'
-          }`}
+          className={`font-black tracking-tight leading-none text-emerald-400 ${wordmarkClass}`}
         >
           VM-TIPS
-          {byline && (
-            <span
-              className="ml-2 align-baseline text-amber-400 font-script font-normal whitespace-nowrap"
-              style={{
-                fontSize: size === 'lg' ? '1.05em' : size === 'md' ? '1em' : '0.95em',
-                letterSpacing: 0,
-              }}
-            >
-              {byline}
-            </span>
-          )}
+          <span
+            className={`ml-2 align-baseline text-amber-400 font-script font-normal whitespace-nowrap ${bylineClass}`}
+            style={{ letterSpacing: 0 }}
+          >
+            by Alex och Daniel
+          </span>
         </div>
         <div
-          className={`text-gray-400 font-medium tracking-widest uppercase ${
-            size === 'lg' ? 'text-sm mt-1' : 'text-xs mt-0.5'
-          }`}
+          className={`text-gray-400 font-medium tracking-widest uppercase ${subtitleClass}`}
         >
           FIFA World Cup 2026
         </div>

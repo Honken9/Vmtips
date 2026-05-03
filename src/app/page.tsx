@@ -99,7 +99,7 @@ export default async function HomePage() {
         }}
       >
         <div className="relative z-10">
-          <TrophyLogo size="lg" byline="by Alex och Daniel" />
+          <TrophyLogo size="lg" />
           <p className="mt-3 text-gray-400 max-w-lg">
             {profile
               ? `Välkommen tillbaka, ${profile.display_name}.`
