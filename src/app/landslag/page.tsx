@@ -39,11 +39,10 @@ export default async function LandslagPage() {
               style={{ background: '#111827', border: '1px solid #1f2937' }}
             >
               <div
-                className="px-4 py-2.5 flex items-center justify-between"
+                className="px-4 py-2.5"
                 style={{ background: 'linear-gradient(135deg, #1f2937, #1a1a2e)' }}
               >
                 <span className="font-bold text-emerald-400">Grupp {group}</span>
-                <span className="text-xs text-gray-500">{groupTeams.length} lag</span>
               </div>
               <div className="divide-y" style={{ borderColor: '#1f2937' }}>
                 {groupTeams.map(t => (
