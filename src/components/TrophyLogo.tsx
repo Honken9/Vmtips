@@ -9,10 +9,10 @@ export function TrophyLogo({ size = 'md' }: Props) {
   const px = sizes[size]
   const wordmarkClass =
     size === 'lg' ? 'text-3xl' : size === 'md' ? 'text-xl' : 'text-base'
-  const bylineClass =
-    size === 'lg' ? 'text-3xl' : size === 'md' ? 'text-xl' : 'text-base'
+  const bylineFontSize =
+    size === 'lg' ? '1.6em' : size === 'md' ? '1.5em' : '1.4em'
   const subtitleClass =
-    size === 'lg' ? 'text-sm mt-1' : 'text-xs mt-0.5'
+    size === 'lg' ? 'text-sm mt-1' : 'text-xs mt-1'
 
   return (
     <div className="flex items-center gap-3">
@@ -27,20 +27,26 @@ export function TrophyLogo({ size = 'md' }: Props) {
       />
 
       <div className="min-w-0">
-        <div
-          className={`font-black tracking-tight leading-snug text-emerald-400 ${wordmarkClass}`}
-          style={{ overflow: 'visible' }}
-        >
-          VM-TIPS
+        {/* Wordmark + byline – egen flex-rad så Caveat har full höjd */}
+        <div className={`flex items-baseline gap-2 ${wordmarkClass}`}>
+          <span className="font-black tracking-tight text-emerald-400 leading-tight">
+            VM-TIPS
+          </span>
           <span
-            className={`ml-2 text-amber-400 font-script font-normal whitespace-nowrap ${bylineClass}`}
-            style={{ letterSpacing: 0, lineHeight: 1 }}
+            className="text-amber-400 font-script font-normal whitespace-nowrap"
+            style={{
+              letterSpacing: 0,
+              fontSize: bylineFontSize,
+              lineHeight: 1.1,
+              // Hindrar Chrome från att klippa höga ascender på k/l/d/h
+              paddingBlock: '0.05em',
+            }}
           >
             by Alex och Daniel
           </span>
         </div>
         <div
-          className={`text-gray-400 font-medium tracking-widest uppercase ${subtitleClass}`}
+          className={`text-gray-400 font-medium tracking-widest uppercase leading-tight ${subtitleClass}`}
         >
           FIFA World Cup 2026
         </div>
