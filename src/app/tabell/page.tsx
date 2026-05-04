@@ -5,6 +5,7 @@ import { LeaderboardTable } from '@/components/LeaderboardTable'
 import { LeaderboardEntry, Match, Prediction, Settings, Profile, Pool } from '@/lib/types'
 import { calcDailyWinner, popularPicks, topExactScorer, stockholmToday } from '@/lib/stats'
 import { calcPot, calcPayouts, formatKr } from '@/lib/payments'
+import { Flag } from '@/components/Flag'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import { Trophy, Users, CheckCircle, Star, Crown, Target, TrendingUp, Calendar } from 'lucide-react'
@@ -260,7 +261,7 @@ export default async function LeaderboardPage() {
                     </div>
                     <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
                       <span className="text-sm text-white truncate">{home?.name ?? '?'}</span>
-                      <span className="text-base shrink-0">{home?.flag ?? '🏴'}</span>
+                      <Flag emoji={home?.flag ?? null} name={home?.name} width={20} height={14} className="shrink-0" />
                     </div>
                     <div className="shrink-0 w-14 sm:w-20 text-center">
                       <span className="text-emerald-400 font-bold">
@@ -268,7 +269,7 @@ export default async function LeaderboardPage() {
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <span className="text-base shrink-0">{away?.flag ?? '🏴'}</span>
+                      <Flag emoji={away?.flag ?? null} name={away?.name} width={20} height={14} className="shrink-0" />
                       <span className="text-sm text-white truncate">{away?.name ?? '?'}</span>
                     </div>
                     <div className="hidden sm:flex flex-col items-end shrink-0 w-32">

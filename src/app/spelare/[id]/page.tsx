@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { LeaderboardEntry, Match, Prediction, Profile, Settings } from '@/lib/types'
+import { Flag } from '@/components/Flag'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import {
@@ -268,7 +269,7 @@ function PredictionRow({
       <div className="flex items-center gap-2 sm:gap-3">
         <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
           <span className="text-sm text-white truncate">{home}</span>
-          {homeFlag && <span className="text-base shrink-0">{homeFlag}</span>}
+          {homeFlag && <Flag emoji={homeFlag} name={home} width={20} height={14} className="shrink-0" />}
         </div>
         <div className="shrink-0 w-20 text-center">
           {m.result_confirmed ? (
@@ -286,7 +287,7 @@ function PredictionRow({
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          {awayFlag && <span className="text-base shrink-0">{awayFlag}</span>}
+          {awayFlag && <Flag emoji={awayFlag} name={away} width={20} height={14} className="shrink-0" />}
           <span className="text-sm text-white truncate">{away}</span>
         </div>
         {!hideOutcome && (

@@ -1,6 +1,7 @@
 'use client'
 
 import { StandingsRow } from '@/lib/standings'
+import { Flag } from './Flag'
 
 interface Props {
   standings: Record<string, StandingsRow[]>
@@ -78,7 +79,7 @@ export function GroupStandingsGrid({ standings, best8ThirdIds }: Props) {
                     style={{ borderColor: '#1f2937', background: bg }}>
                     <span className="w-5 shrink-0 text-xs font-bold" style={{ color: posColor }}>{i + 1}</span>
                     <div className="flex-1 flex items-center gap-1.5 min-w-0">
-                      <span className="shrink-0">{row.team.flag}</span>
+                      <Flag emoji={row.team.flag} name={row.team.name} width={20} height={14} className="shrink-0" />
                       <span className="truncate text-xs" style={{ color: row.played > 0 ? '#f9fafb' : '#6b7280' }}>
                         {row.team.name}
                       </span>

@@ -11,6 +11,7 @@ import {
   R32_BRACKET, R16_BRACKET, QF_BRACKET, SF_BRACKET, StandingsRow
 } from '@/lib/standings'
 import { GroupStandingsGrid } from '@/components/GroupStandingsGrid'
+import { Flag } from '@/components/Flag'
 import { BonusTipsSection } from '@/components/BonusTipsSection'
 import { RandomizeOverlay } from '@/components/RandomizeOverlay'
 import { format, isPast } from 'date-fns'
@@ -631,7 +632,7 @@ function MatchRow({
         <span className={`text-sm font-medium truncate text-right ${isHomeUnknown ? 'text-gray-500 italic' : 'text-white'}`}>
           {homeName}
         </span>
-        {homeFlag && <span className="text-lg shrink-0">{homeFlag}</span>}
+        {homeFlag && <Flag emoji={homeFlag} name={homeName} width={22} height={16} className="shrink-0" />}
       </div>
 
       {/* Inmatning / resultat */}
@@ -690,7 +691,7 @@ function MatchRow({
 
       {/* Bortalag */}
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        {awayFlag && <span className="text-lg shrink-0">{awayFlag}</span>}
+        {awayFlag && <Flag emoji={awayFlag} name={awayName} width={22} height={16} className="shrink-0" />}
         <span className={`text-sm font-medium truncate ${isAwayUnknown ? 'text-gray-500 italic' : 'text-white'}`}>
           {awayName}
         </span>

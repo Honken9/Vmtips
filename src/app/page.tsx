@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { TrophyLogo } from '@/components/TrophyLogo'
 import { MatchCountdown } from '@/components/MatchCountdown'
+import { Flag } from '@/components/Flag'
 import { LeaderboardEntry, Match, Prediction, Settings, Profile, Pool } from '@/lib/types'
 import { stockholmToday, isMatchOnStockholmDate } from '@/lib/stats'
 import { fetchNews } from '@/lib/rss'
@@ -398,7 +399,7 @@ function TodaysMatchRow({
         </div>
         <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
           <span className="text-sm text-white truncate">{homeName}</span>
-          {homeFlag && <span className="text-base shrink-0">{homeFlag}</span>}
+          {homeFlag && <Flag emoji={homeFlag} name={homeName} width={20} height={14} className="shrink-0" />}
         </div>
         <div className="shrink-0 w-14 sm:w-16 text-center">
           {match.result_confirmed ? (
@@ -414,7 +415,7 @@ function TodaysMatchRow({
           )}
         </div>
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          {awayFlag && <span className="text-base shrink-0">{awayFlag}</span>}
+          {awayFlag && <Flag emoji={awayFlag} name={awayName} width={20} height={14} className="shrink-0" />}
           <span className="text-sm text-white truncate">{awayName}</span>
         </div>
         <div className="hidden md:flex flex-col items-end shrink-0 w-32 text-xs">

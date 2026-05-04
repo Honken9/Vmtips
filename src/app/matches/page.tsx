@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Match, Team, Stage, STAGE_LABELS } from '@/lib/types'
+import { Flag } from '@/components/Flag'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import { CheckCircle, Clock, MapPin, Calendar } from 'lucide-react'
@@ -67,7 +68,7 @@ export default async function MatchesPage() {
                       <div className="grid grid-cols-2 gap-1">
                         {groupTeams.map(team => (
                           <div key={team.id} className="flex items-center gap-2 py-1">
-                            <span className="text-base">{team.flag}</span>
+                            <Flag emoji={team.flag} name={team.name} width={20} height={14} />
                             <span className="text-sm text-gray-300 truncate">{team.name}</span>
                           </div>
                         ))}
@@ -146,7 +147,7 @@ function GroupMatchRow({ match }: { match: Match }) {
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
           <span className="text-sm font-medium text-white truncate">{homeName}</span>
-          <span className="text-base shrink-0">{homeFlag}</span>
+          <Flag emoji={homeFlag} name={homeName} width={20} height={14} className="shrink-0" />
         </div>
         <div className="shrink-0 w-16 text-center">
           {match.result_confirmed ? (
@@ -161,7 +162,7 @@ function GroupMatchRow({ match }: { match: Match }) {
           )}
         </div>
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <span className="text-base shrink-0">{awayFlag}</span>
+          <Flag emoji={awayFlag} name={awayName} width={20} height={14} className="shrink-0" />
           <span className="text-sm font-medium text-white truncate">{awayName}</span>
         </div>
       </div>
@@ -186,7 +187,7 @@ function KnockoutMatchRow({ match, isLast }: { match: Match; isLast: boolean }) 
       </div>
       <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
         <span className="text-sm font-medium text-white truncate">{homeName}</span>
-        {homeFlag && <span className="text-lg shrink-0">{homeFlag}</span>}
+        {homeFlag && <Flag emoji={homeFlag} name={homeName} width={22} height={16} className="shrink-0" />}
       </div>
       <div className="shrink-0 w-14 sm:w-20 text-center">
         {match.result_confirmed ? (
@@ -204,7 +205,7 @@ function KnockoutMatchRow({ match, isLast }: { match: Match; isLast: boolean }) 
         )}
       </div>
       <div className="flex items-center gap-1.5 flex-1 min-w-0">
-        {awayFlag && <span className="text-lg shrink-0">{awayFlag}</span>}
+        {awayFlag && <Flag emoji={awayFlag} name={awayName} width={22} height={16} className="shrink-0" />}
         <span className="text-sm font-medium text-white truncate">{awayName}</span>
       </div>
       {/* Plats */}

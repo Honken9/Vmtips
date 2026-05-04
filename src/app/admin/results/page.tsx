@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Match, Stage, STAGE_LABELS } from '@/lib/types'
+import { Flag } from '@/components/Flag'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import { CheckCircle, Loader2, Save, RefreshCw } from 'lucide-react'
@@ -255,7 +256,7 @@ export default function AdminResultsPage() {
 
                   <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
                     <span className="text-sm font-medium text-white truncate">{homeName}</span>
-                    <span className="text-lg shrink-0">{homeFlag}</span>
+                    <Flag emoji={homeFlag} name={homeName} width={22} height={16} className="shrink-0" />
                   </div>
 
                   <div className="flex items-center gap-1 sm:gap-2 shrink-0">
@@ -285,7 +286,7 @@ export default function AdminResultsPage() {
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                    <span className="text-lg shrink-0">{awayFlag}</span>
+                    <Flag emoji={awayFlag} name={awayName} width={22} height={16} className="shrink-0" />
                     <span className="text-sm font-medium text-white truncate">{awayName}</span>
                   </div>
 

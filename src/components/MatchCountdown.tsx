@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Clock, Calendar, MapPin } from 'lucide-react'
+import { Flag } from './Flag'
 
 interface Props {
   targetIso: string
@@ -69,12 +70,12 @@ export function MatchCountdown({ targetIso, homeName, awayName, homeFlag, awayFl
       </div>
 
       {(homeName || awayName) && (
-        <div className="text-white text-sm sm:text-base mb-2 truncate" suppressHydrationWarning>
-          {homeFlag && <span className="mr-1">{homeFlag}</span>}
+        <div className="text-white text-sm sm:text-base mb-2 flex items-center gap-2 flex-wrap" suppressHydrationWarning>
+          {homeFlag && <Flag emoji={homeFlag} name={homeName} width={22} height={16} />}
           <span className="font-medium">{homeName ?? '?'}</span>
-          <span className="mx-2 text-gray-500">vs</span>
+          <span className="text-gray-500">vs</span>
           <span className="font-medium">{awayName ?? '?'}</span>
-          {awayFlag && <span className="ml-1">{awayFlag}</span>}
+          {awayFlag && <Flag emoji={awayFlag} name={awayName} width={22} height={16} />}
         </div>
       )}
 
