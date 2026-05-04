@@ -238,7 +238,7 @@ export default function AdminResultsPage() {
             const kickoff = format(new Date(match.kickoff_at), 'EEE d MMM HH:mm', { locale: sv })
             const val = scores[match.id] ?? { home: '', away: '' }
             const isSaving = saving === match.id
-            const isSaved = saved.has(match.id)
+            const isSaved = match.result_confirmed || saved.has(match.id)
 
             return (
               <div
