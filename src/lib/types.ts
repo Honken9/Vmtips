@@ -19,6 +19,10 @@ export interface Settings {
   points_exact_score: number
   points_winner: number
   points_finalist: number
+  randomize_duration?: number
+  randomize_phrase_1?: string | null
+  randomize_phrase_2?: string | null
+  randomize_phrase_3?: string | null
   updated_at: string
 }
 

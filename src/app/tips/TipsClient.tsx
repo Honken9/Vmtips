@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   Match, Prediction, Settings, Profile, Team, Stage, STAGE_LABELS, calcPredictionResult,
@@ -16,7 +16,7 @@ import { BonusTipsSection } from '@/components/BonusTipsSection'
 import { RandomizeOverlay } from '@/components/RandomizeOverlay'
 import { format, isPast } from 'date-fns'
 import { sv } from 'date-fns/locale'
-import { Lock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Loader2, Dices, Settings as SettingsIcon } from 'lucide-react'
+import { Lock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Loader2, Dices } from 'lucide-react'
 
 interface Props {
   profile: Profile
@@ -45,32 +45,14 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
   const [locked, setLocked] = useState(profile.tips_locked)
   const [openStages, setOpenStages] = useState<Set<Stage>>(new Set(['group']))
   const [randomizing, setRandomizing] = useState(false)
-  const [showSettings, setShowSettings] = useState(false)
-  const [randomizeDuration, setRandomizeDuration] = useState(15) // sekunder
-  const [customPhrases, setCustomPhrases] = useState<[string, string, string]>(['', '', ''])
 
-  // Ladda inställningar från localStorage
-  useEffect(() => {
-    try {
-      const dur = localStorage.getItem('vm-tips:randomize-duration')
-      if (dur) setRandomizeDuration(parseInt(dur))
-      const phrases = localStorage.getItem('vm-tips:custom-phrases')
-      if (phrases) {
-        const arr = JSON.parse(phrases)
-        if (Array.isArray(arr) && arr.length === 3) setCustomPhrases(arr as [string, string, string])
-      }
-    } catch {}
-  }, [])
-
-  // Spara inställningar
-  function saveSettings(duration: number, phrases: [string, string, string]) {
-    setRandomizeDuration(duration)
-    setCustomPhrases(phrases)
-    try {
-      localStorage.setItem('vm-tips:randomize-duration', String(duration))
-      localStorage.setItem('vm-tips:custom-phrases', JSON.stringify(phrases))
-    } catch {}
-  }
+  // Globala slumpinställningar från admin
+  const randomizeDuration = settings.randomize_duration ?? 15
+  const customPhrases = [
+    settings.randomize_phrase_1 ?? '',
+    settings.randomize_phrase_2 ?? '',
+    settings.randomize_phrase_3 ?? '',
+  ].filter(p => p.trim() !== '')
 
   // Slumpa fram ett enskilt mål (viktad fördelning – vanligare med 0-2 mål)
   function randomGoals(): number {
@@ -317,7 +299,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
       {randomizing && (
         <RandomizeOverlay
           duration={randomizeDuration * 1000}
-          customPhrases={customPhrases.filter(p => p.trim() !== '')}
+          customPhrases={customPhrases}
         />
       )}
 
@@ -358,79 +340,9 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
               <Dices size={16} />
               Slumpa allt
             </button>
-            <button
-              onClick={() => setShowSettings(s => !s)}
-              disabled={randomizing}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-gray-300 transition-all disabled:opacity-40 hover:text-white hover:bg-white/5"
-              style={{ background: 'transparent', border: '1px solid #374151' }}
-              title="Inställningar för slumpning"
-            >
-              <SettingsIcon size={16} />
-            </button>
           </div>
         )}
       </div>
-
-      {/* Inställningspanel för slumpning */}
-      {showSettings && !locked && (
-        <div className="rounded-xl p-5 space-y-4" style={{ background: '#111827', border: '1px solid #1f2937' }}>
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-white flex items-center gap-2">
-              <SettingsIcon size={16} className="text-emerald-400" />
-              Slumpningsinställningar
-            </h3>
-            <button
-              onClick={() => setShowSettings(false)}
-              className="text-xs text-gray-400 hover:text-white"
-            >
-              Stäng
-            </button>
-          </div>
-
-          {/* Tids-slider */}
-          <div>
-            <label className="flex items-center justify-between text-sm font-medium text-gray-300 mb-2">
-              <span>Spänningens längd</span>
-              <span className="text-emerald-400 font-bold">{randomizeDuration} sek</span>
-            </label>
-            <input
-              type="range" min="3" max="60" step="1"
-              value={randomizeDuration}
-              onChange={e => saveSettings(parseInt(e.target.value), customPhrases)}
-              className="w-full accent-amber-400"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>3 sek</span>
-              <span>60 sek</span>
-            </div>
-          </div>
-
-          {/* Anpassade fraser */}
-          <div>
-            <label className="text-sm font-medium text-gray-300 mb-2 block">
-              Egna fraser (visas blandade med standard­fraserna)
-            </label>
-            <div className="space-y-2">
-              {customPhrases.map((p, i) => (
-                <input
-                  key={i}
-                  type="text"
-                  value={p}
-                  onChange={e => {
-                    const next = [...customPhrases] as [string, string, string]
-                    next[i] = e.target.value
-                    saveSettings(randomizeDuration, next)
-                  }}
-                  placeholder={`Fras ${i + 1} (t.ex. "🦁 Kungen brölar…")`}
-                  maxLength={80}
-                  className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
-                  style={{ background: '#1f2937', border: '1px solid #374151' }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Progress – Läge A */}
       {settings.tournament_mode === 'A' && (

@@ -27,6 +27,10 @@ export default function AdminSettingsPage() {
       points_exact_score: settings.points_exact_score,
       points_winner: settings.points_winner,
       points_finalist: settings.points_finalist,
+      randomize_duration: settings.randomize_duration ?? 15,
+      randomize_phrase_1: settings.randomize_phrase_1 ?? '',
+      randomize_phrase_2: settings.randomize_phrase_2 ?? '',
+      randomize_phrase_3: settings.randomize_phrase_3 ?? '',
     }).eq('id', 1)
     setSaving(false)
     setSaved(true)
@@ -128,6 +132,55 @@ export default function AdminSettingsPage() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Slumpning – globala inställningar för "Slumpa fram tips" */}
+      <section className="rounded-xl p-6 space-y-4" style={{ background: '#111827', border: '1px solid #1f2937' }}>
+        <h2 className="text-lg font-semibold text-white">Slumpinställningar</h2>
+        <p className="text-sm text-gray-400">
+          Påverkar &quot;Slumpa fram tips&quot;-funktionen för alla deltagare.
+        </p>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1.5">
+            Animationslängd: <span className="text-emerald-400 font-bold">{settings.randomize_duration ?? 15} sek</span>
+          </label>
+          <input
+            type="range"
+            min={3}
+            max={30}
+            value={settings.randomize_duration ?? 15}
+            onChange={e => setSettings(s => s ? { ...s, randomize_duration: parseInt(e.target.value) } : s)}
+            className="w-full"
+          />
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>3 sek</span><span>30 sek</span>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1.5">
+            Egna fraser i animeringen <span className="text-xs text-gray-500 font-normal">(valfritt)</span>
+          </label>
+          <p className="text-xs text-gray-500 mb-2">
+            Visas blandat med standardfraserna under spänningsanimationen. Lämna tomma för att bara använda standardfraserna.
+          </p>
+          {[1, 2, 3].map(i => {
+            const key = `randomize_phrase_${i}` as 'randomize_phrase_1' | 'randomize_phrase_2' | 'randomize_phrase_3'
+            return (
+              <input
+                key={i}
+                type="text"
+                value={settings[key] ?? ''}
+                onChange={e => setSettings(s => s ? { ...s, [key]: e.target.value } : s)}
+                placeholder={`Fras ${i} – t.ex. "Tippsen rullar in..."`}
+                maxLength={60}
+                className="w-full mb-2 px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+                style={{ background: '#1f2937', border: '1px solid #374151' }}
+              />
+            )
+          })}
         </div>
       </section>
 

@@ -29,15 +29,15 @@ export function Navigation({ profile, pool, allLigor = [] }: Props) {
   }
 
   const links = [
-    { href: '/', label: 'Hem', icon: Home },
-    { href: '/tabell', label: 'Tabell', icon: Trophy },
-    { href: '/statistik', label: 'Statistik', icon: BarChart3 },
-    { href: '/matches', label: 'Matcher', icon: LayoutDashboard },
-    { href: '/landslag', label: 'Landslag', icon: Globe },
-    ...(profile ? [{ href: '/tips', label: 'Mina tips', icon: Target }] : []),
-    ...(profile ? [{ href: '/liga', label: 'Min liga', icon: Wallet }] : []),
-    { href: '/regler', label: 'Regler', icon: BookOpen },
-    ...(profile?.is_admin ? [{ href: '/admin', label: 'Admin', icon: ShieldCheck }] : []),
+    { href: '/',          label: 'Hem',       icon: Home,            color: '#10b981' }, // emerald
+    { href: '/tabell',    label: 'Tabell',    icon: Trophy,          color: '#f59e0b' }, // gold
+    { href: '/statistik', label: 'Statistik', icon: BarChart3,       color: '#60a5fa' }, // blue
+    { href: '/matches',   label: 'Matcher',   icon: LayoutDashboard, color: '#22d3ee' }, // cyan
+    { href: '/landslag',  label: 'Landslag',  icon: Globe,           color: '#a78bfa' }, // violet
+    ...(profile ? [{ href: '/tips', label: 'Mina tips', icon: Target, color: '#f472b6' }] : []), // pink
+    ...(profile ? [{ href: '/liga', label: 'Min liga', icon: Wallet, color: '#34d399' }] : []), // emerald-light
+    { href: '/regler', label: 'Regler', icon: BookOpen, color: '#fbbf24' }, // amber-light
+    ...(profile?.is_admin ? [{ href: '/admin', label: 'Admin', icon: ShieldCheck, color: '#ef4444' }] : []), // red
   ]
 
   const initials = profile?.display_name?.slice(0, 2).toUpperCase() ?? '?'
@@ -60,7 +60,7 @@ export function Navigation({ profile, pool, allLigor = [] }: Props) {
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-1">
-            {links.map(({ href, label, icon: Icon }) => {
+            {links.map(({ href, label, icon: Icon, color }) => {
               const active = pathname === href || (href !== '/' && pathname.startsWith(href))
               return (
                 <Link
@@ -68,11 +68,11 @@ export function Navigation({ profile, pool, allLigor = [] }: Props) {
                   href={href}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     active
-                      ? 'text-emerald-400 bg-emerald-400/10'
+                      ? 'text-white bg-white/10'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  <Icon size={16} />
+                  <Icon size={16} style={{ color }} />
                   {label}
                 </Link>
               )
@@ -145,7 +145,7 @@ export function Navigation({ profile, pool, allLigor = [] }: Props) {
         {/* Mobile menu */}
         {mobileOpen && (
           <div className="md:hidden pb-4 border-t border-white/5 pt-4 space-y-1">
-            {links.map(({ href, label, icon: Icon }) => {
+            {links.map(({ href, label, icon: Icon, color }) => {
               const active = pathname === href || (href !== '/' && pathname.startsWith(href))
               return (
                 <Link
@@ -154,11 +154,11 @@ export function Navigation({ profile, pool, allLigor = [] }: Props) {
                   onClick={() => setMobileOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                     active
-                      ? 'text-emerald-400 bg-emerald-400/10'
+                      ? 'text-white bg-white/10'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
-                  <Icon size={18} />
+                  <Icon size={18} style={{ color }} />
                   {label}
                 </Link>
               )
