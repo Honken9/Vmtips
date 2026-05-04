@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { LeaderboardTable } from '@/components/LeaderboardTable'
 import { LeaderboardEntry, Match, Prediction, Settings, Profile, Pool } from '@/lib/types'
 import { calcDailyWinner, popularPicks, topExactScorer, stockholmToday } from '@/lib/stats'
+import { calcPot, calcPayouts, formatKr } from '@/lib/payments'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import { Trophy, Users, CheckCircle, Star, Crown, Target, TrendingUp, Calendar } from 'lucide-react'
@@ -36,6 +37,7 @@ export default async function LeaderboardPage() {
     { data: predictionsRaw },
     { data: profilesRaw },
     { data: pool },
+    { data: paymentsRaw },
   ] = await Promise.all([
     supabase.from('leaderboard').select('*'),
     supabase.from('settings').select('*').single(),
@@ -46,6 +48,7 @@ export default async function LeaderboardPage() {
     supabase.from('predictions').select('*'),
     supabase.from('profiles').select('id, display_name, pool_id'),
     supabase.from('pools').select('*').eq('id', poolId).single(),
+    supabase.from('pool_payments').select('paid').eq('pool_id', poolId),
   ])
 
   // Filtrera till bara medlemmar i samma pool
@@ -99,6 +102,22 @@ export default async function LeaderboardPage() {
 
   const todayLabel = format(new Date(), 'EEE d MMM', { locale: sv })
 
+  // Pottberäkning (visas bara om ligan har avgift)
+  const fee = currentPool?.entry_fee ?? 0
+  const payments = (paymentsRaw ?? []) as { paid: boolean }[]
+  const paidCount = payments.filter(p => p.paid).length
+  const { paidTotal } = calcPot({
+    entryFee: fee,
+    paidCount,
+    totalMembers: entries.length,
+  })
+  const distribution = currentPool?.prize_distribution ?? { '1': 1.0 }
+  const payouts = calcPayouts({
+    totalPot: paidTotal,
+    distribution,
+    ranking: entries,
+  })
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -120,6 +139,54 @@ export default async function LeaderboardPage() {
           </Link>
         )}
       </div>
+
+      {/* Pott-banner – bara om ligan har avgift */}
+      {fee > 0 && (
+        <Link
+          href="/liga"
+          className="block rounded-2xl p-4 sm:p-5 hover:brightness-110 transition-all"
+          style={{
+            background: 'linear-gradient(135deg, #0c2823 0%, #14202e 50%, #0a3d2a 100%)',
+            border: '1px solid #1f2937',
+          }}
+        >
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-emerald-400 font-semibold">
+                Prispott
+              </div>
+              <div className="text-2xl sm:text-3xl font-black text-white tabular-nums leading-tight">
+                {formatKr(paidTotal)}
+              </div>
+              <div className="text-xs text-gray-400 mt-0.5">
+                {paidCount} av {entries.length} har betalt · {formatKr(fee)} per spelare
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {payouts.slice(0, 3).map(p => {
+                const medals = ['🥇', '🥈', '🥉']
+                return (
+                  <div
+                    key={p.place}
+                    className="rounded-lg px-3 py-1.5"
+                    style={{
+                      background: p.place === 1 ? 'rgba(245,158,11,0.12)' : 'rgba(255,255,255,0.04)',
+                      border: `1px solid ${p.place === 1 ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.08)'}`,
+                    }}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm">{medals[p.place - 1] ?? `#${p.place}`}</span>
+                      <span className={`text-sm font-bold ${p.place === 1 ? 'text-amber-400' : 'text-emerald-400'}`}>
+                        {formatKr(p.amount)}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </Link>
+      )}
 
       {/* Statistik-kort */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

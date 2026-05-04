@@ -41,6 +41,19 @@ export interface Pool {
   invite_code: string
   created_by: string | null
   created_at: string
+  entry_fee?: number
+  swish_recipient_name?: string | null
+  swish_phone?: string | null
+  prize_distribution?: Record<string, number>
+}
+
+export interface PoolPayment {
+  pool_id: number
+  user_id: string
+  paid: boolean
+  paid_at: string | null
+  marked_by_user_id: string | null
+  amount: number | null
 }
 
 export interface Team {
