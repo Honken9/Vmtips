@@ -41,7 +41,14 @@ export function Navigation({ profile, pool }: Props) {
   const initials = profile?.display_name?.slice(0, 2).toUpperCase() ?? '?'
 
   return (
-    <nav className="sticky top-0 z-50 border-b" style={{ background: '#0a0e1a', borderColor: '#1f2937' }}>
+    <nav
+      className="sticky top-0 z-50 border-b"
+      style={{
+        background: '#0a0e1a',
+        borderColor: '#1f2937',
+        paddingTop: 'env(safe-area-inset-top)',
+      }}
+    >
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
