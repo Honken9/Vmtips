@@ -13,12 +13,12 @@ export default async function SelectPoolPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('pool_id, display_name')
+    .select('display_name')
     .eq('id', user.id)
     .single()
 
-  // Om användaren redan har en pool: skicka hem.
-  if (profile?.pool_id) redirect('/')
-
+  // /select-pool är nu öppen även för användare som redan har en liga
+  // (man kan vara med i flera). Användare utan medlemskap landar
+  // automatiskt här via redirect från andra sidor.
   return <SelectPoolClient displayName={profile?.display_name ?? ''} />
 }

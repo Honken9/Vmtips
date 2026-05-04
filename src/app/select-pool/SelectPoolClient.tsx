@@ -69,6 +69,10 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
       resultCode = pool.invite_code
     }
 
+    // Lägg till medlemskap (idempotent) + sätt aktiv liga
+    await supabase
+      .from('pool_memberships')
+      .upsert({ pool_id: poolId, user_id: user.id }, { onConflict: 'pool_id,user_id' })
     const { error: updErr } = await supabase
       .from('profiles')
       .update({ pool_id: poolId })

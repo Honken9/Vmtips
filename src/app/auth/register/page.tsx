@@ -107,8 +107,14 @@ export default function RegisterPage() {
       targetInviteCode = newPool.invite_code
     }
 
-    // 4. Sätt pool_id på profilen (kräver inloggad session)
+    // 4. Sätt pool_id på profilen + lägg till medlemskap (kräver inloggad session)
     if (data.session && data.user && targetPoolId != null) {
+      await supabase
+        .from('pool_memberships')
+        .upsert(
+          { pool_id: targetPoolId, user_id: data.user.id },
+          { onConflict: 'pool_id,user_id' }
+        )
       await supabase
         .from('profiles')
         .update({ pool_id: targetPoolId })

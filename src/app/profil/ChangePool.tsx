@@ -40,6 +40,9 @@ export function ChangePool({ currentPoolId }: { currentPoolId: number | null }) 
       setLoading(false)
       return
     }
+    await supabase
+      .from('pool_memberships')
+      .upsert({ pool_id: pool.id, user_id: user.id }, { onConflict: 'pool_id,user_id' })
     const { error: updErr } = await supabase
       .from('profiles')
       .update({ pool_id: pool.id })
@@ -76,6 +79,9 @@ export function ChangePool({ currentPoolId }: { currentPoolId: number | null }) 
       setLoading(false)
       return
     }
+    await supabase
+      .from('pool_memberships')
+      .upsert({ pool_id: pool.id, user_id: user.id }, { onConflict: 'pool_id,user_id' })
     const { error: updErr } = await supabase
       .from('profiles')
       .update({ pool_id: pool.id })

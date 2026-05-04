@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { TrophyLogo } from './TrophyLogo'
 import { createClient } from '@/lib/supabase/client'
 import { Profile, Pool } from '@/lib/types'
+import { LigaSwitcher } from './LigaSwitcher'
 import { LogOut, LayoutDashboard, Target, Trophy, ShieldCheck, Menu, X, Home, Globe, BarChart3, BookOpen, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import Image from 'next/image'
@@ -12,9 +13,10 @@ import Image from 'next/image'
 interface Props {
   profile: Profile | null
   pool?: Pool | null
+  allLigor?: Pool[]
 }
 
-export function Navigation({ profile, pool }: Props) {
+export function Navigation({ profile, pool, allLigor = [] }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -81,6 +83,11 @@ export function Navigation({ profile, pool }: Props) {
           <div className="hidden md:flex items-center gap-3">
             {profile ? (
               <>
+                <LigaSwitcher
+                  activePool={pool ?? null}
+                  allLigor={allLigor}
+                  userId={profile.id}
+                />
                 <Link
                   href="/profil"
                   className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors group"
@@ -101,11 +108,6 @@ export function Navigation({ profile, pool }: Props) {
                     <span className="text-white font-medium group-hover:text-emerald-400 transition-colors">
                       {profile.display_name}
                     </span>
-                    {pool && (
-                      <span className="ml-2 text-xs text-indigo-300 bg-indigo-500/15 px-2 py-0.5 rounded-full">
-                        {pool.name}
-                      </span>
-                    )}
                     {profile.tips_locked && (
                       <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
                         Tips inlämnade
