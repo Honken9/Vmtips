@@ -79,15 +79,15 @@ export function MatchCountdown({ targetIso, homeName, awayName, homeFlag, awayFl
         </div>
       )}
 
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-300 mb-4">
+      <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-white font-medium mb-4">
         <span className="inline-flex items-center gap-1.5">
-          <Calendar size={12} className="text-gray-500" />
+          <Calendar size={14} className="text-emerald-400" />
           {formatStockholm(targetIso)}
-          <span className="text-gray-500">(svensk tid)</span>
+          <span className="text-gray-400 font-normal">(svensk tid)</span>
         </span>
         {venue && (
           <span className="inline-flex items-center gap-1.5">
-            <MapPin size={12} className="text-gray-500" />
+            <MapPin size={14} className="text-emerald-400" />
             {venue}
           </span>
         )}

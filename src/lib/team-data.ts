@@ -184,6 +184,25 @@ interface FdMatch {
   }>
 }
 
+async function fetchTeamDetail(teamId: number): Promise<FdTeam | null> {
+  const apiKey = process.env.FOOTBALL_DATA_API_KEY
+  if (!apiKey) return null
+  try {
+    const res = await fetch(`https://api.football-data.org/v4/teams/${teamId}`, {
+      headers: { 'X-Auth-Token': apiKey },
+      next: { revalidate: 60 * 60 * 6 }, // 6h
+    })
+    if (!res.ok) {
+      console.error(`[team-data] /v4/teams/${teamId} returned ${res.status}`)
+      return null
+    }
+    return (await res.json()) as FdTeam
+  } catch (err) {
+    console.error(`[team-data] /v4/teams/${teamId} failed`, err)
+    return null
+  }
+}
+
 async function fetchRecentMatchPlayers(teamId: number): Promise<SquadPlayer[]> {
   const apiKey = process.env.FOOTBALL_DATA_API_KEY
   if (!apiKey) return []
@@ -195,7 +214,10 @@ async function fetchRecentMatchPlayers(teamId: number): Promise<SquadPlayer[]> {
         next: { revalidate: 60 * 60 * 6 }, // 6h
       }
     )
-    if (!res.ok) return []
+    if (!res.ok) {
+      console.error(`[team-data] /v4/teams/${teamId}/matches returned ${res.status}`)
+      return []
+    }
     const data = (await res.json()) as { matches?: FdMatch[] }
     const matches = (data.matches ?? []).slice(-3)
     const seen = new Map<number, string>()
@@ -213,6 +235,11 @@ async function fetchRecentMatchPlayers(teamId: number): Promise<SquadPlayer[]> {
         add(s.playerOut)
       }
     }
+    if (seen.size === 0) {
+      console.error(
+        `[team-data] /v4/teams/${teamId}/matches returned ${matches.length} matches but no event players`
+      )
+    }
     return Array.from(seen, ([id, name]) => ({
       id,
       name,
@@ -221,7 +248,8 @@ async function fetchRecentMatchPlayers(teamId: number): Promise<SquadPlayer[]> {
       nationality: null,
       shirtNumber: null,
     })).sort((a, b) => a.name.localeCompare(b.name))
-  } catch {
+  } catch (err) {
+    console.error(`[team-data] /v4/teams/${teamId}/matches failed`, err)
     return []
   }
 }
@@ -235,17 +263,32 @@ export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballI
   const t = teams.find(team => team.tla && targetCodes.includes(team.tla.toUpperCase()))
   if (!t) return null
 
-  const officialSquad: SquadPlayer[] = (t.squad ?? []).map(p => ({
-    id: p.id,
-    name: p.name ?? '?',
-    position: p.position ?? null,
-    dateOfBirth: p.dateOfBirth ?? null,
-    nationality: p.nationality ?? null,
-    shirtNumber: p.shirtNumber ?? null,
-  }))
+  const mapSquad = (raw: FdTeam['squad']): SquadPlayer[] =>
+    (raw ?? []).map(p => ({
+      id: p.id,
+      name: p.name ?? '?',
+      position: p.position ?? null,
+      dateOfBirth: p.dateOfBirth ?? null,
+      nationality: p.nationality ?? null,
+      shirtNumber: p.shirtNumber ?? null,
+    }))
 
-  let squad = officialSquad
+  let squad = mapSquad(t.squad)
   let provisional = false
+  let coachName = t.coach?.name ?? null
+  let coachNationality = t.coach?.nationality ?? null
+
+  // Steg 2: WC-endpoint:en saknar ofta squad för landslag — testa /v4/teams/{id}.
+  if (squad.length === 0) {
+    const detail = await fetchTeamDetail(t.id)
+    if (detail) {
+      squad = mapSquad(detail.squad)
+      coachName = coachName ?? detail.coach?.name ?? null
+      coachNationality = coachNationality ?? detail.coach?.nationality ?? null
+    }
+  }
+
+  // Steg 3: sista utvägen — plocka spelare ur senaste matchhändelser.
   if (squad.length === 0) {
     squad = await fetchRecentMatchPlayers(t.id)
     provisional = squad.length > 0
@@ -256,8 +299,8 @@ export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballI
     name: t.name ?? null,
     founded: t.founded ?? null,
     crestUrl: t.crest ?? null,
-    coachName: t.coach?.name ?? null,
-    coachNationality: t.coach?.nationality ?? null,
+    coachName,
+    coachNationality,
     squad,
     squadIsProvisional: provisional,
   }
