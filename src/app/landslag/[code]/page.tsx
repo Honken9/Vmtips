@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Team } from '@/lib/types'
 import { fetchCountry, fetchTeamFootball, type SquadPlayer } from '@/lib/team-data'
+import { Flag } from '@/components/Flag'
 import { getFacts } from '@/lib/team-facts'
 import { ArrowLeft, MapPin, Users, User, Trophy, Star, Calendar, Globe2, ShieldCheck } from 'lucide-react'
 
@@ -94,7 +95,9 @@ export default async function LandslagDetail({
           border: '1px solid #1f2937',
         }}
       >
-        <div className="text-5xl sm:text-7xl shrink-0 leading-none">{team.flag}</div>
+        <div className="shrink-0">
+          <Flag emoji={team.flag} name={team.name} width={80} height={56} className="rounded shadow-lg" />
+        </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl sm:text-3xl font-bold text-white truncate">{team.name}</h1>
           <div className="flex flex-wrap items-center gap-2 mt-2 text-xs">

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Team } from '@/lib/types'
+import { Flag } from '@/components/Flag'
 import { Globe } from 'lucide-react'
 
 export const revalidate = 3600
@@ -51,7 +52,7 @@ export default async function LandslagPage() {
                     href={`/landslag/${t.code}`}
                     className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors"
                   >
-                    <span className="text-2xl">{t.flag}</span>
+                    <Flag emoji={t.flag} name={t.name} width={28} height={20} />
                     <span className="text-sm font-medium text-white flex-1 truncate">
                       {t.name}
                     </span>
