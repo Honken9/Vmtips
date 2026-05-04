@@ -28,6 +28,7 @@ export interface TeamFootballInfo {
   coachName: string | null
   coachNationality: string | null
   squad: SquadPlayer[]
+  squadIsProvisional: boolean
 }
 
 // FIFA-kod → ISO 3166 alpha-3. För nationer som ingår i Storbritannien
@@ -169,6 +170,62 @@ const TLA_ALIASES: Record<string, string[]> = {
   TUR: ['TUR'],
 }
 
+interface FdMatch {
+  id: number
+  utcDate?: string
+  goals?: Array<{
+    scorer?: { id: number; name: string } | null
+    assist?: { id: number; name: string } | null
+  }>
+  bookings?: Array<{ player?: { id: number; name: string } | null }>
+  substitutions?: Array<{
+    playerIn?: { id: number; name: string } | null
+    playerOut?: { id: number; name: string } | null
+  }>
+}
+
+async function fetchRecentMatchPlayers(teamId: number): Promise<SquadPlayer[]> {
+  const apiKey = process.env.FOOTBALL_DATA_API_KEY
+  if (!apiKey) return []
+  try {
+    const res = await fetch(
+      `https://api.football-data.org/v4/teams/${teamId}/matches?status=FINISHED&limit=3`,
+      {
+        headers: { 'X-Auth-Token': apiKey },
+        next: { revalidate: 60 * 60 * 6 }, // 6h
+      }
+    )
+    if (!res.ok) return []
+    const data = (await res.json()) as { matches?: FdMatch[] }
+    const matches = (data.matches ?? []).slice(-3)
+    const seen = new Map<number, string>()
+    const add = (p: { id: number; name: string } | null | undefined) => {
+      if (p?.id && p.name && !seen.has(p.id)) seen.set(p.id, p.name)
+    }
+    for (const m of matches) {
+      for (const g of m.goals ?? []) {
+        add(g.scorer)
+        add(g.assist)
+      }
+      for (const b of m.bookings ?? []) add(b.player)
+      for (const s of m.substitutions ?? []) {
+        add(s.playerIn)
+        add(s.playerOut)
+      }
+    }
+    return Array.from(seen, ([id, name]) => ({
+      id,
+      name,
+      position: null,
+      dateOfBirth: null,
+      nationality: null,
+      shirtNumber: null,
+    })).sort((a, b) => a.name.localeCompare(b.name))
+  } catch {
+    return []
+  }
+}
+
 export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballInfo | null> {
   const teams = await fetchWcTeams()
   if (teams.length === 0) return null
@@ -177,6 +234,23 @@ export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballI
   )
   const t = teams.find(team => team.tla && targetCodes.includes(team.tla.toUpperCase()))
   if (!t) return null
+
+  const officialSquad: SquadPlayer[] = (t.squad ?? []).map(p => ({
+    id: p.id,
+    name: p.name ?? '?',
+    position: p.position ?? null,
+    dateOfBirth: p.dateOfBirth ?? null,
+    nationality: p.nationality ?? null,
+    shirtNumber: p.shirtNumber ?? null,
+  }))
+
+  let squad = officialSquad
+  let provisional = false
+  if (squad.length === 0) {
+    squad = await fetchRecentMatchPlayers(t.id)
+    provisional = squad.length > 0
+  }
+
   return {
     id: t.id,
     name: t.name ?? null,
@@ -184,13 +258,7 @@ export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballI
     crestUrl: t.crest ?? null,
     coachName: t.coach?.name ?? null,
     coachNationality: t.coach?.nationality ?? null,
-    squad: (t.squad ?? []).map(p => ({
-      id: p.id,
-      name: p.name ?? '?',
-      position: p.position ?? null,
-      dateOfBirth: p.dateOfBirth ?? null,
-      nationality: p.nationality ?? null,
-      shirtNumber: p.shirtNumber ?? null,
-    })),
+    squad,
+    squadIsProvisional: provisional,
   }
 }

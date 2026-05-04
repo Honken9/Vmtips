@@ -244,7 +244,8 @@ export default async function LandslagDetail({
           Trupp
           {football && football.squad.length > 0 && (
             <span className="text-xs text-gray-500 font-normal">
-              ({football.squad.length} spelare)
+              ({football.squad.length} spelare
+              {football.squadIsProvisional ? ', provisorisk' : ''})
             </span>
           )}
         </h2>
@@ -253,6 +254,39 @@ export default async function LandslagDetail({
             style={{ background: '#111827', border: '1px solid #1f2937' }}>
             Truppen är inte publicerad än. VM-trupperna offentliggörs vanligtvis ett par veckor
             innan turneringen startar.
+          </div>
+        ) : football.squadIsProvisional ? (
+          <div className="space-y-3">
+            <div
+              className="rounded-xl px-4 py-3 text-xs flex items-start gap-2"
+              style={{
+                background: 'rgba(251,191,36,0.08)',
+                border: '1px solid rgba(251,191,36,0.25)',
+                color: '#fbbf24',
+              }}
+            >
+              <Star size={14} className="mt-0.5 shrink-0" />
+              <span>
+                Preliminär lista – baserad på spelare som varit involverade i lagets tre senaste
+                landskamper (mål, byten, varningar). Ersätts när VM-truppen är spikad.
+              </span>
+            </div>
+            <div
+              className="rounded-xl overflow-hidden"
+              style={{ background: '#111827', border: '1px solid #1f2937' }}
+            >
+              <div
+                className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-amber-400"
+                style={{ background: '#1a2233' }}
+              >
+                Senast aktiva ({groupedSquad.length})
+              </div>
+              <div className="divide-y" style={{ borderColor: '#1f2937' }}>
+                {groupedSquad.map(p => (
+                  <PlayerRow key={p.id} p={p} photoUrl={photos.get(p.name) ?? null} />
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
