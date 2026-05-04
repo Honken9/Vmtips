@@ -28,12 +28,13 @@ export function TrophyLogo({ size = 'md' }: Props) {
 
       <div className="min-w-0">
         <div
-          className={`font-black tracking-tight leading-none text-emerald-400 ${wordmarkClass}`}
+          className={`font-black tracking-tight leading-snug text-emerald-400 ${wordmarkClass}`}
+          style={{ overflow: 'visible' }}
         >
           VM-TIPS
           <span
-            className={`ml-2 align-baseline text-amber-400 font-script font-normal whitespace-nowrap ${bylineClass}`}
-            style={{ letterSpacing: 0 }}
+            className={`ml-2 text-amber-400 font-script font-normal whitespace-nowrap ${bylineClass}`}
+            style={{ letterSpacing: 0, lineHeight: 1 }}
           >
             by Alex och Daniel
           </span>
