@@ -133,15 +133,20 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
 
   // Pollar profilen var 4:e sek när en generering pågår – när
   // avatar_generating flippar till false visas den nya bilden direkt.
+  // Timeout-skydd: om servern inte svarat på 3 min, behandla som krasch
+  // och nollställ flaggan så användaren kan försöka igen.
   useEffect(() => {
     if (!generating) return
     const interval = setInterval(async () => {
       const { data } = await supabase
         .from('profiles')
-        .select('avatar_url, avatar_generating')
+        .select('avatar_url, avatar_generating, last_avatar_generated_at')
         .eq('id', userId)
         .single()
-      if (data && data.avatar_generating === false) {
+      if (!data) return
+
+      // Klart!
+      if (data.avatar_generating === false) {
         setGenerating(false)
         if (data.avatar_url && data.avatar_url !== generatedAvatar) {
           setGeneratedAvatar(data.avatar_url)
@@ -150,10 +155,33 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
           setTimeout(() => setSuccess(false), 4000)
         }
         router.refresh()
+        return
+      }
+
+      // Timeout-skydd: om generering startade > 3 min sen, anta krasch
+      if (data.last_avatar_generated_at) {
+        const elapsedMs = Date.now() - new Date(data.last_avatar_generated_at).getTime()
+        if (elapsedMs > 3 * 60 * 1000) {
+          await supabase
+            .from('profiles')
+            .update({ avatar_generating: false })
+            .eq('id', userId)
+          setGenerating(false)
+          setError('Det tog för lång tid. Försök igen, eller prova en annan bild.')
+        }
       }
     }, 4000)
     return () => clearInterval(interval)
   }, [generating, userId, supabase, generatedAvatar, onAvatarChange, router])
+
+  async function cancelGeneration() {
+    await supabase
+      .from('profiles')
+      .update({ avatar_generating: false })
+      .eq('id', userId)
+    setGenerating(false)
+    setError(null)
+  }
 
   const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -192,16 +220,21 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
       .then(async res => {
         if (!res.ok) {
           const data = await res.json().catch(() => ({}))
-          // Om servern svarade direkt med ett valideringsfel innan
-          // avatar_generating sattes (t.ex. för stor fil) – återställ.
-          if (res.status === 400 || res.status === 401) {
-            setGenerating(false)
-          }
-          setError(data.error || 'Något gick fel')
+          // Vid alla felkoder: återställ generating-state lokalt OCH
+          // i databasen så pollingen ser slutet, plus visa tydligt fel.
+          await supabase
+            .from('profiles')
+            .update({ avatar_generating: false })
+            .eq('id', userId)
+          setGenerating(false)
+          setError(data.error || `Generering misslyckades (${res.status})`)
         }
       })
-      .catch(() => {
-        // Ignoreras – polling sköter status
+      .catch(async () => {
+        // Nätverksfel eller fetch-abort – pollingen brukar fixa det
+        // men vi väntar 30 sek innan vi släpper. Om servern faktiskt
+        // hängt hjälper det inte att rensa här direkt eftersom servern
+        // kan vara i mitten av en lyckad körning.
       })
   }
 
@@ -248,7 +281,8 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
 
         {/* "Skapar bilden..."-overlay – ersätter hela upload-blocket
             tills servern är klar. Pollar var 4:e sek så användaren kan
-            scrolla, byta sida eller refreshna utan att förlora status. */}
+            scrolla, byta sida eller refreshna utan att förlora status.
+            Om något fastnar > 3 min auto-rensar pollingen. */}
         {generating && (
           <div
             className="rounded-xl flex flex-col items-center justify-center gap-4 py-10 px-5 text-center"
@@ -268,6 +302,12 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
                 bilden dyker upp här när den är klar.
               </p>
             </div>
+            <button
+              onClick={cancelGeneration}
+              className="text-xs text-gray-500 hover:text-red-400 transition-colors underline"
+            >
+              Avbryt och försök med annan bild
+            </button>
           </div>
         )}
 
