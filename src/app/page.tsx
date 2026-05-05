@@ -119,7 +119,7 @@ export default async function HomePage() {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium hover:bg-white/10 transition-colors"
                 style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}
               >
-                Pool: <span className="text-white">{currentPool.name}</span>
+                Liga: <span className="text-white">{currentPool.name}</span>
               </Link>
             )}
           </div>
