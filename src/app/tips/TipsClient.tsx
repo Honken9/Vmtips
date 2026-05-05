@@ -302,7 +302,10 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
   }
 
   // ─── Progress ────────────────────────────────────────────────────────────────
-  const totalLockableMatches = matches.filter(m => m.home_team_id && m.away_team_id).length
+  // Räknar alla matcher man kan tippa: gruppspel + slutspels-bracket via placeholders.
+  // Filtrerar inte på home_team_id eftersom slutspelsmatcher har placeholders innan
+  // gruppspelet är spelat — det är fortfarande tippningsbara via bracket-resolvern.
+  const totalLockableMatches = matches.length
   const tippedMatches = Object.keys(preds).filter(id => {
     const v = preds[parseInt(id)]; return v?.home !== '' && v?.away !== ''
   }).length
@@ -330,6 +333,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
         <RandomizeOverlay
           duration={randomizeDuration * 1000}
           customPhrases={customPhrases}
+          displayName={profile.display_name}
         />
       )}
 

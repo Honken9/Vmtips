@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 const FOOTBALL_PHRASES = [
   '⚽ Skickar bollen till VAR…',
@@ -14,7 +14,6 @@ const FOOTBALL_PHRASES = [
   '🤔 Diskuterar med domaren…',
   '📺 Tittar på repris…',
   '🚑 Vinkar in sjukvårdarna…',
-  '😱 Pelle blev plötsligt nervös…',
   '🍀 Ringer Zlatan för råd…',
   '🎤 Skriker GOOOOOOOOOAL!',
   '🔥 Stadion brinner!',
@@ -39,15 +38,121 @@ const FOOTBALL_PHRASES = [
   '🎯 Straffläggning förbereds…',
 ]
 
+// Hårdkodat smeknamn för vanliga svenska förnamn. Saknas namnet i mappen
+// faller vi tillbaka på ett deterministiskt "titel"-mönster.
+const NICKNAME_MAP: Record<string, string> = {
+  Daniel: 'Danne',
+  David: 'Davve',
+  Peter: 'Pelle',
+  Per: 'Pelle',
+  Erik: 'Erra',
+  Anders: 'Andis',
+  Johan: 'Janne',
+  Lars: 'Lasse',
+  Karl: 'Kalle',
+  Carl: 'Calle',
+  Thomas: 'Tomte',
+  Tomas: 'Tomte',
+  Mikael: 'Mickis',
+  Niklas: 'Nicke',
+  Andreas: 'Anders',
+  Stefan: 'Steffe',
+  Magnus: 'Mange',
+  Alexander: 'Allan',
+  Alex: 'Allan',
+  Oskar: 'Osse',
+  Oscar: 'Osse',
+  Henrik: 'Hempa',
+  Jonas: 'Jojje',
+  Robert: 'Robban',
+  Patrik: 'Patte',
+  Gustav: 'Gugge',
+  Joakim: 'Jocke',
+  Filip: 'Fippe',
+  Sebastian: 'Sebbe',
+  Christian: 'Krille',
+  Kristian: 'Krille',
+  Marcus: 'Macke',
+  Markus: 'Macke',
+  Fredrik: 'Fredde',
+  Martin: 'Matte',
+  Anna: 'Anki',
+  Maria: 'Mia',
+  Katarina: 'Kattis',
+  Kristina: 'Stina',
+  Christina: 'Stina',
+  Sofia: 'Soffan',
+  Sara: 'Sarra',
+  Emma: 'Emmis',
+  Amanda: 'Mandis',
+  Charlotte: 'Lotta',
+  Hanna: 'Hannis',
+  Demus: 'Demmel',
+  Honken: 'Honkis',
+}
+
+function getFirstName(displayName: string): string {
+  return (displayName || '').trim().split(/\s+/)[0] || ''
+}
+
+function getNickname(firstName: string): string {
+  if (!firstName) return 'Mästaren'
+  const cap = firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase()
+  if (NICKNAME_MAP[cap]) return NICKNAME_MAP[cap]
+  const patterns = [
+    `Stor-${cap}`,
+    `${cap}-Bagaren`,
+    `Mästar-${cap}`,
+    `Kung-${cap}`,
+    `${cap} the Goat`,
+    `${cap}-Magnetar`,
+  ]
+  // Deterministiskt val så samma namn ger samma smeknamn varje gång
+  let h = 0
+  for (let i = 0; i < firstName.length; i++) h = (h * 31 + firstName.charCodeAt(i)) | 0
+  return patterns[Math.abs(h) % patterns.length]
+}
+
+function buildPersonalPhrases(firstName: string, nickname: string): string[] {
+  if (!firstName) return []
+  return [
+    `🎯 ${firstName} fokuserar på en lyckoboll…`,
+    `🤞 ${firstName} korsar fingrarna…`,
+    `😱 ${firstName} blev plötsligt nervös…`,
+    `🍀 ${firstName} hittar fyrklövern…`,
+    `💪 ${firstName} kraftsamlar inför kvällens slag…`,
+    `🔮 ${firstName} ser framtiden…`,
+    `🐐 ${nickname} är i goalmode!`,
+    `⚡ ${nickname} laddar med energi…`,
+    `🎩 ${nickname} drar tipsen ur hatten…`,
+    `🎲 ${nickname} kastar tärningen…`,
+    `👑 ${nickname} härskar över bracketen!`,
+    `🚀 ${nickname} skjuter iväg ett rocket-tipps…`,
+  ]
+}
+
 export function RandomizeOverlay({
   duration = 15000,
   customPhrases = [],
+  displayName = '',
 }: {
   duration?: number
   customPhrases?: string[]
+  displayName?: string
 }) {
-  // Slå ihop standard + anpassade fraser. Anpassade visas oftare (3x viktning) så de syns garanterat.
-  const allPhrases = [...FOOTBALL_PHRASES, ...customPhrases, ...customPhrases, ...customPhrases]
+  // Bygg personliga fraser från användarens förnamn + smeknamn
+  const personalPhrases = useMemo(() => {
+    const firstName = getFirstName(displayName)
+    const nickname = getNickname(firstName)
+    return buildPersonalPhrases(firstName, nickname)
+  }, [displayName])
+
+  // Slå ihop alla fraser. Anpassade och personliga visas oftare (viktning).
+  const allPhrases = [
+    ...FOOTBALL_PHRASES,
+    ...customPhrases, ...customPhrases, ...customPhrases,
+    ...personalPhrases, ...personalPhrases,
+  ]
   const [phrase, setPhrase] = useState(allPhrases[0])
   const [progress, setProgress] = useState(0)
 
