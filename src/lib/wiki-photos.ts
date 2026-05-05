@@ -47,7 +47,7 @@ async function fetchBatch(names: string[]): Promise<Map<string, string>> {
 
   try {
     const res = await fetch(url, {
-      headers: { 'User-Agent': 'VMTips/1.0 (https://vmtips-2026.vercel.app)' },
+      headers: { 'User-Agent': 'VMTips/1.0 (https://tippavm2026.se)' },
       next: { revalidate: 60 * 60 * 24 }, // 24h
     })
     if (!res.ok) return result
