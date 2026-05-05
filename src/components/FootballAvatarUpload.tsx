@@ -218,17 +218,21 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
     // bort eller stänger fliken. Status pollas via avatar_generating.
     fetch('/api/generate-football-image', { method: 'POST', body: form })
       .then(async res => {
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}))
-          // Vid alla felkoder: återställ generating-state lokalt OCH
-          // i databasen så pollingen ser slutet, plus visa tydligt fel.
-          await supabase
-            .from('profiles')
-            .update({ avatar_generating: false })
-            .eq('id', userId)
-          setGenerating(false)
-          setError(data.error || `Generering misslyckades (${res.status})`)
-        }
+        if (res.ok) return
+        // 504/502 = Vercels gateway timeout. Servern KAN fortfarande
+        // slutföra Gemini-anropet i bakgrunden — låt pollingen avgöra.
+        // (avatar_generating-flaggan rensas av routens finally-block om
+        // servern hinner, eller av polling-timeouten på 3 min.)
+        if (res.status === 504 || res.status === 502) return
+
+        // Andra fel: rensa state och visa tydligt felmeddelande.
+        const data = await res.json().catch(() => ({}))
+        await supabase
+          .from('profiles')
+          .update({ avatar_generating: false })
+          .eq('id', userId)
+        setGenerating(false)
+        setError(data.error || `Generering misslyckades (${res.status})`)
       })
       .catch(async () => {
         // Nätverksfel eller fetch-abort – pollingen brukar fixa det
