@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { LeaderboardEntry, Pool } from '@/lib/types'
 import {
-  buildSwishUrl, buildSwishQrUrl, isValidSwishPhone,
+  buildSwishUrl, buildSwishQrUrl, buildSwishQrPayload, isValidSwishPhone,
 } from '@/lib/swish'
 import {
   PRESETS, calcPot, calcPayouts, formatKr, type PrizeDistribution, findPresetId,
@@ -54,10 +54,20 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
     [paidTotal, distribution, ranking]
   )
 
-  // Swish-URL för min egen betalning
+  // Swish-URL för min egen betalning (klickbar knapp på mobil)
   const swishUrl = useMemo(() => {
     if (!fee || !pool.swish_phone) return null
     return buildSwishUrl({
+      phone: pool.swish_phone,
+      amount: fee,
+      message: `${pool.name} – VM-Tips`,
+    })
+  }, [fee, pool.swish_phone, pool.name])
+
+  // QR-payload (swish://-schema) som Swish-appens scanner förstår direkt
+  const swishQrPayload = useMemo(() => {
+    if (!fee || !pool.swish_phone) return null
+    return buildSwishQrPayload({
       phone: pool.swish_phone,
       amount: fee,
       message: `${pool.name} – VM-Tips`,
@@ -107,6 +117,7 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
           poolName={pool.name}
           recipient={pool.swish_recipient_name ?? null}
           swishUrl={swishUrl}
+          swishQrPayload={swishQrPayload}
           markedByMe={!canManage}
           meUserId={meUserId}
           poolId={pool.id}
@@ -341,12 +352,13 @@ function PotSummary({
 
 // ─────────────────────────────────────────────────────────
 function MyPayment({
-  fee, poolName, recipient, swishUrl, markedByMe, meUserId, poolId, onChanged,
+  fee, poolName, recipient, swishUrl, swishQrPayload, markedByMe, meUserId, poolId, onChanged,
 }: {
   fee: number
   poolName: string
   recipient: string | null
   swishUrl: string | null
+  swishQrPayload: string | null
   markedByMe: boolean
   meUserId: string
   poolId: number
@@ -422,14 +434,14 @@ function MyPayment({
               {showQr ? 'Dölj QR' : 'Visa QR'}
             </button>
           </div>
-          {showQr && (
+          {showQr && swishQrPayload && (
             <div className="flex flex-col items-center gap-2 pt-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={buildSwishQrUrl(swishUrl, 220)}
+                src={buildSwishQrUrl(swishQrPayload, 240)}
                 alt="QR-kod till Swish-betalning"
-                width={220}
-                height={220}
+                width={240}
+                height={240}
                 className="rounded-lg"
               />
               <p className="text-xs text-gray-500">Skanna med Swish-appen</p>
