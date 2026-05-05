@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import type { LeaderboardEntry, Pool } from '@/lib/types'
 import {
-  buildSwishUrl, buildSwishQrUrl, buildSwishQrPayload, isValidSwishPhone,
+  buildSwishUrl, isValidSwishPhone,
 } from '@/lib/swish'
 import {
   PRESETS, calcPot, calcPayouts, formatKr, type PrizeDistribution, findPresetId,
@@ -64,14 +64,16 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
     })
   }, [fee, pool.swish_phone, pool.name])
 
-  // QR-payload (swish://-schema) som Swish-appens scanner förstår direkt
-  const swishQrPayload = useMemo(() => {
+  // QR-bild via vår server-route som proxar Swishs officiella QR-API
+  const swishQrSrc = useMemo(() => {
     if (!fee || !pool.swish_phone) return null
-    return buildSwishQrPayload({
+    const params = new URLSearchParams({
       phone: pool.swish_phone,
-      amount: fee,
+      amount: String(fee),
       message: `${pool.name} – VM-Tips`,
+      size: '300',
     })
+    return `/api/swish-qr?${params.toString()}`
   }, [fee, pool.swish_phone, pool.name])
 
   return (
@@ -117,7 +119,7 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
           poolName={pool.name}
           recipient={pool.swish_recipient_name ?? null}
           swishUrl={swishUrl}
-          swishQrPayload={swishQrPayload}
+          swishQrSrc={swishQrSrc}
           markedByMe={!canManage}
           meUserId={meUserId}
           poolId={pool.id}
@@ -225,11 +227,9 @@ function LigaSelector({
       <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
         <Users size={14} className="text-emerald-400" />
         Mina ligor
-        {!isOnlyOne && (
-          <span className="text-xs text-gray-500 font-normal normal-case tracking-normal">
-            (klicka för att byta aktiv)
-          </span>
-        )}
+        <span className="text-xs text-gray-500 font-normal normal-case tracking-normal">
+          ({allLigor.length} st – klicka för att byta aktiv)
+        </span>
       </h2>
       <div className="rounded-xl overflow-hidden divide-y" style={{ background: '#111827', border: '1px solid #1f2937', borderColor: '#1f2937' }}>
         {allLigor.map(p => {
@@ -238,23 +238,33 @@ function LigaSelector({
             <div
               key={p.id}
               className={`flex items-center gap-3 px-4 py-3 transition-colors ${
-                isActive ? 'bg-emerald-400/5' : 'hover:bg-white/5'
+                isActive ? 'bg-emerald-400/10 border-l-4 border-l-emerald-400' : 'hover:bg-white/5 border-l-4 border-l-transparent'
               }`}
             >
               <button
                 onClick={() => switchTo(p.id)}
                 disabled={busy === p.id || isActive}
                 className="flex-1 flex items-center gap-3 min-w-0 text-left disabled:cursor-default"
+                title={isActive ? 'Aktiv liga' : 'Klicka för att byta till denna liga'}
               >
-                <div className={`w-5 h-5 shrink-0 flex items-center justify-center ${isActive ? 'text-emerald-400' : 'text-transparent'}`}>
-                  {busy === p.id ? <Loader2 size={14} className="animate-spin text-gray-400" /> : <Check size={16} />}
+                <div className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${
+                  isActive ? 'bg-emerald-400 text-black' : 'border border-gray-600 text-gray-600'
+                }`}>
+                  {busy === p.id ? <Loader2 size={12} className="animate-spin" /> : isActive ? <Check size={14} strokeWidth={3} /> : null}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className={`text-sm font-medium truncate ${isActive ? 'text-emerald-400' : 'text-white'}`}>
-                    {p.name}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className={`text-sm font-semibold truncate ${isActive ? 'text-emerald-400' : 'text-white'}`}>
+                      {p.name}
+                    </div>
+                    {isActive && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-400/20 text-emerald-400">
+                        Aktiv
+                      </span>
+                    )}
                   </div>
-                  <div className="text-xs text-gray-500 font-mono">
-                    {p.invite_code}
+                  <div className="text-xs text-gray-500 font-mono mt-0.5">
+                    Invite: {p.invite_code}
                   </div>
                 </div>
               </button>
@@ -352,13 +362,13 @@ function PotSummary({
 
 // ─────────────────────────────────────────────────────────
 function MyPayment({
-  fee, poolName, recipient, swishUrl, swishQrPayload, markedByMe, meUserId, poolId, onChanged,
+  fee, poolName, recipient, swishUrl, swishQrSrc, markedByMe, meUserId, poolId, onChanged,
 }: {
   fee: number
   poolName: string
   recipient: string | null
   swishUrl: string | null
-  swishQrPayload: string | null
+  swishQrSrc: string | null
   markedByMe: boolean
   meUserId: string
   poolId: number
@@ -434,15 +444,15 @@ function MyPayment({
               {showQr ? 'Dölj QR' : 'Visa QR'}
             </button>
           </div>
-          {showQr && swishQrPayload && (
+          {showQr && swishQrSrc && (
             <div className="flex flex-col items-center gap-2 pt-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={buildSwishQrUrl(swishQrPayload, 240)}
+                src={swishQrSrc}
                 alt="QR-kod till Swish-betalning"
                 width={240}
                 height={240}
-                className="rounded-lg"
+                className="rounded-lg bg-white p-2"
               />
               <p className="text-xs text-gray-500">Skanna med Swish-appen</p>
             </div>
