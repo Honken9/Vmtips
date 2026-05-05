@@ -4,19 +4,16 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { TrophyLogo } from './TrophyLogo'
 import { createClient } from '@/lib/supabase/client'
-import { Profile, Pool } from '@/lib/types'
-import { LigaSwitcher } from './LigaSwitcher'
+import { Profile } from '@/lib/types'
 import { LogOut, LayoutDashboard, Target, Trophy, ShieldCheck, Menu, X, Home, Globe, BarChart3, BookOpen, Wallet } from 'lucide-react'
 import { useState } from 'react'
 import Image from 'next/image'
 
 interface Props {
   profile: Profile | null
-  pool?: Pool | null
-  allLigor?: Pool[]
 }
 
-export function Navigation({ profile, pool, allLigor = [] }: Props) {
+export function Navigation({ profile }: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -51,22 +48,22 @@ export function Navigation({ profile, pool, allLigor = [] }: Props) {
         paddingTop: 'env(safe-area-inset-top)',
       }}
     >
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
+        <div className="flex items-center justify-between gap-3 h-16">
           {/* Logo */}
-          <Link href="/">
+          <Link href="/" className="shrink-0">
             <TrophyLogo size="sm" />
           </Link>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-1">
+          <div className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
             {links.map(({ href, label, icon: Icon, color }) => {
               const active = pathname === href || (href !== '/' && pathname.startsWith(href))
               return (
                 <Link
                   key={href}
                   href={href}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                     active
                       ? 'text-white bg-white/10'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
@@ -80,19 +77,13 @@ export function Navigation({ profile, pool, allLigor = [] }: Props) {
           </div>
 
           {/* Höger: användarinfo */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-1.5 shrink-0">
             {profile ? (
               <>
-                <LigaSwitcher
-                  activePool={pool ?? null}
-                  allLigor={allLigor}
-                  userId={profile.id}
-                />
                 <Link
                   href="/profil"
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5 transition-colors group"
+                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors group"
                 >
-                  {/* Avatar */}
                   <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0"
                     style={{ border: '1.5px solid #374151' }}>
                     {profile.avatar_url ? (
@@ -104,29 +95,22 @@ export function Navigation({ profile, pool, allLigor = [] }: Props) {
                       </div>
                     )}
                   </div>
-                  <div className="text-sm">
-                    <span className="text-white font-medium group-hover:text-emerald-400 transition-colors">
-                      {profile.display_name}
-                    </span>
-                    {profile.tips_locked && (
-                      <span className="ml-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">
-                        Tips inlämnade
-                      </span>
-                    )}
-                  </div>
+                  <span className="text-sm text-white font-medium group-hover:text-emerald-400 transition-colors whitespace-nowrap hidden lg:inline">
+                    {profile.display_name}
+                  </span>
                 </Link>
                 <button
                   onClick={handleSignOut}
-                  className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+                  title="Logga ut"
+                  className="text-gray-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5"
                 >
                   <LogOut size={16} />
-                  Logga ut
                 </button>
               </>
             ) : (
               <Link
                 href="/auth/login"
-                className="text-sm font-medium px-4 py-2 rounded-lg gold-gradient text-black"
+                className="text-sm font-medium px-4 py-2 rounded-lg gold-gradient text-black whitespace-nowrap"
               >
                 Logga in
               </Link>

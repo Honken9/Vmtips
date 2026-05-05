@@ -34,11 +34,13 @@ export default async function LigaPage() {
     { data: profilesRaw },
     { data: paymentsRaw },
     { data: leaderboardRaw },
+    { data: membershipsRaw },
   ] = await Promise.all([
     supabase.from('pools').select('*').eq('id', poolId).single(),
     supabase.from('profiles').select('id, display_name, is_admin').eq('pool_id', poolId),
     supabase.from('pool_payments').select('*').eq('pool_id', poolId),
     supabase.from('leaderboard').select('*'),
+    supabase.from('pool_memberships').select('pool:pools(*)').eq('user_id', user.id),
   ])
 
   if (!pool) redirect('/select-pool')
@@ -47,6 +49,13 @@ export default async function LigaPage() {
   const profiles = (profilesRaw ?? []) as Pick<Profile, 'id' | 'display_name' | 'is_admin'>[]
   const payments = (paymentsRaw ?? []) as PoolPayment[]
   const ranking = ((leaderboardRaw ?? []) as LeaderboardEntry[]).filter(e => e.pool_id === poolId)
+  const allLigor = ((membershipsRaw ?? [])
+    .flatMap(m => {
+      const p = (m as unknown as { pool: Pool | Pool[] | null }).pool
+      if (!p) return []
+      return Array.isArray(p) ? p : [p]
+    }) as Pool[])
+    .sort((a, b) => a.name.localeCompare(b.name))
 
   const paymentsByUser = new Map(payments.map(p => [p.user_id, p]))
   const members: MemberRow[] = profiles
@@ -74,6 +83,7 @@ export default async function LigaPage() {
       members={members}
       ranking={ranking}
       canManage={canManage}
+      allLigor={allLigor}
     />
   )
 }

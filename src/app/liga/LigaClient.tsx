@@ -13,7 +13,7 @@ import {
 } from '@/lib/payments'
 import {
   Users, Trophy, CheckCircle, Loader2, Save, Settings, Wallet, QrCode,
-  ExternalLink, AlertCircle, Crown,
+  ExternalLink, AlertCircle, Crown, Plus, LogOut, Check,
 } from 'lucide-react'
 
 interface MemberRow {
@@ -32,9 +32,10 @@ interface Props {
   members: MemberRow[]
   ranking: LeaderboardEntry[]
   canManage: boolean
+  allLigor: Pool[]
 }
 
-export function LigaClient({ pool, meUserId, members, ranking, canManage }: Props) {
+export function LigaClient({ pool, meUserId, members, ranking, canManage, allLigor }: Props) {
   const supabase = createClient()
   const router = useRouter()
 
@@ -77,6 +78,15 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage }: Prop
           {members.length} medlemmar
         </p>
       </div>
+
+      {/* Mina ligor – välj aktiv */}
+      <LigaSelector
+        activePoolId={pool.id}
+        allLigor={allLigor}
+        meUserId={meUserId}
+        onChanged={() => router.refresh()}
+        supabase={supabase}
+      />
 
       {/* Pott-sammanfattning – visas bara om avgift är satt */}
       {fee > 0 && (
@@ -144,6 +154,114 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage }: Prop
         />
       </section>
     </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+function LigaSelector({
+  activePoolId,
+  allLigor,
+  meUserId,
+  onChanged,
+  supabase,
+}: {
+  activePoolId: number
+  allLigor: Pool[]
+  meUserId: string
+  onChanged: () => void
+  supabase: ReturnType<typeof createClient>
+}) {
+  const [busy, setBusy] = useState<number | null>(null)
+  const isOnlyOne = allLigor.length <= 1
+
+  async function switchTo(poolId: number) {
+    if (poolId === activePoolId) return
+    setBusy(poolId)
+    await supabase.from('profiles').update({ pool_id: poolId }).eq('id', meUserId)
+    setBusy(null)
+    onChanged()
+  }
+
+  async function leave(p: Pool) {
+    const ok = window.confirm(
+      `Lämna ligan "${p.name}"? Du kommer behöva en ny invite-kod för att gå med igen.`
+    )
+    if (!ok) return
+    setBusy(p.id)
+    await supabase
+      .from('pool_memberships')
+      .delete()
+      .eq('pool_id', p.id)
+      .eq('user_id', meUserId)
+    if (p.id === activePoolId) {
+      const next = allLigor.find(l => l.id !== p.id)
+      await supabase
+        .from('profiles')
+        .update({ pool_id: next?.id ?? null })
+        .eq('id', meUserId)
+    }
+    setBusy(null)
+    onChanged()
+  }
+
+  return (
+    <section>
+      <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <Users size={14} className="text-emerald-400" />
+        Mina ligor
+        {!isOnlyOne && (
+          <span className="text-xs text-gray-500 font-normal normal-case tracking-normal">
+            (klicka för att byta aktiv)
+          </span>
+        )}
+      </h2>
+      <div className="rounded-xl overflow-hidden divide-y" style={{ background: '#111827', border: '1px solid #1f2937', borderColor: '#1f2937' }}>
+        {allLigor.map(p => {
+          const isActive = p.id === activePoolId
+          return (
+            <div
+              key={p.id}
+              className={`flex items-center gap-3 px-4 py-3 transition-colors ${
+                isActive ? 'bg-emerald-400/5' : 'hover:bg-white/5'
+              }`}
+            >
+              <button
+                onClick={() => switchTo(p.id)}
+                disabled={busy === p.id || isActive}
+                className="flex-1 flex items-center gap-3 min-w-0 text-left disabled:cursor-default"
+              >
+                <div className={`w-5 h-5 shrink-0 flex items-center justify-center ${isActive ? 'text-emerald-400' : 'text-transparent'}`}>
+                  {busy === p.id ? <Loader2 size={14} className="animate-spin text-gray-400" /> : <Check size={16} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className={`text-sm font-medium truncate ${isActive ? 'text-emerald-400' : 'text-white'}`}>
+                    {p.name}
+                  </div>
+                  <div className="text-xs text-gray-500 font-mono">
+                    {p.invite_code}
+                  </div>
+                </div>
+              </button>
+              <button
+                onClick={() => leave(p)}
+                disabled={busy === p.id}
+                title="Lämna ligan"
+                className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded disabled:opacity-40"
+              >
+                <LogOut size={14} />
+              </button>
+            </div>
+          )
+        })}
+        <Link
+          href="/select-pool"
+          className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-emerald-400 hover:bg-emerald-400/5 transition-colors"
+        >
+          <Plus size={16} />
+          Lägg till en ny liga
+        </Link>
+      </div>
+    </section>
   )
 }
 
