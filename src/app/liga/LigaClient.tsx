@@ -13,7 +13,7 @@ import {
 } from '@/lib/payments'
 import {
   Users, Trophy, CheckCircle, Loader2, Save, Settings, Wallet, QrCode,
-  ExternalLink, AlertCircle, Crown, Plus, LogOut, Check,
+  AlertCircle, Crown, Plus, LogOut, Check,
 } from 'lucide-react'
 
 interface MemberRow {
@@ -424,26 +424,14 @@ function MyPayment({
 
       {swishUrl ? (
         <>
-          <div className="flex flex-wrap gap-2">
-            <a
-              href={swishUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-black"
-              style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
-            >
-              <ExternalLink size={14} />
-              Betala via Swish
-            </a>
-            <button
-              onClick={() => setShowQr(s => !s)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-300"
-              style={{ background: '#1f2937', border: '1px solid #374151' }}
-            >
-              <QrCode size={14} />
-              {showQr ? 'Dölj QR' : 'Visa QR'}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowQr(s => !s)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-black transition-all"
+            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+          >
+            <QrCode size={14} />
+            {showQr ? 'Dölj QR-kod' : 'Betala via Swish – Visa QR-kod'}
+          </button>
           {showQr && swishQrSrc && (
             <div className="flex flex-col items-center gap-2 pt-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
