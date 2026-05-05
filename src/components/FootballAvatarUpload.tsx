@@ -202,14 +202,60 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
     if (file) handleFile(file)
   }, [handleFile])
 
+  // Mild komprimering: behåller originalets dimensioner och kodar som
+  // JPEG med 90%-kvalitet. Ger ~10% mindre filstorlek utan synlig kvalitets-
+  // förlust på ansikten — minskar risken för 504-timeout vid Gemini-anrop.
+  async function compressImage(file: File): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('Canvas context saknas'))
+          return
+        }
+        ctx.drawImage(img, 0, 0)
+        canvas.toBlob(
+          blob => {
+            if (!blob) {
+              reject(new Error('Komprimering misslyckades'))
+              return
+            }
+            const baseName = file.name.replace(/\.[^.]+$/, '')
+            resolve(new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' }))
+          },
+          'image/jpeg',
+          0.9
+        )
+      }
+      img.onerror = () => {
+        URL.revokeObjectURL(url)
+        reject(new Error('Kunde inte läsa bilden'))
+      }
+      img.src = url
+    })
+  }
+
   async function handleGenerate() {
     const file = fileRef.current?.files?.[0]
     if (!file) return
     setError(null)
     setGenerating(true)
 
+    let uploadFile = file
+    try {
+      uploadFile = await compressImage(file)
+    } catch {
+      // Om komprimering failar, fall tillbaka på originalet
+    }
+
     const form = new FormData()
-    form.append('image', file)
+    form.append('image', uploadFile)
     form.append('team', team)
     form.append('pose', pose)
     form.append('arena', arena)
