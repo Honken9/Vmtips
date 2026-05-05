@@ -1,5 +1,7 @@
 // Hämtar landslagsdata från externa API:er (cache:ad) och från football-data.org.
 
+import { getFallbackSquad, type FallbackPlayer } from './wc-fallback-squads'
+
 export interface CountryInfo {
   capital: string | null
   population: number | null
@@ -18,6 +20,7 @@ export interface SquadPlayer {
   dateOfBirth: string | null
   nationality: string | null
   shirtNumber: number | null
+  club?: string | null
 }
 
 export interface TeamFootballInfo {
@@ -254,32 +257,44 @@ async function fetchRecentMatchPlayers(teamId: number): Promise<SquadPlayer[]> {
   }
 }
 
+function fallbackToSquadPlayers(fb: FallbackPlayer[]): SquadPlayer[] {
+  // Negativa ids så vi inte krockar med football-data:s riktiga ids.
+  return fb.map((p, i) => ({
+    id: -1 - i,
+    name: p.name,
+    position: p.position,
+    dateOfBirth: null,
+    nationality: null,
+    shirtNumber: null,
+    club: p.club ?? null,
+  }))
+}
+
+const mapSquad = (raw: FdTeam['squad']): SquadPlayer[] =>
+  (raw ?? []).map(p => ({
+    id: p.id,
+    name: p.name ?? '?',
+    position: p.position ?? null,
+    dateOfBirth: p.dateOfBirth ?? null,
+    nationality: p.nationality ?? null,
+    shirtNumber: p.shirtNumber ?? null,
+  }))
+
 export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballInfo | null> {
+  const fallback = getFallbackSquad(fifaCode)
   const teams = await fetchWcTeams()
-  if (teams.length === 0) return null
   const targetCodes = (TLA_ALIASES[fifaCode.toUpperCase()] ?? [fifaCode.toUpperCase()]).map(s =>
     s.toUpperCase()
   )
-  const t = teams.find(team => team.tla && targetCodes.includes(team.tla.toUpperCase()))
-  if (!t) return null
+  const t = teams.find(team => team.tla && targetCodes.includes(team.tla.toUpperCase())) ?? null
 
-  const mapSquad = (raw: FdTeam['squad']): SquadPlayer[] =>
-    (raw ?? []).map(p => ({
-      id: p.id,
-      name: p.name ?? '?',
-      position: p.position ?? null,
-      dateOfBirth: p.dateOfBirth ?? null,
-      nationality: p.nationality ?? null,
-      shirtNumber: p.shirtNumber ?? null,
-    }))
-
-  let squad = mapSquad(t.squad)
+  let squad = t ? mapSquad(t.squad) : []
   let provisional = false
-  let coachName = t.coach?.name ?? null
-  let coachNationality = t.coach?.nationality ?? null
+  let coachName = t?.coach?.name ?? null
+  let coachNationality = t?.coach?.nationality ?? null
 
   // Steg 2: WC-endpoint:en saknar ofta squad för landslag — testa /v4/teams/{id}.
-  if (squad.length === 0) {
+  if (squad.length === 0 && t) {
     const detail = await fetchTeamDetail(t.id)
     if (detail) {
       squad = mapSquad(detail.squad)
@@ -288,17 +303,26 @@ export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballI
     }
   }
 
-  // Steg 3: sista utvägen — plocka spelare ur senaste matchhändelser.
-  if (squad.length === 0) {
+  // Steg 3: matchhändelser från senaste avslutade matcherna.
+  if (squad.length === 0 && t) {
     squad = await fetchRecentMatchPlayers(t.id)
     provisional = squad.length > 0
   }
 
+  // Steg 4: hårdkodad fallback (stjärnspelare per nation).
+  if (squad.length === 0 && fallback) {
+    squad = fallbackToSquadPlayers(fallback)
+    provisional = true
+  }
+
+  // Inget alls hittat – returnera null bara om vi heller inte har en fallback.
+  if (squad.length === 0 && !t) return null
+
   return {
-    id: t.id,
-    name: t.name ?? null,
-    founded: t.founded ?? null,
-    crestUrl: t.crest ?? null,
+    id: t?.id ?? null,
+    name: t?.name ?? null,
+    founded: t?.founded ?? null,
+    crestUrl: t?.crest ?? null,
     coachName,
     coachNationality,
     squad,

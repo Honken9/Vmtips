@@ -255,41 +255,24 @@ export default async function LandslagDetail({
             Truppen är inte publicerad än. VM-trupperna offentliggörs vanligtvis ett par veckor
             innan turneringen startar.
           </div>
-        ) : football.squadIsProvisional ? (
-          <div className="space-y-3">
-            <div
-              className="rounded-xl px-4 py-3 text-xs flex items-start gap-2"
-              style={{
-                background: 'rgba(251,191,36,0.08)',
-                border: '1px solid rgba(251,191,36,0.25)',
-                color: '#fbbf24',
-              }}
-            >
-              <Star size={14} className="mt-0.5 shrink-0" />
-              <span>
-                Preliminär lista – baserad på spelare som varit involverade i lagets tre senaste
-                landskamper (mål, byten, varningar). Ersätts när VM-truppen är spikad.
-              </span>
-            </div>
-            <div
-              className="rounded-xl overflow-hidden"
-              style={{ background: '#111827', border: '1px solid #1f2937' }}
-            >
-              <div
-                className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-amber-400"
-                style={{ background: '#1a2233' }}
-              >
-                Senast aktiva ({groupedSquad.length})
-              </div>
-              <div className="divide-y" style={{ borderColor: '#1f2937' }}>
-                {groupedSquad.map(p => (
-                  <PlayerRow key={p.id} p={p} photoUrl={photos.get(p.name) ?? null} />
-                ))}
-              </div>
-            </div>
-          </div>
         ) : (
           <div className="space-y-4">
+            {football.squadIsProvisional && (
+              <div
+                className="rounded-xl px-4 py-3 text-xs flex items-start gap-2"
+                style={{
+                  background: 'rgba(251,191,36,0.08)',
+                  border: '1px solid rgba(251,191,36,0.25)',
+                  color: '#fbbf24',
+                }}
+              >
+                <Star size={14} className="mt-0.5 shrink-0" />
+                <span>
+                  Preliminär lista – stjärnspelare och senaste landslagsuttagningar. Ersätts
+                  automatiskt när den officiella VM-truppen är spikad.
+                </span>
+              </div>
+            )}
             {(['Goalkeeper', 'Defender', 'Midfielder', 'Forward'] as const).map(posKey => {
               const players = groupedSquad.filter(p => {
                 const norm = (p.position ?? '').replace(/^Defence$/, 'Defender')
@@ -426,15 +409,19 @@ function PlayerRow({ p, photoUrl }: { p: SquadPlayer; photoUrl: string | null })
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-white truncate">{p.name}</div>
         <div className="text-xs text-gray-500 truncate">
-          {[a != null ? `${a} år` : null, p.nationality]
+          {[a != null ? `${a} år` : null, p.club ?? p.nationality]
             .filter(Boolean)
             .join(' · ') || ' '}
         </div>
       </div>
-      <Calendar size={12} className="text-gray-600 shrink-0" />
-      <span className="text-xs text-gray-500 shrink-0 hidden sm:inline">
-        {p.dateOfBirth?.slice(0, 10) ?? '–'}
-      </span>
+      {p.dateOfBirth && (
+        <>
+          <Calendar size={12} className="text-gray-600 shrink-0" />
+          <span className="text-xs text-gray-500 shrink-0 hidden sm:inline">
+            {p.dateOfBirth.slice(0, 10)}
+          </span>
+        </>
+      )}
     </div>
   )
 }
