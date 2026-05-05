@@ -31,8 +31,11 @@ export function buildSwishUrl(args: {
 
 export function buildSwishQrUrl(swishUrl: string, size = 200): string {
   // Använder goqr.me:s gratis QR-API – server-side QR utan dependencies.
+  // Svart på vit för universell scanbarhet (Swish-appens skanner och iOS/Android-kameror
+  // kräver mörk-på-ljus kontrast — färgade/inverterade QR är opålitliga). qzone=2 ger
+  // tillräcklig "quiet zone" runt koden så scannern hittar den.
   const encoded = encodeURIComponent(swishUrl)
-  return `https://api.qrserver.com/v1/create-qr-code/?data=${encoded}&size=${size}x${size}&margin=8&color=10b981&bgcolor=0b1320`
+  return `https://api.qrserver.com/v1/create-qr-code/?data=${encoded}&size=${size}x${size}&qzone=2&ecc=M&format=png`
 }
 
 export function isValidSwishPhone(input: string): boolean {
