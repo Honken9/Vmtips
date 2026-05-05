@@ -48,20 +48,27 @@ export function buildSwishUrl(args: {
   return `https://app.swish.nu/1/p/sw/?${params.toString()}`
 }
 
-// QR-payload som Swish-appens egen scanner känner igen — JSON enligt
-// Swish-protokollet, transporterat via swish:// custom scheme.
+// QR-payload enligt Swishs interna QR-protokoll. Formatet är:
+//   C{telefon};{belopp};{meddelande};{lockValue}
+//
+// lockValue: börjar på 7, dra av per fält som är ifyllt och låst:
+//   -1 för telefon, -2 för belopp, -4 för meddelande.
+// Alla tre låsta = 0. Bara telefon = 6. Telefon+belopp = 4. Etc.
+//
+// Det här är formatet som Swish-appens egen QR-skanner förstår och
+// auto-fyller betalningsbilden från. (Inte JSON, inte URL.)
 export function buildSwishQrPayload(args: {
   phone: string
   amount: number
   message?: string
 }): string {
-  const data = {
-    version: 1,
-    payee: { value: normalizeSwishPhone(args.phone), editable: false },
-    amount: { value: args.amount, editable: false },
-    message: { value: args.message ? sanitizeSwishMessage(args.message) : '', editable: true },
-  }
-  return `swish://payment?data=${encodeURIComponent(JSON.stringify(data))}`
+  const phone = normalizeSwishPhone(args.phone)
+  const message = args.message ? sanitizeSwishMessage(args.message) : ''
+  let lock = 7
+  if (phone) lock -= 1
+  if (args.amount) lock -= 2
+  if (message) lock -= 4
+  return `C${phone};${args.amount};${message};${lock}`
 }
 
 export function buildSwishQrUrl(swishOrPayload: string, size = 200): string {
