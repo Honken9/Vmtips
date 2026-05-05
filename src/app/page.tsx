@@ -109,9 +109,12 @@ export default async function HomePage() {
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
               style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
-              {s.tournament_mode === 'A'
-                ? '📋 Läge A – Tips lämnas in innan turneringen'
-                : '⚡ Läge B – Tips per match, låses vid avspark'}
+              {(() => {
+                const m = currentPool?.tournament_mode ?? s.tournament_mode
+                if (m === 'A') return '📋 Läge A – Tips lämnas in innan turneringen'
+                if (m === 'C') return '🎯 Läge C – Gruppspel som A, slutspel som B'
+                return '⚡ Läge B – Tips per match, låses vid avspark'
+              })()}
             </div>
             {currentPool && (
               <Link

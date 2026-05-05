@@ -73,10 +73,10 @@ export default async function ReglerPage() {
       </Section>
 
       {/* Lägen */}
-      <Section icon={<Zap size={18} />} title="Två sätt att tippa">
-        <div className="grid sm:grid-cols-2 gap-3">
+      <Section icon={<Zap size={18} />} title="Tre sätt att tippa">
+        <div className="grid sm:grid-cols-3 gap-3">
           <ModeBox
-            label="Läge A – Tippa allt på en gång"
+            label="Läge A – Allt på en gång"
             active={s.tournament_mode === 'A'}
             description="Alla 104 matchresultat tippas innan turneringen drar igång. Sedan låses alla dina tips samtidigt med en knapptryckning. Mer skill-fokus – du måste förutspå hela turneringen i förväg."
           />
@@ -85,10 +85,15 @@ export default async function ReglerPage() {
             active={s.tournament_mode === 'B'}
             description="Du kan tippa när du vill, ända fram till matchens avspark. Vid avspark låses tipset automatiskt och kan inte ändras. Mer flexibelt – du kan justera baserat på lagens form, skador osv."
           />
+          <ModeBox
+            label="Läge C – Hybrid"
+            active={s.tournament_mode === 'C'}
+            description="Tippa hela gruppspelet i förväg som Läge A. När gruppspelet är klart tippas slutspelet löpande som Läge B. Bästa av båda världar."
+          />
         </div>
         <p className="text-xs text-gray-500 mt-3">
-          Aktivt läge just nu: <strong className="text-white">{s.tournament_mode}</strong>.
-          Admin kan byta mellan lägena i Inställningar.
+          Spelform väljs per liga av liga-skaparen. Gå till{' '}
+          <a href="/liga" className="text-emerald-400 hover:underline">Min liga</a> för att se eller ändra.
         </p>
       </Section>
 

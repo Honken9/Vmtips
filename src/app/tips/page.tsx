@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { TipsClient } from './TipsClient'
-import { Match, Prediction, Settings, Profile, Team, BonusPrediction, BonusResults } from '@/lib/types'
+import { Match, Prediction, Settings, Profile, Team, BonusPrediction, BonusResults, Pool } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +30,7 @@ export default async function TipsPage() {
     created_at: new Date().toISOString(),
   }
 
+  const activePoolId = profile.pool_id ?? null
   const [
     { data: matchesData },
     { data: predictionsData },
@@ -37,6 +38,7 @@ export default async function TipsPage() {
     { data: teamsData },
     { data: bonusData },
     { data: bonusResultsData },
+    { data: poolData },
   ] = await Promise.all([
     supabase.from('matches').select('*, home_team:teams!matches_home_team_id_fkey(*), away_team:teams!matches_away_team_id_fkey(*)').order('kickoff_at'),
     supabase.from('predictions').select('*').eq('user_id', user.id),
@@ -44,6 +46,9 @@ export default async function TipsPage() {
     supabase.from('teams').select('*').order('group_name').order('name'),
     supabase.from('bonus_predictions').select('*').eq('user_id', user.id).maybeSingle(),
     supabase.from('bonus_results').select('*').eq('id', 1).maybeSingle(),
+    activePoolId
+      ? supabase.from('pools').select('*').eq('id', activePoolId).maybeSingle()
+      : Promise.resolve({ data: null }),
   ])
 
   const settings: Settings = settingsData ?? {
@@ -64,6 +69,7 @@ export default async function TipsPage() {
       userId={user.id}
       bonus={(bonusData ?? null) as BonusPrediction | null}
       bonusResults={(bonusResultsData ?? null) as BonusResults | null}
+      pool={(poolData ?? null) as Pool | null}
     />
   )
 }

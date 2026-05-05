@@ -1,4 +1,4 @@
-export type TournamentMode = 'A' | 'B'
+export type TournamentMode = 'A' | 'B' | 'C'
 export type Stage = 'group' | 'r32' | 'r16' | 'qf' | 'sf' | '3rd' | 'final'
 
 export const STAGE_LABELS: Record<Stage, string> = {
@@ -49,6 +49,8 @@ export interface Pool {
   swish_recipient_name?: string | null
   swish_phone?: string | null
   prize_distribution?: Record<string, number>
+  tournament_mode?: TournamentMode
+  mode_a_global_lock?: boolean
 }
 
 export interface PoolPayment {
