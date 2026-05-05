@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Team, BonusPrediction, BonusResults } from '@/lib/types'
-import { Star, CheckCircle, Loader2 } from 'lucide-react'
+import { Team, BonusPrediction, BonusResults, Prediction } from '@/lib/types'
+import { Star, CheckCircle, Loader2, Calculator } from 'lucide-react'
+import { getAllFallbackPlayers } from '@/lib/wc-fallback-squads'
 
 interface Props {
   userId: string
@@ -11,6 +12,7 @@ interface Props {
   bonus: BonusPrediction | null
   bonusResults: BonusResults | null
   locked: boolean
+  predictions?: Prediction[]
 }
 
 type Field = 'top_scorer' | 'most_yellow_team_id' | 'total_goals'
@@ -67,8 +69,31 @@ function getResultBadge(field: Field, pred: BonusPrediction | null, results: Bon
   )
 }
 
-export function BonusTipsSection({ userId, teams, bonus, bonusResults, locked }: Props) {
+export function BonusTipsSection({ userId, teams, bonus, bonusResults, locked, predictions = [] }: Props) {
   const supabase = createClient()
+
+  // Spelare för skytteligavinnare-dropdown. När football-data.org levererar
+  // riktiga trupper kan denna bytas mot spelare från trupp-endpointen.
+  const allPlayers = useMemo(() => {
+    const players = getAllFallbackPlayers()
+    // Sortera: anfallare och mittfältare först (de som faktiskt gör mål),
+    // sen efter marknadsvärde, sen alfabetiskt på namn.
+    const positionWeight: Record<string, number> = {
+      Forward: 0, Midfielder: 1, Defender: 2, Goalkeeper: 3,
+    }
+    return [...players].sort((a, b) => {
+      const pw = (positionWeight[a.position] ?? 9) - (positionWeight[b.position] ?? 9)
+      if (pw !== 0) return pw
+      const mv = (b.marketValueM ?? 0) - (a.marketValueM ?? 0)
+      if (mv !== 0) return mv
+      return a.name.localeCompare(b.name)
+    })
+  }, [])
+
+  // Summan av användarens egna tippade mål — auto-förslag för "Totalt antal mål".
+  const tippedTotalGoals = useMemo(() => {
+    return predictions.reduce((sum, p) => sum + (p.pred_home ?? 0) + (p.pred_away ?? 0), 0)
+  }, [predictions])
 
   const [vals, setVals] = useState<Record<Field, string>>({
     top_scorer: bonus?.top_scorer ?? '',
@@ -164,15 +189,28 @@ export function BonusTipsSection({ userId, teams, bonus, bonusResults, locked }:
                       }
                     </div>
                   ) : cat.type === 'text' ? (
-                    <input
-                      type="text"
-                      value={val}
-                      placeholder="Skriv spelarnamn…"
-                      onChange={e => setVals(v => ({ ...v, [cat.field]: e.target.value }))}
-                      onBlur={() => save(cat.field)}
-                      className="w-full max-w-xs px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
-                      style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
-                    />
+                    <>
+                      <input
+                        type="text"
+                        list="top-scorer-suggestions"
+                        value={val}
+                        placeholder="Sök eller skriv spelarnamn…"
+                        onChange={e => setVals(v => ({ ...v, [cat.field]: e.target.value }))}
+                        onBlur={() => save(cat.field)}
+                        className="w-full max-w-md px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+                        style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
+                      />
+                      <datalist id="top-scorer-suggestions">
+                        {allPlayers.slice(0, 250).map(p => (
+                          <option key={`${p.country}-${p.name}`} value={p.name}>
+                            {p.country} · {p.club ?? ''}
+                          </option>
+                        ))}
+                      </datalist>
+                      <p className="text-[11px] text-gray-500 mt-1">
+                        Förslag baseras på preliminära trupper – uppdateras när VM-trupperna är spikade.
+                      </p>
+                    </>
                   ) : cat.type === 'team' ? (
                     <select
                       value={val}
@@ -191,17 +229,35 @@ export function BonusTipsSection({ userId, teams, bonus, bonusResults, locked }:
                       ))}
                     </select>
                   ) : (
-                    <input
-                      type="number"
-                      min="0"
-                      max="999"
-                      value={val}
-                      placeholder="Antal mål…"
-                      onChange={e => setVals(v => ({ ...v, [cat.field]: e.target.value }))}
-                      onBlur={() => save(cat.field)}
-                      className="w-36 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
-                      style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
-                    />
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        max="999"
+                        value={val}
+                        placeholder="Antal mål…"
+                        onChange={e => setVals(v => ({ ...v, [cat.field]: e.target.value }))}
+                        onBlur={() => save(cat.field)}
+                        className="w-36 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+                        style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
+                      />
+                      {tippedTotalGoals > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVals(v => ({ ...v, total_goals: String(tippedTotalGoals) }))
+                            // Spara direkt så slipper vi extra blur-klick
+                            setTimeout(() => save('total_goals'), 0)
+                          }}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-emerald-400 hover:bg-emerald-400/10 transition-colors"
+                          style={{ background: '#1f2937', border: '1px solid #374151' }}
+                          title="Räknar ihop alla mål från dina egna matchtipps"
+                        >
+                          <Calculator size={12} />
+                          Använd mina tipps: {tippedTotalGoals}
+                        </button>
+                      )}
+                    </div>
                   )}
 
                   {/* Spara-indikator */}

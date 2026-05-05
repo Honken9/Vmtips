@@ -463,6 +463,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
         bonus={bonus}
         bonusResults={bonusResults}
         locked={(locked && tournamentMode !== 'B') || globalLock}
+        predictions={predictions}
       />
     </div>
   )
@@ -652,11 +653,15 @@ function MatchRow({
           </>
         )}
 
-        {/* Spara-indikator */}
+        {/* Spara-indikator – grön check kvarstår så länge tipset är ifyllt */}
         <div className="w-5 shrink-0">
-          {saving && <Loader2 size={14} className="animate-spin text-emerald-400" />}
-          {!saving && justSaved && <CheckCircle size={14} className="text-green-400" />}
-          {locked && !saving && !justSaved && <Lock size={12} className="text-gray-600" />}
+          {saving ? (
+            <Loader2 size={14} className="animate-spin text-emerald-400" />
+          ) : value.home !== '' && value.away !== '' ? (
+            <CheckCircle size={14} className="text-green-400" />
+          ) : locked ? (
+            <Lock size={12} className="text-gray-600" />
+          ) : null}
         </div>
       </div>
 

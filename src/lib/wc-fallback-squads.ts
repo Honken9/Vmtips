@@ -666,3 +666,20 @@ export const WC_FALLBACK_SQUADS: Record<string, FallbackPlayer[]> = {
 export function getFallbackSquad(fifaCode: string) {
   return WC_FALLBACK_SQUADS[fifaCode.toUpperCase()] ?? null
 }
+
+// Platta ut alla spelare till en lista med {name, country}.
+// Används som autocomplete-dropdown för "Skytteligavinnare"-bonustippet.
+// Ersätts automatiskt med riktiga trupper när football-data.org levererar dem.
+export interface FallbackPlayerWithCountry extends FallbackPlayer {
+  country: string // FIFA-koden
+}
+
+export function getAllFallbackPlayers(): FallbackPlayerWithCountry[] {
+  const out: FallbackPlayerWithCountry[] = []
+  for (const [code, players] of Object.entries(WC_FALLBACK_SQUADS)) {
+    for (const p of players) {
+      out.push({ ...p, country: code })
+    }
+  }
+  return out
+}
