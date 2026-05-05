@@ -48,41 +48,43 @@ export function Navigation({ profile }: Props) {
         paddingTop: 'env(safe-area-inset-top)',
       }}
     >
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between gap-3 h-16">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-5">
+        <div className="flex items-center justify-between gap-2 h-16">
           {/* Logo */}
           <Link href="/" className="shrink-0">
             <TrophyLogo size="sm" />
           </Link>
 
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
+          {/* Desktop nav – ikoner med text på xl+, ikoner-bara på md/lg */}
+          <div className="hidden md:flex items-center gap-0.5 flex-1 justify-center min-w-0">
             {links.map(({ href, label, icon: Icon, color }) => {
               const active = pathname === href || (href !== '/' && pathname.startsWith(href))
               return (
                 <Link
                   key={href}
                   href={href}
-                  className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                  title={label}
+                  className={`flex items-center gap-1.5 px-2 xl:px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                     active
                       ? 'text-white bg-white/10'
                       : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
                 >
                   <Icon size={16} style={{ color }} />
-                  {label}
+                  <span className="hidden xl:inline">{label}</span>
                 </Link>
               )
             })}
           </div>
 
           {/* Höger: användarinfo */}
-          <div className="hidden md:flex items-center gap-1.5 shrink-0">
+          <div className="hidden md:flex items-center gap-1 shrink-0">
             {profile ? (
               <>
                 <Link
                   href="/profil"
-                  className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 transition-colors group"
+                  title={profile.display_name}
+                  className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
                 >
                   <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0"
                     style={{ border: '1.5px solid #374151' }}>
@@ -95,9 +97,6 @@ export function Navigation({ profile }: Props) {
                       </div>
                     )}
                   </div>
-                  <span className="text-sm text-white font-medium group-hover:text-emerald-400 transition-colors whitespace-nowrap hidden lg:inline">
-                    {profile.display_name}
-                  </span>
                 </Link>
                 <button
                   onClick={handleSignOut}
@@ -110,7 +109,7 @@ export function Navigation({ profile }: Props) {
             ) : (
               <Link
                 href="/auth/login"
-                className="text-sm font-medium px-4 py-2 rounded-lg gold-gradient text-black whitespace-nowrap"
+                className="text-sm font-medium px-3 py-2 rounded-lg gold-gradient text-black whitespace-nowrap"
               >
                 Logga in
               </Link>
