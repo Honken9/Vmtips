@@ -21,6 +21,8 @@ export interface SquadPlayer {
   nationality: string | null
   shirtNumber: number | null
   club?: string | null
+  youthClub?: string | null
+  marketValueM?: number | null
 }
 
 export interface TeamFootballInfo {
@@ -267,6 +269,8 @@ function fallbackToSquadPlayers(fb: FallbackPlayer[]): SquadPlayer[] {
     nationality: null,
     shirtNumber: null,
     club: p.club ?? null,
+    youthClub: p.youthClub ?? null,
+    marketValueM: p.marketValueM ?? null,
   }))
 }
 

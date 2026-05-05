@@ -9,7 +9,8 @@ import { Flag } from '@/components/Flag'
 import { getFacts } from '@/lib/team-facts'
 import { ArrowLeft, MapPin, Users, User, Trophy, Star, Calendar, Globe2, ShieldCheck } from 'lucide-react'
 
-export const revalidate = 3600
+export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 const POSITION_ORDER: Record<string, number> = {
   Goalkeeper: 0,
@@ -413,7 +414,21 @@ function PlayerRow({ p, photoUrl }: { p: SquadPlayer; photoUrl: string | null })
             .filter(Boolean)
             .join(' · ') || ' '}
         </div>
+        {p.youthClub && (
+          <div className="text-[11px] text-gray-600 truncate">
+            Moderklubb: <span className="text-gray-400">{p.youthClub}</span>
+          </div>
+        )}
       </div>
+      {p.marketValueM != null && (
+        <span
+          className="text-xs font-semibold shrink-0 px-2 py-0.5 rounded"
+          title="Bedömt marknadsvärde"
+          style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981' }}
+        >
+          {p.marketValueM >= 1 ? `€${p.marketValueM}M` : `€${(p.marketValueM * 1000).toFixed(0)}k`}
+        </span>
+      )}
       {p.dateOfBirth && (
         <>
           <Calendar size={12} className="text-gray-600 shrink-0" />
