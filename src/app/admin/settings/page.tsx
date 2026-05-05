@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Settings, TournamentMode } from '@/lib/types'
-import { Loader2, CheckCircle, AlertTriangle, Lock } from 'lucide-react'
+import { Settings } from '@/lib/types'
+import { Loader2, CheckCircle, AlertTriangle } from 'lucide-react'
 
 export default function AdminSettingsPage() {
   const supabase = createClient()
   const [settings, setSettings] = useState<Settings | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const [lockingAll, setLockingAll] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     supabase.from('settings').select('*').single().then(({ data }) => {
@@ -21,8 +21,8 @@ export default function AdminSettingsPage() {
   async function saveSettings() {
     if (!settings) return
     setSaving(true)
-    await supabase.from('settings').update({
-      tournament_mode: settings.tournament_mode,
+    setError(null)
+    const { error: err } = await supabase.from('settings').update({
       points_correct_result: settings.points_correct_result,
       points_exact_score: settings.points_exact_score,
       points_winner: settings.points_winner,
@@ -33,23 +33,12 @@ export default function AdminSettingsPage() {
       randomize_phrase_3: settings.randomize_phrase_3 ?? '',
     }).eq('id', 1)
     setSaving(false)
+    if (err) {
+      setError(err.message)
+      return
+    }
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
-  }
-
-  async function lockAllTips() {
-    if (!confirm('Lås ALLA deltagares tips? Detta går inte att ångra.')) return
-    setLockingAll(true)
-
-    // Hämta alla users
-    const { data: profiles } = await supabase.from('profiles').select('id').eq('is_admin', false)
-    for (const p of profiles ?? []) {
-      await supabase.rpc('lock_user_tips', { p_user_id: p.id })
-    }
-    // Sätt global lock
-    await supabase.from('settings').update({ mode_a_global_lock: true }).eq('id', 1)
-    setSettings(s => s ? { ...s, mode_a_global_lock: true } : s)
-    setLockingAll(false)
   }
 
   if (!settings) {
@@ -60,50 +49,12 @@ export default function AdminSettingsPage() {
     <div className="space-y-8 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold text-white">Inställningar</h1>
-        <p className="text-gray-400 text-sm mt-1">Turneringsläge och poängsystem</p>
+        <p className="text-gray-400 text-sm mt-1">Poängsystem och slumpning (gäller globalt)</p>
+        <p className="text-xs text-gray-500 mt-2">
+          Spelform (Läge A/B/C) väljs nu per liga – gå till{' '}
+          <a href="/liga" className="text-emerald-400 hover:underline">Min liga</a> för att ändra.
+        </p>
       </div>
-
-      {/* Turneringsläge */}
-      <section className="rounded-xl p-6 space-y-5" style={{ background: '#111827', border: '1px solid #1f2937' }}>
-        <h2 className="text-lg font-semibold text-white">Turneringsläge</h2>
-
-        <div className="grid gap-3">
-          {([
-            {
-              mode: 'A' as TournamentMode,
-              title: 'Läge A – Allt på en gång',
-              desc: 'Deltagarna tippar alla matcher och lämnar in. Tips kan inte ändras efter inlämning. Perfekt för klassiskt ligaformat.',
-              icon: '📋',
-            },
-            {
-              mode: 'B' as TournamentMode,
-              title: 'Läge B – Löpande per match',
-              desc: 'Deltagarna tippar inför varje match. Tips låses automatiskt vid avspark. Mer engagerande under turneringen.',
-              icon: '⚡',
-            },
-          ] as const).map(({ mode, title, desc, icon }) => (
-            <button
-              key={mode}
-              onClick={() => setSettings(s => s ? { ...s, tournament_mode: mode } : s)}
-              className={`text-left p-4 rounded-xl border-2 transition-all ${
-                settings.tournament_mode === mode
-                  ? 'border-emerald-400/60 bg-emerald-400/5'
-                  : 'border-transparent hover:border-white/10'
-              }`}
-              style={settings.tournament_mode !== mode ? { background: '#1f2937' } : undefined}
-            >
-              <div className="flex items-center gap-3 mb-1">
-                <span className="text-xl">{icon}</span>
-                <span className="font-semibold text-white">{title}</span>
-                {settings.tournament_mode === mode && (
-                  <span className="ml-auto text-xs text-emerald-400 font-medium">Aktivt</span>
-                )}
-              </div>
-              <p className="text-sm text-gray-400 ml-8">{desc}</p>
-            </button>
-          ))}
-        </div>
-      </section>
 
       {/* Poängsystem */}
       <section className="rounded-xl p-6 space-y-4" style={{ background: '#111827', border: '1px solid #1f2937' }}>
@@ -184,6 +135,19 @@ export default function AdminSettingsPage() {
         </div>
       </section>
 
+      {error && (
+        <div className="flex items-start gap-2 px-4 py-3 rounded-lg text-sm"
+          style={{
+            background: 'rgba(239,68,68,0.1)',
+            border: '1px solid rgba(239,68,68,0.3)',
+            color: '#fca5a5',
+          }}
+        >
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+          <span>Kunde inte spara: {error}</span>
+        </div>
+      )}
+
       {/* Spara-knapp */}
       <button
         onClick={saveSettings}
@@ -193,36 +157,6 @@ export default function AdminSettingsPage() {
         {saving ? <Loader2 size={18} className="animate-spin" /> : saved ? <CheckCircle size={18} /> : null}
         {saved ? 'Sparat!' : 'Spara inställningar'}
       </button>
-
-      {/* Lås alla tips (Läge A) */}
-      {settings.tournament_mode === 'A' && (
-        <section className="rounded-xl p-6 space-y-3"
-          style={{ background: '#111827', border: '1px solid rgba(239,68,68,0.3)' }}>
-          <div className="flex items-center gap-2 text-red-400">
-            <AlertTriangle size={18} />
-            <h2 className="text-lg font-semibold">Globalt lås – Läge A</h2>
-          </div>
-          <p className="text-sm text-gray-400">
-            Lås ALLA deltagares tips på en gång. Används när turneringen börjar och tippningstiden är slut. Kan inte ångras.
-          </p>
-          {settings.mode_a_global_lock ? (
-            <div className="flex items-center gap-2 text-green-400 text-sm">
-              <Lock size={16} />
-              Alla tips är låsta
-            </div>
-          ) : (
-            <button
-              onClick={lockAllTips}
-              disabled={lockingAll}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-white transition-all disabled:opacity-50"
-              style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#ef4444' }}
-            >
-              {lockingAll ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
-              Lås alla tips nu
-            </button>
-          )}
-        </section>
-      )}
     </div>
   )
 }

@@ -32,9 +32,8 @@ export default async function AdminDashboard() {
       <div>
         <h1 className="text-2xl font-bold text-white">Översikt</h1>
         <p className="text-gray-400 text-sm mt-1">
-          Turneringsläge: <span className="text-white font-medium">
-            {s?.tournament_mode === 'A' ? 'A – Allt på en gång' : 'B – Löpande per match'}
-          </span>
+          Spelform väljs nu per liga – se{' '}
+          <a href="/admin/pools" className="text-emerald-400 hover:underline">Ligor</a>.
         </p>
       </div>
 

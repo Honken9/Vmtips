@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Team } from '@/lib/types'
 import { fetchCountry, fetchTeamFootball, type SquadPlayer } from '@/lib/team-data'
+import { fetchPlayerPhotos } from '@/lib/wiki-photos'
 import { Flag } from '@/components/Flag'
 import { getFacts } from '@/lib/team-facts'
 import { ArrowLeft, MapPin, Users, User, Trophy, Star, Calendar, Globe2, ShieldCheck } from 'lucide-react'
@@ -76,6 +78,11 @@ export default async function LandslagDetail({
     }
     return a.name.localeCompare(b.name)
   })
+
+  const photos =
+    groupedSquad.length > 0
+      ? await fetchPlayerPhotos(groupedSquad.map(p => p.name))
+      : new Map<string, string>()
 
   return (
     <div className="space-y-6">
@@ -237,7 +244,8 @@ export default async function LandslagDetail({
           Trupp
           {football && football.squad.length > 0 && (
             <span className="text-xs text-gray-500 font-normal">
-              ({football.squad.length} spelare)
+              ({football.squad.length} spelare
+              {football.squadIsProvisional ? ', provisorisk' : ''})
             </span>
           )}
         </h2>
@@ -249,6 +257,22 @@ export default async function LandslagDetail({
           </div>
         ) : (
           <div className="space-y-4">
+            {football.squadIsProvisional && (
+              <div
+                className="rounded-xl px-4 py-3 text-xs flex items-start gap-2"
+                style={{
+                  background: 'rgba(251,191,36,0.08)',
+                  border: '1px solid rgba(251,191,36,0.25)',
+                  color: '#fbbf24',
+                }}
+              >
+                <Star size={14} className="mt-0.5 shrink-0" />
+                <span>
+                  Preliminär lista – stjärnspelare och senaste landslagsuttagningar. Ersätts
+                  automatiskt när den officiella VM-truppen är spikad.
+                </span>
+              </div>
+            )}
             {(['Goalkeeper', 'Defender', 'Midfielder', 'Forward'] as const).map(posKey => {
               const players = groupedSquad.filter(p => {
                 const norm = (p.position ?? '').replace(/^Defence$/, 'Defender')
@@ -272,7 +296,7 @@ export default async function LandslagDetail({
                   </div>
                   <div className="divide-y" style={{ borderColor: '#1f2937' }}>
                     {players.map(p => (
-                      <PlayerRow key={p.id} p={p} />
+                      <PlayerRow key={p.id} p={p} photoUrl={photos.get(p.name) ?? null} />
                     ))}
                   </div>
                 </div>
@@ -294,7 +318,7 @@ export default async function LandslagDetail({
                   {groupedSquad
                     .filter(p => !POSITION_ORDER[p.position ?? ''])
                     .map(p => (
-                      <PlayerRow key={p.id} p={p} />
+                      <PlayerRow key={p.id} p={p} photoUrl={photos.get(p.name) ?? null} />
                     ))}
                 </div>
               </div>
@@ -346,7 +370,14 @@ function Row({ icon, label, value }: { icon: React.ReactNode; label: string; val
   )
 }
 
-function PlayerRow({ p }: { p: SquadPlayer }) {
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  if (parts.length === 0) return '?'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+function PlayerRow({ p, photoUrl }: { p: SquadPlayer; photoUrl: string | null }) {
   const a = age(p.dateOfBirth)
   return (
     <div className="flex items-center gap-3 px-3 sm:px-4 py-2.5 hover:bg-white/5 transition-colors">
@@ -354,18 +385,43 @@ function PlayerRow({ p }: { p: SquadPlayer }) {
         style={{ background: '#1f2937', color: '#10b981' }}>
         {p.shirtNumber ?? '–'}
       </div>
+      <div
+        className="relative w-10 h-10 rounded-full overflow-hidden shrink-0"
+        style={{ background: '#1f2937', border: '1px solid #374151' }}
+      >
+        {photoUrl ? (
+          <Image
+            src={photoUrl}
+            alt={p.name}
+            fill
+            sizes="40px"
+            className="object-cover"
+          />
+        ) : (
+          <div
+            className="w-full h-full flex items-center justify-center text-xs font-bold text-white"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+          >
+            {initialsOf(p.name)}
+          </div>
+        )}
+      </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-white truncate">{p.name}</div>
         <div className="text-xs text-gray-500 truncate">
-          {[a != null ? `${a} år` : null, p.nationality]
+          {[a != null ? `${a} år` : null, p.club ?? p.nationality]
             .filter(Boolean)
             .join(' · ') || ' '}
         </div>
       </div>
-      <Calendar size={12} className="text-gray-600 shrink-0" />
-      <span className="text-xs text-gray-500 shrink-0 hidden sm:inline">
-        {p.dateOfBirth?.slice(0, 10) ?? '–'}
-      </span>
+      {p.dateOfBirth && (
+        <>
+          <Calendar size={12} className="text-gray-600 shrink-0" />
+          <span className="text-xs text-gray-500 shrink-0 hidden sm:inline">
+            {p.dateOfBirth.slice(0, 10)}
+          </span>
+        </>
+      )}
     </div>
   )
 }

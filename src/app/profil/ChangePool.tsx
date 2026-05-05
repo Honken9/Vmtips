@@ -123,7 +123,7 @@ export function ChangePool({ currentPoolId }: { currentPoolId: number | null }) 
     <div className="pt-2 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-xs text-gray-400">
-          {mode === 'join' ? 'Klistra in invite-kod:' : 'Namn på ny pool:'}
+          {mode === 'join' ? 'Klistra in invite-kod:' : 'Namn på ny liga:'}
         </span>
         <button onClick={() => setMode('closed')} className="text-gray-500 hover:text-white">
           <X size={14} />

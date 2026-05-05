@@ -272,7 +272,7 @@ export function AdminPoolsClient({
                             </option>
                           ))}
                           <option value="" className="bg-gray-900 text-white">
-                            – Ingen pool –
+                            – Ingen liga –
                           </option>
                         </select>
                       </div>
@@ -286,7 +286,7 @@ export function AdminPoolsClient({
         {pools.length === 0 && (
           <div className="rounded-xl p-8 text-center text-gray-500"
             style={{ background: '#111827', border: '1px solid #1f2937' }}>
-            Inga pools än. Skapa en ovan.
+            Inga ligor än. Skapa en ovan.
           </div>
         )}
       </div>
@@ -294,7 +294,7 @@ export function AdminPoolsClient({
       {orphans.length > 0 && (
         <div className="rounded-xl p-4" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.25)' }}>
           <h3 className="text-sm font-semibold text-emerald-400 mb-2">
-            {orphans.length} användare utan pool
+            {orphans.length} användare utan liga
           </h3>
           <div className="space-y-1">
             {orphans.map(o => (
@@ -308,7 +308,7 @@ export function AdminPoolsClient({
                   style={{ border: '1px solid #374151' }}
                 >
                   <option value="" className="bg-gray-900 text-white">
-                    – Välj pool –
+                    – Välj liga –
                   </option>
                   {pools.map(p => (
                     <option key={p.id} value={p.id} className="bg-gray-900 text-white">

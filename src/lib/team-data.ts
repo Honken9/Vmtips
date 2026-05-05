@@ -1,5 +1,7 @@
 // Hämtar landslagsdata från externa API:er (cache:ad) och från football-data.org.
 
+import { getFallbackSquad, type FallbackPlayer } from './wc-fallback-squads'
+
 export interface CountryInfo {
   capital: string | null
   population: number | null
@@ -18,6 +20,7 @@ export interface SquadPlayer {
   dateOfBirth: string | null
   nationality: string | null
   shirtNumber: number | null
+  club?: string | null
 }
 
 export interface TeamFootballInfo {
@@ -28,6 +31,7 @@ export interface TeamFootballInfo {
   coachName: string | null
   coachNationality: string | null
   squad: SquadPlayer[]
+  squadIsProvisional: boolean
 }
 
 // FIFA-kod → ISO 3166 alpha-3. För nationer som ingår i Storbritannien
@@ -169,28 +173,159 @@ const TLA_ALIASES: Record<string, string[]> = {
   TUR: ['TUR'],
 }
 
+interface FdMatch {
+  id: number
+  utcDate?: string
+  goals?: Array<{
+    scorer?: { id: number; name: string } | null
+    assist?: { id: number; name: string } | null
+  }>
+  bookings?: Array<{ player?: { id: number; name: string } | null }>
+  substitutions?: Array<{
+    playerIn?: { id: number; name: string } | null
+    playerOut?: { id: number; name: string } | null
+  }>
+}
+
+async function fetchTeamDetail(teamId: number): Promise<FdTeam | null> {
+  const apiKey = process.env.FOOTBALL_DATA_API_KEY
+  if (!apiKey) return null
+  try {
+    const res = await fetch(`https://api.football-data.org/v4/teams/${teamId}`, {
+      headers: { 'X-Auth-Token': apiKey },
+      next: { revalidate: 60 * 60 * 6 }, // 6h
+    })
+    if (!res.ok) {
+      console.error(`[team-data] /v4/teams/${teamId} returned ${res.status}`)
+      return null
+    }
+    return (await res.json()) as FdTeam
+  } catch (err) {
+    console.error(`[team-data] /v4/teams/${teamId} failed`, err)
+    return null
+  }
+}
+
+async function fetchRecentMatchPlayers(teamId: number): Promise<SquadPlayer[]> {
+  const apiKey = process.env.FOOTBALL_DATA_API_KEY
+  if (!apiKey) return []
+  try {
+    const res = await fetch(
+      `https://api.football-data.org/v4/teams/${teamId}/matches?status=FINISHED&limit=3`,
+      {
+        headers: { 'X-Auth-Token': apiKey },
+        next: { revalidate: 60 * 60 * 6 }, // 6h
+      }
+    )
+    if (!res.ok) {
+      console.error(`[team-data] /v4/teams/${teamId}/matches returned ${res.status}`)
+      return []
+    }
+    const data = (await res.json()) as { matches?: FdMatch[] }
+    const matches = (data.matches ?? []).slice(-3)
+    const seen = new Map<number, string>()
+    const add = (p: { id: number; name: string } | null | undefined) => {
+      if (p?.id && p.name && !seen.has(p.id)) seen.set(p.id, p.name)
+    }
+    for (const m of matches) {
+      for (const g of m.goals ?? []) {
+        add(g.scorer)
+        add(g.assist)
+      }
+      for (const b of m.bookings ?? []) add(b.player)
+      for (const s of m.substitutions ?? []) {
+        add(s.playerIn)
+        add(s.playerOut)
+      }
+    }
+    if (seen.size === 0) {
+      console.error(
+        `[team-data] /v4/teams/${teamId}/matches returned ${matches.length} matches but no event players`
+      )
+    }
+    return Array.from(seen, ([id, name]) => ({
+      id,
+      name,
+      position: null,
+      dateOfBirth: null,
+      nationality: null,
+      shirtNumber: null,
+    })).sort((a, b) => a.name.localeCompare(b.name))
+  } catch (err) {
+    console.error(`[team-data] /v4/teams/${teamId}/matches failed`, err)
+    return []
+  }
+}
+
+function fallbackToSquadPlayers(fb: FallbackPlayer[]): SquadPlayer[] {
+  // Negativa ids så vi inte krockar med football-data:s riktiga ids.
+  return fb.map((p, i) => ({
+    id: -1 - i,
+    name: p.name,
+    position: p.position,
+    dateOfBirth: null,
+    nationality: null,
+    shirtNumber: null,
+    club: p.club ?? null,
+  }))
+}
+
+const mapSquad = (raw: FdTeam['squad']): SquadPlayer[] =>
+  (raw ?? []).map(p => ({
+    id: p.id,
+    name: p.name ?? '?',
+    position: p.position ?? null,
+    dateOfBirth: p.dateOfBirth ?? null,
+    nationality: p.nationality ?? null,
+    shirtNumber: p.shirtNumber ?? null,
+  }))
+
 export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballInfo | null> {
+  const fallback = getFallbackSquad(fifaCode)
   const teams = await fetchWcTeams()
-  if (teams.length === 0) return null
   const targetCodes = (TLA_ALIASES[fifaCode.toUpperCase()] ?? [fifaCode.toUpperCase()]).map(s =>
     s.toUpperCase()
   )
-  const t = teams.find(team => team.tla && targetCodes.includes(team.tla.toUpperCase()))
-  if (!t) return null
+  const t = teams.find(team => team.tla && targetCodes.includes(team.tla.toUpperCase())) ?? null
+
+  let squad = t ? mapSquad(t.squad) : []
+  let provisional = false
+  let coachName = t?.coach?.name ?? null
+  let coachNationality = t?.coach?.nationality ?? null
+
+  // Steg 2: WC-endpoint:en saknar ofta squad för landslag — testa /v4/teams/{id}.
+  if (squad.length === 0 && t) {
+    const detail = await fetchTeamDetail(t.id)
+    if (detail) {
+      squad = mapSquad(detail.squad)
+      coachName = coachName ?? detail.coach?.name ?? null
+      coachNationality = coachNationality ?? detail.coach?.nationality ?? null
+    }
+  }
+
+  // Steg 3: matchhändelser från senaste avslutade matcherna.
+  if (squad.length === 0 && t) {
+    squad = await fetchRecentMatchPlayers(t.id)
+    provisional = squad.length > 0
+  }
+
+  // Steg 4: hårdkodad fallback (stjärnspelare per nation).
+  if (squad.length === 0 && fallback) {
+    squad = fallbackToSquadPlayers(fallback)
+    provisional = true
+  }
+
+  // Inget alls hittat – returnera null bara om vi heller inte har en fallback.
+  if (squad.length === 0 && !t) return null
+
   return {
-    id: t.id,
-    name: t.name ?? null,
-    founded: t.founded ?? null,
-    crestUrl: t.crest ?? null,
-    coachName: t.coach?.name ?? null,
-    coachNationality: t.coach?.nationality ?? null,
-    squad: (t.squad ?? []).map(p => ({
-      id: p.id,
-      name: p.name ?? '?',
-      position: p.position ?? null,
-      dateOfBirth: p.dateOfBirth ?? null,
-      nationality: p.nationality ?? null,
-      shirtNumber: p.shirtNumber ?? null,
-    })),
+    id: t?.id ?? null,
+    name: t?.name ?? null,
+    founded: t?.founded ?? null,
+    crestUrl: t?.crest ?? null,
+    coachName,
+    coachNationality,
+    squad,
+    squadIsProvisional: provisional,
   }
 }

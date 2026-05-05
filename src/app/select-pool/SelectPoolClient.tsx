@@ -98,7 +98,7 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
         <div className="w-full max-w-md text-center">
           <div className="rounded-2xl p-8" style={{ background: '#111827', border: '1px solid #1f2937' }}>
             <CheckCircle size={48} className="text-emerald-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-white mb-2">Poolen är skapad!</h2>
+            <h2 className="text-xl font-bold text-white mb-2">Ligan är skapad!</h2>
             <p className="text-gray-300 mb-4">
               <span className="text-emerald-400 font-semibold">{success.name}</span> är igång.
             </p>
@@ -149,7 +149,7 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
               }}
             >
               <Users size={14} />
-              Gå med i pool
+              Gå med i liga
             </button>
             <button
               type="button"
@@ -222,7 +222,7 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
               className="w-full py-3 rounded-lg font-semibold text-black transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 gold-gradient"
             >
               {loading && <Loader2 size={18} className="animate-spin" />}
-              {mode === 'join' ? 'Gå med' : 'Skapa pool'}
+              {mode === 'join' ? 'Gå med' : 'Skapa liga'}
             </button>
           </form>
         </div>

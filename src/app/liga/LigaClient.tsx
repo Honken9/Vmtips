@@ -13,7 +13,7 @@ import {
 } from '@/lib/payments'
 import {
   Users, Trophy, CheckCircle, Loader2, Save, Settings, Wallet, QrCode,
-  ExternalLink, AlertCircle, Crown,
+  ExternalLink, AlertCircle, Crown, Plus, LogOut, Check,
 } from 'lucide-react'
 
 interface MemberRow {
@@ -32,9 +32,10 @@ interface Props {
   members: MemberRow[]
   ranking: LeaderboardEntry[]
   canManage: boolean
+  allLigor: Pool[]
 }
 
-export function LigaClient({ pool, meUserId, members, ranking, canManage }: Props) {
+export function LigaClient({ pool, meUserId, members, ranking, canManage, allLigor }: Props) {
   const supabase = createClient()
   const router = useRouter()
 
@@ -77,6 +78,15 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage }: Prop
           {members.length} medlemmar
         </p>
       </div>
+
+      {/* Mina ligor – välj aktiv */}
+      <LigaSelector
+        activePoolId={pool.id}
+        allLigor={allLigor}
+        meUserId={meUserId}
+        onChanged={() => router.refresh()}
+        supabase={supabase}
+      />
 
       {/* Pott-sammanfattning – visas bara om avgift är satt */}
       {fee > 0 && (
@@ -122,6 +132,11 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage }: Prop
         </div>
       )}
 
+      {/* Spelform & lås – bara för skapare/admin */}
+      {canManage && (
+        <LigaModePicker pool={pool} onChanged={() => router.refresh()} />
+      )}
+
       {/* Inställningar – bara för skapare/admin */}
       {canManage && (
         <LigaSettings pool={pool} onSaved={() => router.refresh()} />
@@ -144,6 +159,114 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage }: Prop
         />
       </section>
     </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+function LigaSelector({
+  activePoolId,
+  allLigor,
+  meUserId,
+  onChanged,
+  supabase,
+}: {
+  activePoolId: number
+  allLigor: Pool[]
+  meUserId: string
+  onChanged: () => void
+  supabase: ReturnType<typeof createClient>
+}) {
+  const [busy, setBusy] = useState<number | null>(null)
+  const isOnlyOne = allLigor.length <= 1
+
+  async function switchTo(poolId: number) {
+    if (poolId === activePoolId) return
+    setBusy(poolId)
+    await supabase.from('profiles').update({ pool_id: poolId }).eq('id', meUserId)
+    setBusy(null)
+    onChanged()
+  }
+
+  async function leave(p: Pool) {
+    const ok = window.confirm(
+      `Lämna ligan "${p.name}"? Du kommer behöva en ny invite-kod för att gå med igen.`
+    )
+    if (!ok) return
+    setBusy(p.id)
+    await supabase
+      .from('pool_memberships')
+      .delete()
+      .eq('pool_id', p.id)
+      .eq('user_id', meUserId)
+    if (p.id === activePoolId) {
+      const next = allLigor.find(l => l.id !== p.id)
+      await supabase
+        .from('profiles')
+        .update({ pool_id: next?.id ?? null })
+        .eq('id', meUserId)
+    }
+    setBusy(null)
+    onChanged()
+  }
+
+  return (
+    <section>
+      <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <Users size={14} className="text-emerald-400" />
+        Mina ligor
+        {!isOnlyOne && (
+          <span className="text-xs text-gray-500 font-normal normal-case tracking-normal">
+            (klicka för att byta aktiv)
+          </span>
+        )}
+      </h2>
+      <div className="rounded-xl overflow-hidden divide-y" style={{ background: '#111827', border: '1px solid #1f2937', borderColor: '#1f2937' }}>
+        {allLigor.map(p => {
+          const isActive = p.id === activePoolId
+          return (
+            <div
+              key={p.id}
+              className={`flex items-center gap-3 px-4 py-3 transition-colors ${
+                isActive ? 'bg-emerald-400/5' : 'hover:bg-white/5'
+              }`}
+            >
+              <button
+                onClick={() => switchTo(p.id)}
+                disabled={busy === p.id || isActive}
+                className="flex-1 flex items-center gap-3 min-w-0 text-left disabled:cursor-default"
+              >
+                <div className={`w-5 h-5 shrink-0 flex items-center justify-center ${isActive ? 'text-emerald-400' : 'text-transparent'}`}>
+                  {busy === p.id ? <Loader2 size={14} className="animate-spin text-gray-400" /> : <Check size={16} />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className={`text-sm font-medium truncate ${isActive ? 'text-emerald-400' : 'text-white'}`}>
+                    {p.name}
+                  </div>
+                  <div className="text-xs text-gray-500 font-mono">
+                    {p.invite_code}
+                  </div>
+                </div>
+              </button>
+              <button
+                onClick={() => leave(p)}
+                disabled={busy === p.id}
+                title="Lämna ligan"
+                className="text-gray-500 hover:text-red-400 transition-colors p-2 rounded disabled:opacity-40"
+              >
+                <LogOut size={14} />
+              </button>
+            </div>
+          )
+        })}
+        <Link
+          href="/select-pool"
+          className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-emerald-400 hover:bg-emerald-400/5 transition-colors"
+        >
+          <Plus size={16} />
+          Lägg till en ny liga
+        </Link>
+      </div>
+    </section>
   )
 }
 
@@ -330,6 +453,176 @@ function MyPayment({
       )}
       {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+function LigaModePicker({ pool, onChanged }: { pool: Pool; onChanged: () => void }) {
+  const supabase = createClient()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const mode = (pool.tournament_mode ?? 'B') as 'A' | 'B' | 'C'
+  const groupLocked = pool.mode_a_global_lock === true
+
+  async function setMode(next: 'A' | 'B' | 'C') {
+    if (next === mode) return
+    setBusy(true)
+    setError(null)
+    const { error: err } = await supabase
+      .from('pools')
+      .update({ tournament_mode: next })
+      .eq('id', pool.id)
+    setBusy(false)
+    if (err) {
+      setError(err.message)
+      return
+    }
+    onChanged()
+  }
+
+  async function lockGroup() {
+    if (!confirm(
+      mode === 'C'
+        ? 'Lås alla deltagares gruppspels-tips? Slutspels-tips kan fortfarande ändras tills avspark.'
+        : 'Lås ALLA deltagares tips? Detta går inte att ångra.'
+    )) return
+    setBusy(true)
+    setError(null)
+
+    // Hämta alla användare i ligan
+    const { data: members } = await supabase
+      .from('pool_memberships')
+      .select('user_id')
+      .eq('pool_id', pool.id)
+
+    const onlyGroup = mode === 'C'
+    for (const m of members ?? []) {
+      await supabase.rpc('lock_user_tips', {
+        p_user_id: (m as { user_id: string }).user_id,
+        p_only_group: onlyGroup,
+      })
+    }
+
+    const { error: err } = await supabase
+      .from('pools')
+      .update({ mode_a_global_lock: true })
+      .eq('id', pool.id)
+    setBusy(false)
+    if (err) {
+      setError(err.message)
+      return
+    }
+    onChanged()
+  }
+
+  const options: Array<{
+    key: 'A' | 'B' | 'C'
+    title: string
+    desc: string
+    icon: string
+  }> = [
+    {
+      key: 'A',
+      title: 'Läge A – Allt på en gång',
+      desc: 'Deltagarna tippar alla matcher och lämnar in. Tips kan inte ändras efter inlämning.',
+      icon: '📋',
+    },
+    {
+      key: 'B',
+      title: 'Läge B – Löpande per match',
+      desc: 'Deltagarna tippar inför varje match. Tips låses automatiskt vid avspark.',
+      icon: '⚡',
+    },
+    {
+      key: 'C',
+      title: 'Läge C – Hybrid',
+      desc: 'Gruppspelet tippas i förväg som Läge A. När gruppspelet är klart tippas slutspelet löpande som Läge B.',
+      icon: '🎯',
+    },
+  ]
+
+  return (
+    <section>
+      <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <Settings size={14} className="text-emerald-400" />
+        Spelform – {pool.name}
+      </h2>
+      <div
+        className="rounded-xl p-5 space-y-4"
+        style={{ background: '#111827', border: '1px solid #1f2937' }}
+      >
+        <div className="grid gap-2">
+          {options.map(opt => {
+            const active = opt.key === mode
+            return (
+              <button
+                key={opt.key}
+                onClick={() => setMode(opt.key)}
+                disabled={busy}
+                className={`text-left p-3 rounded-xl border-2 transition-all disabled:opacity-60 ${
+                  active
+                    ? 'border-emerald-400/60 bg-emerald-400/5'
+                    : 'border-transparent hover:border-white/10'
+                }`}
+                style={!active ? { background: '#1f2937' } : undefined}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-lg">{opt.icon}</span>
+                  <span className="font-semibold text-white text-sm">{opt.title}</span>
+                  {active && (
+                    <span className="ml-auto text-xs text-emerald-400 font-medium">Aktivt</span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-400 ml-7">{opt.desc}</p>
+              </button>
+            )
+          })}
+        </div>
+
+        {error && (
+          <div className="text-xs text-red-400 px-3 py-2 rounded-lg"
+            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)' }}>
+            {error}
+          </div>
+        )}
+
+        {/* Globalt lås (relevant för A och C) */}
+        {(mode === 'A' || mode === 'C') && (
+          <div className="rounded-xl p-4"
+            style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.25)' }}>
+            <div className="flex items-center gap-2 text-red-400 text-sm font-semibold mb-2">
+              <AlertCircle size={14} />
+              {mode === 'C' ? 'Lås gruppspels-tips' : 'Globalt lås'}
+            </div>
+            <p className="text-xs text-gray-400 mb-3">
+              {mode === 'C'
+                ? 'Lås alla deltagares gruppspels-tips när gruppspelet startar. Slutspelet kan fortfarande tippas inför varje match.'
+                : 'Lås ALLA deltagares tips på en gång när turneringen börjar. Kan inte ångras.'}
+            </p>
+            {groupLocked ? (
+              <div className="flex items-center gap-2 text-green-400 text-xs">
+                <CheckCircle size={14} />
+                {mode === 'C' ? 'Gruppspels-tips är låsta' : 'Alla tips är låsta'}
+              </div>
+            ) : (
+              <button
+                onClick={lockGroup}
+                disabled={busy}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-white text-sm transition-all disabled:opacity-50"
+                style={{
+                  background: 'rgba(239,68,68,0.15)',
+                  border: '1px solid rgba(239,68,68,0.4)',
+                  color: '#ef4444',
+                }}
+              >
+                {busy ? <Loader2 size={14} className="animate-spin" /> : <AlertCircle size={14} />}
+                {mode === 'C' ? 'Lås gruppspels-tips nu' : 'Lås alla tips nu'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 

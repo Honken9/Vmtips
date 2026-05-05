@@ -3,7 +3,7 @@ import './globals.css'
 import { createClient } from '@/lib/supabase/server'
 import { Navigation } from '@/components/Navigation'
 import { MusicToggle } from '@/components/MusicToggle'
-import { Profile, Pool } from '@/lib/types'
+import { Profile } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,41 +63,11 @@ export default async function RootLayout({
     }
   }
 
-  let pool: Pool | null = null
-  let allLigor: Pool[] = []
-  if (user) {
-    // Hämta alla ligor användaren är medlem i
-    const { data: memberships } = await supabase
-      .from('pool_memberships')
-      .select('pool:pools(*)')
-      .eq('user_id', user.id)
-    allLigor = ((memberships ?? [])
-      .flatMap(m => {
-        const p = (m as unknown as { pool: Pool | Pool[] | null }).pool
-        if (!p) return []
-        return Array.isArray(p) ? p : [p]
-      }) as Pool[])
-      .sort((a, b) => a.name.localeCompare(b.name))
-
-    if (profile?.pool_id) {
-      pool = allLigor.find(l => l.id === profile.pool_id) ?? null
-      if (!pool) {
-        // Profilen pekar på en liga användaren inte är medlem i längre
-        const { data } = await supabase
-          .from('pools')
-          .select('*')
-          .eq('id', profile.pool_id)
-          .single()
-        pool = data ?? null
-      }
-    }
-  }
-
   return (
     <html lang="sv">
       <body>
-        <Navigation profile={profile} pool={pool} allLigor={allLigor} />
-        <main className="max-w-6xl mx-auto px-3 sm:px-4 py-5 sm:py-8">
+        <Navigation profile={profile} />
+        <main className="max-w-[1400px] mx-auto px-3 sm:px-6 py-5 sm:py-8">
           {children}
         </main>
         <MusicToggle />
