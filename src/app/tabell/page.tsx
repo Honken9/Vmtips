@@ -2,8 +2,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { LeaderboardTable } from '@/components/LeaderboardTable'
-import { LeaderboardEntry, Match, Prediction, Settings, Profile, Pool } from '@/lib/types'
-import { calcDailyWinner, popularPicks, topExactScorer, stockholmToday } from '@/lib/stats'
+import { LeaderboardEntry, Match, Settings, Profile, Pool } from '@/lib/types'
+import { stockholmToday, isMatchOnStockholmDate } from '@/lib/stats'
 import { calcPot, calcPayouts, formatKr } from '@/lib/payments'
 import { Flag } from '@/components/Flag'
 import { format } from 'date-fns'
@@ -31,14 +31,17 @@ export default async function LeaderboardPage() {
   const poolId = meProfile.pool_id
   const isAdmin = meProfile.is_admin === true
 
+  // Ymd för dagens-vinnare
+  const ymd = stockholmToday()
+
   const [
     { data: leaderboardRaw },
     { data: settings },
     { data: matchesRaw },
-    { data: predictionsRaw },
     { data: profilesRaw },
     { data: pool },
     { data: paymentsRaw },
+    { data: popularRaw },
   ] = await Promise.all([
     supabase.from('leaderboard').select('*'),
     supabase.from('settings').select('*').single(),
@@ -46,25 +49,18 @@ export default async function LeaderboardPage() {
       .from('matches')
       .select('*, home_team:teams!matches_home_team_id_fkey(*), away_team:teams!matches_away_team_id_fkey(*)')
       .order('kickoff_at'),
-    supabase.from('predictions').select('*'),
-    supabase.from('profiles').select('id, display_name, pool_id'),
+    supabase.from('profiles').select('id, display_name, pool_id').eq('pool_id', poolId),
     supabase.from('pools').select('*').eq('id', poolId).single(),
     supabase.from('pool_payments').select('paid').eq('pool_id', poolId),
+    supabase.rpc('popular_picks_for_pool', { p_pool_id: poolId, p_limit: 5 }),
   ])
 
-  // Filtrera till bara medlemmar i samma pool
+  // Filtrera leaderboard till samma pool
   const leaderboard = (leaderboardRaw ?? []).filter(
     (e: LeaderboardEntry) => e.pool_id === poolId
   )
-  const memberIds = new Set(
-    (profilesRaw ?? [])
-      .filter((p: Pick<Profile, 'id' | 'pool_id'>) => p.pool_id === poolId)
-      .map((p: Pick<Profile, 'id'>) => p.id)
-  )
-  const predictionsInPool = (predictionsRaw ?? []).filter((p: Prediction) =>
-    memberIds.has(p.user_id)
-  )
 
+  void settings
   const s: Settings = settings ?? {
     id: 1,
     tournament_mode: 'B',
@@ -78,28 +74,58 @@ export default async function LeaderboardPage() {
 
   const entries = leaderboard as LeaderboardEntry[]
   const matches = (matchesRaw ?? []) as Match[]
-  const predictions = predictionsInPool
-  const profiles = ((profilesRaw ?? []).filter(
-    (p: Pick<Profile, 'pool_id'>) => p.pool_id === poolId
-  )) as Pick<Profile, 'id' | 'display_name'>[]
+  const profiles = (profilesRaw ?? []) as Pick<Profile, 'id' | 'display_name'>[]
   const currentPool = pool as Pool | null
 
   const totalMatches = matches.length
   const completedMatches = matches.filter(m => m.result_confirmed).length
   const participantsWithTips = entries.filter(e => e.predictions_graded > 0).length
 
-  const profilesById = new Map(profiles.map(p => [p.id, p.display_name]))
-  const ymd = stockholmToday()
-  const dailyWinner = calcDailyWinner({
-    matches,
-    predictions,
-    profilesById,
-    settings: s,
-    ymd,
-  })
-  const exactKing = topExactScorer(entries)
+  // Dagens vinnare via server-side RPC (slipper ladda 100k predictions)
+  const todaysFinishedMatchIds = matches
+    .filter(m => m.result_confirmed && isMatchOnStockholmDate(m.kickoff_at, ymd))
+    .map(m => m.id)
+  const { data: dailyWinnerRaw } = todaysFinishedMatchIds.length > 0
+    ? await supabase.rpc('daily_winner_for_pool', {
+        p_pool_id: poolId,
+        p_match_ids: todaysFinishedMatchIds,
+      })
+    : { data: null }
+  const dailyWinner = (dailyWinnerRaw && dailyWinnerRaw[0]) ? {
+    user_id: dailyWinnerRaw[0].user_id,
+    display_name: dailyWinnerRaw[0].display_name,
+    points: dailyWinnerRaw[0].points,
+    matches: dailyWinnerRaw[0].matches,
+  } : null
+
+  // Topp-exakta-tippare ur leaderboard-vyn (redan aggregerad)
+  const exactKing = entries.length > 0
+    ? [...entries].sort((a, b) => b.exact_scores - a.exact_scores)[0]
+    : null
   const leader = entries[0] ?? null
-  const popular = popularPicks({ matches, predictions, limit: 5 })
+
+  // Mest populära tipps via RPC (server-side aggregerat per liga)
+  const popularRows = (popularRaw ?? []) as Array<{
+    match_id: number
+    pred_home: number
+    pred_away: number
+    votes: number
+    total: number
+  }>
+  const matchById = new Map(matches.map(m => [m.id, m]))
+  const popular = popularRows.map(row => {
+    const m = matchById.get(row.match_id)
+    return {
+      match_id: row.match_id,
+      home_team: m?.home_team ?? null,
+      away_team: m?.away_team ?? null,
+      kickoff_at: m?.kickoff_at ?? '',
+      pred_home: row.pred_home,
+      pred_away: row.pred_away,
+      votes: Number(row.votes),
+      total: Number(row.total),
+    }
+  })
 
   const todayLabel = format(new Date(), 'EEE d MMM', { locale: sv })
 
