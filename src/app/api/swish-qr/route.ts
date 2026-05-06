@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
 // Server-side proxy mot Swishs officiella QR-API. Kör server-side så
 // vi slipper CORS och får den korrekta QR-formaten direkt från Swish.
 // Endpoint: https://mpc.getswish.net/qrg-swish/api/v1/prefilled
+//
+// Autentisering: bara inloggade användare får generera QR-koder så att
+// inte vem som helst använder vår route som gratis Swish-QR-tjänst.
 
-export const runtime = 'edge'
+// Edge runtime ger lägre latens men har inte tillgång till hela Supabase-
+// SDK:n; vi använder default Node.js runtime så getUser() funkar.
 
 interface SwishPrefilled {
   format: 'png' | 'jpg' | 'svg'
@@ -35,6 +40,13 @@ function sanitizeMessage(msg: string): string {
 }
 
 export async function GET(req: NextRequest) {
+  // Auth-check: bara inloggade användare
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { searchParams } = new URL(req.url)
   const phone = normalizePhone(searchParams.get('phone') ?? '')
   const amountStr = searchParams.get('amount')
