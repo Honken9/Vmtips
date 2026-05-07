@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import { Activity, Filter } from 'lucide-react'
@@ -124,8 +125,10 @@ interface Lookups {
   teams: Map<number, string>
 }
 
-function matchLabel(m: MatchLookup | undefined): string {
-  if (!m) return 'Okänd match'
+function matchLabel(m: MatchLookup | undefined, fallbackId?: number): string {
+  if (!m) {
+    return fallbackId ? `Match #${fallbackId}` : 'Okänd match'
+  }
   const home = m.home_team_name ?? m.home_placeholder ?? '?'
   const away = m.away_team_name ?? m.away_placeholder ?? '?'
   return `Match ${m.match_number}: ${home} – ${away}`
@@ -134,9 +137,11 @@ function matchLabel(m: MatchLookup | undefined): string {
 function describePrediction(row: AuditRow, lookups: Lookups): string {
   const c = (row.changes ?? {}) as Record<string, unknown>
   const fullRow = (c._row as Record<string, unknown> | undefined) ?? c
-  const matchId = Number(fullRow.match_id ?? c.match_id)
-  const m = lookups.matches.get(matchId)
-  const label = matchLabel(m)
+  const matchId = Number(
+    fullRow.match_id ?? c.match_id ?? (isDiff(c.match_id) ? (c.match_id as Diff).new : undefined)
+  )
+  const m = isFinite(matchId) && matchId > 0 ? lookups.matches.get(matchId) : undefined
+  const label = matchLabel(m, isFinite(matchId) ? matchId : undefined)
 
   if (row.action === 'insert') {
     return `${label}: ${c.pred_home}–${c.pred_away}`
@@ -246,16 +251,21 @@ function describeProfile(row: AuditRow, lookups: Lookups): string {
 function describeMatch(row: AuditRow, lookups: Lookups): string {
   const c = (row.changes ?? {}) as Record<string, unknown>
   const fullRow = (c._row as Record<string, unknown> | undefined) ?? c
-  const matchId = Number(fullRow.id ?? c.id ?? row.record_id)
-  const m = lookups.matches.get(matchId)
-  const label = matchLabel(m)
+  // För matches-tabellen: id är primärnyckeln OCH lika med record_id.
+  const matchId = Number(
+    fullRow.id ?? c.id ?? row.record_id
+  )
+  const m = isFinite(matchId) && matchId > 0 ? lookups.matches.get(matchId) : undefined
+  const label = matchLabel(m, isFinite(matchId) ? matchId : undefined)
 
   if (row.action !== 'update') return label
   const home = isDiff(c.home_score) ? c.home_score : null
   const away = isDiff(c.away_score) ? c.away_score : null
   if (home && away) {
-    return `${label}: ${home.old}–${away.old} → ${home.new}–${away.new}`
+    return `${label}: ${home.old ?? '–'}–${away.old ?? '–'} → ${home.new}–${away.new}`
   }
+  if (home) return `${label}: hemmamål ${arrowFmt(home)}`
+  if (away) return `${label}: bortamål ${arrowFmt(away)}`
   const parts: string[] = []
   for (const [key, val] of Object.entries(c)) {
     if (key.startsWith('_') || !isDiff(val)) continue
@@ -320,6 +330,8 @@ export default async function AdminAuditPage({
   const limit = Math.min(parseInt(params.limit || '200', 10) || 200, 1000)
 
   const supabase = await createClient()
+  // Admin-klient för matches/pools så RLS aldrig kan blockera kontextlookups
+  const admin = createAdminClient()
 
   const [
     { data: auditData, error },
@@ -336,10 +348,10 @@ export default async function AdminAuditPage({
       if (actionFilter) q = q.eq('action', actionFilter)
       return q
     })(),
-    supabase
+    admin
       .from('matches')
       .select('id, match_number, home_placeholder, away_placeholder, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name)'),
-    supabase.from('pools').select('id, name'),
+    admin.from('pools').select('id, name'),
   ])
 
   const rows = (auditData ?? []) as AuditRow[]
