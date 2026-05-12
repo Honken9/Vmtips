@@ -46,11 +46,18 @@ export default function LoginPage() {
         <div className="rounded-2xl p-8" style={{ background: '#111827', border: '1px solid #1f2937' }}>
           <h1 className="text-xl font-bold text-white mb-6">Logga in</h1>
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4" method="post" autoComplete="on">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">E-post</label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">E-post</label>
               <input
+                id="email"
+                name="email"
                 type="email"
+                autoComplete="email"
+                inputMode="email"
+                spellCheck={false}
+                autoCapitalize="off"
+                autoCorrect="off"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
@@ -61,9 +68,12 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Lösenord</label>
+              <label htmlFor="current-password" className="block text-sm font-medium text-gray-300 mb-1.5">Lösenord</label>
               <input
+                id="current-password"
+                name="password"
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required

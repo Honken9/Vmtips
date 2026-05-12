@@ -186,7 +186,7 @@ export default function RegisterPage() {
         <div className="rounded-2xl p-8" style={{ background: '#111827', border: '1px solid #1f2937' }}>
           <h1 className="text-xl font-bold text-white mb-6">Skapa konto</h1>
 
-          <form onSubmit={handleRegister} className="space-y-4">
+          <form onSubmit={handleRegister} className="space-y-4" method="post" autoComplete="on">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Visningsnamn</label>
               <input
@@ -202,9 +202,16 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">E-post</label>
+              <label htmlFor="register-email" className="block text-sm font-medium text-gray-300 mb-1.5">E-post</label>
               <input
+                id="register-email"
+                name="email"
                 type="email"
+                autoComplete="email"
+                inputMode="email"
+                spellCheck={false}
+                autoCapitalize="off"
+                autoCorrect="off"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
@@ -215,9 +222,12 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1.5">Lösenord</label>
+              <label htmlFor="new-password" className="block text-sm font-medium text-gray-300 mb-1.5">Lösenord</label>
               <input
+                id="new-password"
+                name="password"
                 type="password"
+                autoComplete="new-password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required

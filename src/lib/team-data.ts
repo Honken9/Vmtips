@@ -259,6 +259,20 @@ async function fetchRecentMatchPlayers(teamId: number): Promise<SquadPlayer[]> {
   }
 }
 
+// Normalisera namn för matchning mellan football-data.org-truppen och vår
+// fallback-lista. Tar bort diakritiska tecken (Ø → O, é → e), trimmar och
+// lowercasear. "Viktor Gyökeres" matchar då "Viktor Gyokeres" från API:n.
+function normalizeName(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[ø]/gi, 'o')
+    .replace(/[æ]/gi, 'ae')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+}
+
 function fallbackToSquadPlayers(fb: FallbackPlayer[]): SquadPlayer[] {
   // Negativa ids så vi inte krockar med football-data:s riktiga ids.
   return fb.map((p, i) => ({
@@ -317,6 +331,23 @@ export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballI
   if (squad.length === 0 && fallback) {
     squad = fallbackToSquadPlayers(fallback)
     provisional = true
+  }
+
+  // Anrika riktiga trupper med klubb + moderklubb + marknadsvärde från
+  // fallback-listan när namn matchar. Detta gör att marknadsvärdet visas
+  // även när football-data.org levererar den riktiga truppen.
+  if (squad.length > 0 && !provisional && fallback) {
+    const byName = new Map(fallback.map(p => [normalizeName(p.name), p]))
+    squad = squad.map(p => {
+      const fb = byName.get(normalizeName(p.name))
+      if (!fb) return p
+      return {
+        ...p,
+        club: p.club ?? fb.club ?? null,
+        youthClub: p.youthClub ?? fb.youthClub ?? null,
+        marketValueM: p.marketValueM ?? fb.marketValueM ?? null,
+      }
+    })
   }
 
   // Inget alls hittat – returnera null bara om vi heller inte har en fallback.

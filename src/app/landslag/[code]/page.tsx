@@ -240,16 +240,38 @@ export default async function LandslagDetail({
 
       {/* Trupp */}
       <section>
-        <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-          <Users size={18} className="text-emerald-400" />
-          Trupp
-          {football && football.squad.length > 0 && (
-            <span className="text-xs text-gray-500 font-normal">
-              ({football.squad.length} spelare
-              {football.squadIsProvisional ? ', provisorisk' : ''})
-            </span>
-          )}
-        </h2>
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <h2 className="text-lg font-bold text-white flex items-center gap-2">
+            <Users size={18} className="text-emerald-400" />
+            Trupp
+            {football && football.squad.length > 0 && (
+              <span className="text-xs text-gray-500 font-normal">
+                ({football.squad.length} spelare
+                {football.squadIsProvisional ? ', provisorisk' : ''})
+              </span>
+            )}
+          </h2>
+          {(() => {
+            const totalValue = groupedSquad.reduce((sum, p) => sum + (p.marketValueM ?? 0), 0)
+            const playersWithValue = groupedSquad.filter(p => (p.marketValueM ?? 0) > 0).length
+            if (totalValue === 0) return null
+            return (
+              <div
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm"
+                style={{
+                  background: 'rgba(16,185,129,0.1)',
+                  border: '1px solid rgba(16,185,129,0.3)',
+                }}
+                title={`Summa marknadsvärde för ${playersWithValue} av ${groupedSquad.length} spelare i truppen.`}
+              >
+                <span className="text-gray-400 text-xs">Truppvärde:</span>
+                <span className="font-bold text-emerald-400">
+                  €{totalValue >= 1000 ? `${(totalValue / 1000).toFixed(2)}B` : `${totalValue.toFixed(0)}M`}
+                </span>
+              </div>
+            )
+          })()}
+        </div>
         {!football || football.squad.length === 0 ? (
           <div className="rounded-xl p-6 text-sm text-gray-500"
             style={{ background: '#111827', border: '1px solid #1f2937' }}>
@@ -410,9 +432,10 @@ function PlayerRow({ p, photoUrl }: { p: SquadPlayer; photoUrl: string | null })
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-white truncate">{p.name}</div>
         <div className="text-xs text-gray-500 truncate">
-          {[a != null ? `${a} år` : null, p.club ?? p.nationality]
-            .filter(Boolean)
-            .join(' · ') || ' '}
+          {a != null && <span>{a} år · </span>}
+          <span className={p.club ? 'text-gray-300' : 'text-gray-600 italic'}>
+            {p.club ?? 'Klubb okänd'}
+          </span>
         </div>
         {p.youthClub && (
           <div className="text-[11px] text-gray-600 truncate">
