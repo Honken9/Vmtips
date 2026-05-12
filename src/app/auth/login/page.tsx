@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { TrophyLogo } from '@/components/TrophyLogo'
 import { Loader2 } from 'lucide-react'
@@ -12,7 +11,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
   const supabase = createClient()
 
   async function handleLogin(e: React.FormEvent) {
@@ -28,8 +26,9 @@ export default function LoginPage() {
       return
     }
 
-    router.push('/tips')
-    router.refresh()
+    // Full page reload så root-layout SSR:as om med nya auth-cookien
+    // och navigationen visar inloggat tillstånd direkt.
+    window.location.href = '/tips'
   }
 
   return (

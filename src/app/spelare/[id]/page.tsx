@@ -203,7 +203,7 @@ export default async function SpelarePage({
       {upcoming.length > 0 && (
         <section>
           <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3">
-            Kommande tipps
+            Kommande tips
           </h2>
           <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1f2937' }}>
             {upcoming.map((r, i) => (
@@ -283,7 +283,7 @@ function PredictionRow({
             </div>
           )}
           <div className="text-[10px] text-gray-500 mt-0.5">
-            tipps: <span className="text-emerald-400 font-medium">{row.p.pred_home}–{row.p.pred_away}</span>
+            tips: <span className="text-emerald-400 font-medium">{row.p.pred_home}–{row.p.pred_away}</span>
           </div>
         </div>
         <div className="flex items-center gap-1.5 flex-1 min-w-0">

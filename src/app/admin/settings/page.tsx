@@ -125,7 +125,7 @@ export default function AdminSettingsPage() {
                 type="text"
                 value={settings[key] ?? ''}
                 onChange={e => setSettings(s => s ? { ...s, [key]: e.target.value } : s)}
-                placeholder={`Fras ${i} – t.ex. "Tippsen rullar in..."`}
+                placeholder={`Fras ${i} – t.ex. "Tipsen rullar in..."`}
                 maxLength={60}
                 className="w-full mb-2 px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                 style={{ background: '#1f2937', border: '1px solid #374151' }}

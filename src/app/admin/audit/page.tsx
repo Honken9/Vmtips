@@ -147,7 +147,7 @@ function describePrediction(row: AuditRow, lookups: Lookups): string {
     return `${label}: ${c.pred_home}–${c.pred_away}`
   }
   if (row.action === 'delete') {
-    return `Raderade tipps på ${label}: ${c.pred_home}–${c.pred_away}`
+    return `Raderade tips på ${label}: ${c.pred_home}–${c.pred_away}`
   }
   // update
   const home = isDiff(c.pred_home) ? c.pred_home : null

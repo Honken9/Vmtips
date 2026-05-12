@@ -127,7 +127,7 @@ function buildPersonalPhrases(firstName: string, nickname: string): string[] {
     `🎩 ${nickname} drar tipsen ur hatten…`,
     `🎲 ${nickname} kastar tärningen…`,
     `👑 ${nickname} härskar över bracketen!`,
-    `🚀 ${nickname} skjuter iväg ett rocket-tipps…`,
+    `🚀 ${nickname} skjuter iväg ett rocket-tips…`,
   ]
 }
 

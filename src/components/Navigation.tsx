@@ -21,8 +21,9 @@ export function Navigation({ profile }: Props) {
 
   async function handleSignOut() {
     await supabase.auth.signOut()
-    router.push('/auth/login')
-    router.refresh()
+    // Full reload så root-layout SSR:as om utan auth-cookie och
+    // navigationen visar utloggat tillstånd direkt.
+    window.location.href = '/auth/login'
   }
 
   const links = [

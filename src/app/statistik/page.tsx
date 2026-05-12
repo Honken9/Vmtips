@@ -343,7 +343,7 @@ export default async function StatistikPage() {
       {/* Folkets favorit-tips */}
       <section>
         <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3">
-          Folkets vanligaste tipps
+          Folkets vanligaste tips
         </h2>
         {popularPicks.length === 0 ? (
           <div className="rounded-xl p-5 text-sm text-gray-500"

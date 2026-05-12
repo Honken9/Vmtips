@@ -128,8 +128,8 @@ export default function RegisterPage() {
       if (poolMode === 'create' && targetInviteCode) {
         setSuccess({ poolName: targetPoolName, inviteCode: targetInviteCode })
       } else {
-        router.push('/')
-        router.refresh()
+        // Full page reload så root-layout SSR:as om med nya auth-cookien.
+        window.location.href = '/'
       }
       return
     }
