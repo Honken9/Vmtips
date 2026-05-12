@@ -249,12 +249,12 @@ export function BonusTipsSection({ userId, teams, bonus, bonusResults, locked, p
                             // Spara direkt så slipper vi extra blur-klick
                             setTimeout(() => save('total_goals'), 0)
                           }}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-emerald-400 hover:bg-emerald-400/10 transition-colors"
-                          style={{ background: '#1f2937', border: '1px solid #374151' }}
-                          title="Räknar ihop alla mål från dina egna matchtipps"
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-black transition-all hover:opacity-90 shadow-sm"
+                          style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                          title="Räknar ihop alla mål från dina egna matchtips"
                         >
-                          <Calculator size={12} />
-                          Använd mina tipps: {tippedTotalGoals}
+                          <Calculator size={14} />
+                          Använd mina tips: {tippedTotalGoals} mål
                         </button>
                       )}
                     </div>
