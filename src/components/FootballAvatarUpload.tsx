@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Sparkles, CheckCircle, AlertCircle, Camera, Shirt, Activity, MapPin } from 'lucide-react'
+import { Loader2, Sparkles, CheckCircle, AlertCircle, Camera, Shirt, Activity, MapPin, X } from 'lucide-react'
 import Image from 'next/image'
 
 interface Props {
@@ -124,6 +124,7 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
   const [generating, setGenerating] = useState(initialGenerating)
   const [generatedAvatar, setGeneratedAvatar] = useState<string | null>(currentAvatar)
   const [error, setError] = useState<string | null>(null)
+  const [lightbox, setLightbox] = useState(false)
   const [success, setSuccess] = useState(false)
   const [dragOver, setDragOver] = useState(false)
   const [team, setTeam] = useState(TEAMS[0].value)
@@ -304,23 +305,36 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
       <div className="p-5 space-y-5" style={{ background: '#0f172a' }}>
         {/* Nuvarande avatar – stor helkropps-vy */}
         <div className="flex flex-col items-center gap-3">
-          <div className="relative w-full max-w-xs aspect-[3/4] rounded-2xl overflow-hidden"
-            style={{ border: '2px solid #374151', background: '#111827' }}>
-            {generatedAvatar ? (
+          {generatedAvatar ? (
+            <button
+              type="button"
+              onClick={() => setLightbox(true)}
+              className="relative w-full max-w-xs aspect-[3/4] rounded-2xl overflow-hidden cursor-zoom-in group"
+              style={{ border: '2px solid #374151', background: '#111827' }}
+              aria-label="Visa större bild"
+            >
               <Image
                 src={generatedAvatar}
                 alt={displayName}
                 fill
-                className="object-contain"
-                sizes="(max-width: 640px) 100vw, 320px"
+                className="object-cover transition-transform group-hover:scale-105"
+                sizes="(max-width: 640px) 100vw, 400px"
+                priority
               />
-            ) : (
+              <div className="absolute bottom-2 right-2 px-2 py-1 rounded text-[10px] font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ background: 'rgba(0,0,0,0.6)' }}>
+                Klicka för stor
+              </div>
+            </button>
+          ) : (
+            <div className="relative w-full max-w-xs aspect-[3/4] rounded-2xl overflow-hidden"
+              style={{ border: '2px solid #374151', background: '#111827' }}>
               <div className="w-full h-full flex items-center justify-center text-6xl font-bold text-white"
                 style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
                 {initials}
               </div>
-            )}
-          </div>
+            </div>
+          )}
           <div className="text-center">
             <div className="text-base font-semibold text-white">{displayName}</div>
             <div className="text-xs text-gray-500 mt-0.5">
@@ -496,6 +510,36 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
           AI bevarar ditt ansikte och klär dig i en fotbollsdräkt. Tar 30–60 sekunder.
         </p>
       </div>
+
+      {/* Lightbox – fullskärms-vy vid klick */}
+      {lightbox && generatedAvatar && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 cursor-zoom-out"
+          style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(8px)' }}
+          onClick={() => setLightbox(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            onClick={() => setLightbox(false)}
+            aria-label="Stäng"
+            className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.2)' }}
+          >
+            <X size={20} />
+          </button>
+          <div className="relative max-h-[95vh] max-w-[95vw] aspect-[3/4]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={generatedAvatar}
+              alt={displayName}
+              className="max-h-[95vh] max-w-[95vw] object-contain rounded-xl shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
