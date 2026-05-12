@@ -1,6 +1,7 @@
 // Hämtar landslagsdata från externa API:er (cache:ad) och från football-data.org.
 
 import { getFallbackSquad, type FallbackPlayer } from './wc-fallback-squads'
+import { getFallbackCoach } from './wc-fallback-coaches'
 
 export interface CountryInfo {
   capital: string | null
@@ -352,6 +353,15 @@ export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballI
 
   // Inget alls hittat – returnera null bara om vi heller inte har en fallback.
   if (squad.length === 0 && !t) return null
+
+  // Fallback för förbundskapten när football-data.org inte har det.
+  if (!coachName) {
+    const fbCoach = getFallbackCoach(fifaCode)
+    if (fbCoach) {
+      coachName = fbCoach.name
+      coachNationality = coachNationality ?? fbCoach.nationality ?? null
+    }
+  }
 
   return {
     id: t?.id ?? null,
