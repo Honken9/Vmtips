@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
     const prompt = `Transform this person into a professional football (soccer) player on the ${teamName} national/club team. Generate a FULL BODY shot showing the person from head to toe, wearing the ${teamName} kit: ${teamKit}, plus matching football boots. The player is ${poseDesc}. Setting: ${arenaDesc}. Keep the person's face and identity EXACTLY the same – do NOT change their facial features, skin tone, hair color, or hairstyle. Professional sports photography style, realistic, vibrant colors, dramatic stadium lighting, sharp focus on the player. The FULL BODY must be visible in the frame, from head to toe. High quality, photorealistic, magazine cover style.`
 
     const response = await genAI.models.generateContent({
-      model: 'gemini-3.1-flash-image-preview',
+      model: 'gemini-2.5-flash-image',
       contents: [
         {
           role: 'user',

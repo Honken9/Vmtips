@@ -67,7 +67,12 @@ export default async function ReglerPage() {
           </li>
           <li className="flex gap-2">
             <span className="text-amber-400 shrink-0">🥅</span>
-            <span><strong>Totalt antal mål</strong> – hur många mål görs i hela turneringen? Exakt rätt = 5p.</span>
+            <span>
+              <strong>Totalt antal mål</strong> – hur många mål görs i hela turneringen? Exakt rätt = 5p.
+              <span className="block text-xs text-gray-500 mt-1">
+                Räknar alla mål under turneringen — gruppspelet, slutspelets fulltid, eventuell förlängning samt eventuella straffläggningsmål. Det vill säga slutresultaten på samtliga 104 matcher summeras.
+              </span>
+            </span>
           </li>
         </ul>
       </Section>
