@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Team } from '@/lib/types'
 import { fetchCountry, fetchTeamFootball, type SquadPlayer } from '@/lib/team-data'
-import { fetchPlayerPhotos } from '@/lib/wiki-photos'
+import { fetchPlayerInfo } from '@/lib/wiki-photos'
 import { Flag } from '@/components/Flag'
 import { getFacts } from '@/lib/team-facts'
 import { ArrowLeft, MapPin, Users, User, Trophy, Star, Calendar, Globe2, ShieldCheck } from 'lucide-react'
@@ -70,20 +70,44 @@ export default async function LandslagDetail({
   ])
   const facts = getFacts(team.code)
 
-  const groupedSquad = (football?.squad ?? []).slice().sort((a, b) => {
-    const pa = POSITION_ORDER[a.position ?? ''] ?? 99
-    const pb = POSITION_ORDER[b.position ?? ''] ?? 99
-    if (pa !== pb) return pa - pb
-    if ((a.shirtNumber ?? 99) !== (b.shirtNumber ?? 99)) {
-      return (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99)
-    }
-    return a.name.localeCompare(b.name)
-  })
+  const rawSquad = football?.squad ?? []
 
-  const photos =
-    groupedSquad.length > 0
-      ? await fetchPlayerPhotos(groupedSquad.map(p => p.name))
-      : new Map<string, string>()
+  // Hämta foto + aktuell klubb från Wikipedia för alla spelare i en batch
+  const wikiInfo =
+    rawSquad.length > 0
+      ? await fetchPlayerInfo(rawSquad.map(p => p.name))
+      : new Map<string, { photoUrl?: string; currentClub?: string }>()
+
+  // Anrika med Wikipedia-klubb när vår fallback saknar + default-värde per position
+  const groupedSquad = rawSquad
+    .map(p => {
+      const info = wikiInfo.get(p.name)
+      return {
+        ...p,
+        club: p.club ?? info?.currentClub ?? null,
+        marketValueM:
+          p.marketValueM ??
+          (p.position === 'Forward' ? 4
+            : p.position === 'Midfielder' ? 3
+            : p.position === 'Defender' ? 2.5
+            : p.position === 'Goalkeeper' ? 1.5
+            : 2),
+      }
+    })
+    .sort((a, b) => {
+      const pa = POSITION_ORDER[a.position ?? ''] ?? 99
+      const pb = POSITION_ORDER[b.position ?? ''] ?? 99
+      if (pa !== pb) return pa - pb
+      if ((a.shirtNumber ?? 99) !== (b.shirtNumber ?? 99)) {
+        return (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99)
+      }
+      return a.name.localeCompare(b.name)
+    })
+
+  const photos = new Map<string, string>()
+  for (const [name, info] of wikiInfo) {
+    if (info.photoUrl) photos.set(name, info.photoUrl)
+  }
 
   return (
     <div className="space-y-6">
