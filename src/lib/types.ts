@@ -62,6 +62,14 @@ export interface PoolPayment {
   amount: number | null
 }
 
+export interface PoolMemberTag {
+  pool_id: number
+  user_id: string
+  color: string | null
+  department: string | null
+  updated_at: string
+}
+
 export interface Team {
   id: number
   name: string
