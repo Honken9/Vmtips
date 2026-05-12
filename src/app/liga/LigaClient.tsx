@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import type { LeaderboardEntry, Pool } from '@/lib/types'
+import type { LeaderboardEntry, Pool, PoolMemberTag } from '@/lib/types'
 import {
   buildSwishUrl, isValidSwishPhone,
 } from '@/lib/swish'
@@ -33,9 +33,10 @@ interface Props {
   ranking: LeaderboardEntry[]
   canManage: boolean
   allLigor: Pool[]
+  tags: PoolMemberTag[]
 }
 
-export function LigaClient({ pool, meUserId, members, ranking, canManage, allLigor }: Props) {
+export function LigaClient({ pool, meUserId, members, ranking, canManage, allLigor, tags }: Props) {
   const supabase = createClient()
   const router = useRouter()
 
@@ -167,6 +168,7 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
           fee={fee}
           canManage={canManage}
           meUserId={meUserId}
+          tags={tags}
           onChanged={() => router.refresh()}
           supabase={supabase}
         />
@@ -780,18 +782,59 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 // ─────────────────────────────────────────────────────────
+// Färgpalett som taggar kan välja mellan. Tailwind-namn + hex för rendering.
+const TAG_COLORS: { key: string; hex: string; label: string }[] = [
+  { key: 'emerald', hex: '#10b981', label: 'Grön' },
+  { key: 'sky', hex: '#0ea5e9', label: 'Blå' },
+  { key: 'rose', hex: '#f43f5e', label: 'Rosa' },
+  { key: 'amber', hex: '#f59e0b', label: 'Gul' },
+  { key: 'violet', hex: '#8b5cf6', label: 'Lila' },
+  { key: 'cyan', hex: '#06b6d4', label: 'Cyan' },
+  { key: 'lime', hex: '#84cc16', label: 'Lime' },
+  { key: 'pink', hex: '#ec4899', label: 'Skär' },
+  { key: 'orange', hex: '#f97316', label: 'Orange' },
+  { key: 'slate', hex: '#94a3b8', label: 'Grå' },
+]
+
+function colorHex(key: string | null | undefined): string | null {
+  if (!key) return null
+  return TAG_COLORS.find(c => c.key === key)?.hex ?? null
+}
+
 function MemberList({
-  members, poolId, fee, canManage, meUserId, onChanged, supabase,
+  members, poolId, fee, canManage, meUserId, tags, onChanged, supabase,
 }: {
   members: MemberRow[]
   poolId: number
   fee: number
   canManage: boolean
   meUserId: string
+  tags: PoolMemberTag[]
   onChanged: () => void
   supabase: ReturnType<typeof createClient>
 }) {
   const [busy, setBusy] = useState<string | null>(null)
+  const [editingTag, setEditingTag] = useState<string | null>(null)
+  const tagByUser = new Map(tags.map(t => [t.user_id, t]))
+
+  async function saveTag(userId: string, color: string | null, department: string | null) {
+    setBusy(`tag-${userId}`)
+    await supabase
+      .from('pool_member_tags')
+      .upsert(
+        {
+          pool_id: poolId,
+          user_id: userId,
+          color: color ?? null,
+          department: department?.trim() || null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'pool_id,user_id' }
+      )
+    setBusy(null)
+    setEditingTag(null)
+    onChanged()
+  }
 
   async function toggle(member: MemberRow) {
     setBusy(member.user_id)
@@ -815,12 +858,30 @@ function MemberList({
 
   return (
     <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1f2937' }}>
-      {members.map((m, i) => (
+      {members.map((m, i) => {
+        const tag = tagByUser.get(m.user_id)
+        const canEditTag = canManage || m.user_id === meUserId
+        const dotHex = colorHex(tag?.color)
+        return (
+        <div key={m.user_id}>
         <div
-          key={m.user_id}
           className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? 'border-t' : ''}`}
           style={{ borderColor: '#1f2937', background: '#111827' }}
         >
+          {/* Färgprick */}
+          <button
+            type="button"
+            onClick={() => canEditTag && setEditingTag(editingTag === m.user_id ? null : m.user_id)}
+            disabled={!canEditTag}
+            title={canEditTag ? 'Redigera färg + avdelning' : tag?.department ?? ''}
+            className="shrink-0 w-3.5 h-3.5 rounded-full transition-transform disabled:cursor-default"
+            style={{
+              background: dotHex ?? 'transparent',
+              border: `1px solid ${dotHex ? 'transparent' : '#374151'}`,
+            }}
+            aria-label="Färg-tagg"
+          />
+
           <Link
             href={`/spelare/${m.user_id}`}
             className="flex-1 min-w-0 flex items-center gap-2 hover:underline"
@@ -829,7 +890,24 @@ function MemberList({
               {m.display_name}
             </span>
             {m.is_admin && <Crown size={12} className="text-amber-400 shrink-0" />}
+            {tag?.department && (
+              <span className="text-[11px] px-1.5 py-0.5 rounded shrink-0 text-gray-300"
+                style={{ background: '#1f2937', border: '1px solid #374151' }}>
+                {tag.department}
+              </span>
+            )}
           </Link>
+
+          {canEditTag && (
+            <button
+              type="button"
+              onClick={() => setEditingTag(editingTag === m.user_id ? null : m.user_id)}
+              className="text-xs text-gray-500 hover:text-emerald-400 shrink-0"
+              title="Redigera tagg"
+            >
+              {editingTag === m.user_id ? '✕' : '✎'}
+            </button>
+          )}
 
           {fee > 0 && (
             <>
@@ -869,7 +947,93 @@ function MemberList({
             </>
           )}
         </div>
-      ))}
+
+        {/* Tag-editor: visas inline under raden när användaren klickat redigera */}
+        {editingTag === m.user_id && canEditTag && (
+          <TagEditor
+            currentColor={tag?.color ?? null}
+            currentDepartment={tag?.department ?? null}
+            busy={busy === `tag-${m.user_id}`}
+            onSave={(color, dept) => saveTag(m.user_id, color, dept)}
+            onCancel={() => setEditingTag(null)}
+          />
+        )}
+        </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+function TagEditor({
+  currentColor, currentDepartment, busy, onSave, onCancel,
+}: {
+  currentColor: string | null
+  currentDepartment: string | null
+  busy: boolean
+  onSave: (color: string | null, department: string | null) => void
+  onCancel: () => void
+}) {
+  const [color, setColor] = useState<string | null>(currentColor)
+  const [department, setDepartment] = useState<string>(currentDepartment ?? '')
+  return (
+    <div className="px-4 py-3 space-y-3 border-t"
+      style={{ background: '#0f172a', borderColor: '#1f2937' }}>
+      <div>
+        <div className="text-[11px] uppercase tracking-wider text-gray-500 mb-2">Färg</div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setColor(null)}
+            className={`w-7 h-7 rounded-full transition-transform ${color === null ? 'ring-2 ring-emerald-400 scale-110' : ''}`}
+            style={{ background: 'transparent', border: '1px dashed #374151' }}
+            title="Ingen färg"
+            aria-label="Ingen färg"
+          />
+          {TAG_COLORS.map(c => (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => setColor(c.key)}
+              className={`w-7 h-7 rounded-full transition-transform ${color === c.key ? 'ring-2 ring-white scale-110' : ''}`}
+              style={{ background: c.hex }}
+              title={c.label}
+              aria-label={c.label}
+            />
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="text-[11px] uppercase tracking-wider text-gray-500 mb-1">Avdelning</div>
+        <input
+          type="text"
+          value={department}
+          onChange={e => setDepartment(e.target.value)}
+          maxLength={30}
+          placeholder="t.ex. Försäljning, Kompisar, Familj"
+          className="w-full px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+          style={{ background: '#1f2937', border: '1px solid #374151' }}
+        />
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => onSave(color, department)}
+          disabled={busy}
+          className="px-4 py-1.5 rounded-lg text-sm font-medium text-black gold-gradient disabled:opacity-40"
+        >
+          {busy ? 'Sparar…' : 'Spara'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-4 py-1.5 rounded-lg text-sm text-gray-400 hover:text-white"
+          style={{ background: '#1f2937', border: '1px solid #374151' }}
+        >
+          Avbryt
+        </button>
+      </div>
     </div>
   )
 }

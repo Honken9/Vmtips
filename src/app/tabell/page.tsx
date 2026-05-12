@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { LeaderboardTable } from '@/components/LeaderboardTable'
-import { LeaderboardEntry, Match, Settings, Profile, Pool } from '@/lib/types'
+import { LeaderboardEntry, Match, Settings, Profile, Pool, PoolMemberTag } from '@/lib/types'
 import { stockholmToday, isMatchOnStockholmDate } from '@/lib/stats'
 import { calcPot, calcPayouts, formatKr } from '@/lib/payments'
 import { Flag } from '@/components/Flag'
@@ -42,6 +42,7 @@ export default async function LeaderboardPage() {
     { data: pool },
     { data: paymentsRaw },
     { data: popularRaw },
+    { data: tagsRaw },
   ] = await Promise.all([
     supabase.from('leaderboard').select('*'),
     supabase.from('settings').select('*').single(),
@@ -53,7 +54,10 @@ export default async function LeaderboardPage() {
     supabase.from('pools').select('*').eq('id', poolId).single(),
     supabase.from('pool_payments').select('paid').eq('pool_id', poolId),
     supabase.rpc('popular_picks_for_pool', { p_pool_id: poolId, p_limit: 5 }),
+    supabase.from('pool_member_tags').select('*').eq('pool_id', poolId),
   ])
+
+  const tags = (tagsRaw ?? []) as PoolMemberTag[]
 
   // Filtrera leaderboard till samma pool
   const leaderboard = (leaderboardRaw ?? []).filter(
@@ -262,7 +266,7 @@ export default async function LeaderboardPage() {
       {/* Leaderboard */}
       <section>
         <h2 className="text-xl font-bold text-white mb-4">Tabell</h2>
-        <LeaderboardTable entries={entries} participantsWithTips={participantsWithTips} />
+        <LeaderboardTable entries={entries} participantsWithTips={participantsWithTips} tags={tags} />
       </section>
 
       {/* Mest populära tips */}

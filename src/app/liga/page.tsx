@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import type { LeaderboardEntry, Pool, PoolPayment, Profile } from '@/lib/types'
+import type { LeaderboardEntry, Pool, PoolPayment, PoolMemberTag, Profile } from '@/lib/types'
 import { LigaClient } from './LigaClient'
 
 export const dynamic = 'force-dynamic'
@@ -35,12 +35,14 @@ export default async function LigaPage() {
     { data: paymentsRaw },
     { data: leaderboardRaw },
     { data: membershipsRaw },
+    { data: tagsRaw },
   ] = await Promise.all([
     supabase.from('pools').select('*').eq('id', poolId).single(),
     supabase.from('profiles').select('id, display_name, is_admin').eq('pool_id', poolId),
     supabase.from('pool_payments').select('*').eq('pool_id', poolId),
     supabase.from('leaderboard').select('*'),
     supabase.from('pool_memberships').select('pool:pools(*)').eq('user_id', user.id),
+    supabase.from('pool_member_tags').select('*').eq('pool_id', poolId),
   ])
 
   if (!pool) redirect('/select-pool')
@@ -75,6 +77,8 @@ export default async function LigaPage() {
   const isCreator = currentPool.created_by === user.id
   const canManage = isCreator || meIsAdmin
 
+  const tags = (tagsRaw ?? []) as PoolMemberTag[]
+
   return (
     <LigaClient
       pool={currentPool}
@@ -84,6 +88,7 @@ export default async function LigaPage() {
       ranking={ranking}
       canManage={canManage}
       allLigor={allLigor}
+      tags={tags}
     />
   )
 }

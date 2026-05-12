@@ -1,15 +1,23 @@
 'use client'
 
 import Link from 'next/link'
-import { LeaderboardEntry } from '@/lib/types'
+import { LeaderboardEntry, PoolMemberTag } from '@/lib/types'
 import { Lock } from 'lucide-react'
+
+const TAG_COLOR_HEX: Record<string, string> = {
+  emerald: '#10b981', sky: '#0ea5e9', rose: '#f43f5e', amber: '#f59e0b',
+  violet: '#8b5cf6', cyan: '#06b6d4', lime: '#84cc16', pink: '#ec4899',
+  orange: '#f97316', slate: '#94a3b8',
+}
 
 interface Props {
   entries: LeaderboardEntry[]
   participantsWithTips: number
+  tags?: PoolMemberTag[]
 }
 
-export function LeaderboardTable({ entries }: Props) {
+export function LeaderboardTable({ entries, tags = [] }: Props) {
+  const tagByUser = new Map(tags.map(t => [t.user_id, t]))
   if (entries.length === 0) {
     return (
       <div
@@ -57,9 +65,31 @@ export function LeaderboardTable({ entries }: Props) {
                     href={`/spelare/${entry.user_id}`}
                     className="flex items-center gap-2 group"
                   >
+                    {(() => {
+                      const tag = tagByUser.get(entry.user_id)
+                      const hex = tag?.color ? TAG_COLOR_HEX[tag.color] : null
+                      if (!hex) return null
+                      return (
+                        <span
+                          className="shrink-0 w-2.5 h-2.5 rounded-full"
+                          style={{ background: hex }}
+                          aria-hidden="true"
+                        />
+                      )
+                    })()}
                     <span className={`font-semibold group-hover:underline ${i === 0 ? 'text-amber-400' : 'text-white'}`}>
                       {entry.display_name}
                     </span>
+                    {(() => {
+                      const dept = tagByUser.get(entry.user_id)?.department
+                      if (!dept) return null
+                      return (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded shrink-0 text-gray-300"
+                          style={{ background: '#1f2937', border: '1px solid #374151' }}>
+                          {dept}
+                        </span>
+                      )
+                    })()}
                     {entry.tips_locked && (
                       <Lock size={12} className="text-green-500" />
                     )}
