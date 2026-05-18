@@ -133,16 +133,22 @@ export default async function HomePage() {
         />
       </div>
 
-      {/* Nedräkning till nästa match */}
+      {/* Nedräkning till nästa match – klickbar → matchsidan filtrerad på dagen */}
       {upcomingMatch && (
-        <MatchCountdown
-          targetIso={upcomingMatch.kickoff_at}
-          homeName={upcomingMatch.home_team?.name ?? upcomingMatch.home_placeholder ?? '?'}
-          awayName={upcomingMatch.away_team?.name ?? upcomingMatch.away_placeholder ?? '?'}
-          homeFlag={upcomingMatch.home_team?.flag}
-          awayFlag={upcomingMatch.away_team?.flag}
-          venue={upcomingMatch.venue}
-        />
+        <Link
+          href={`/matches?day=${new Date(upcomingMatch.kickoff_at).toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })}`}
+          className="block transition-transform hover:scale-[1.01]"
+          title="Visa på matchsidan"
+        >
+          <MatchCountdown
+            targetIso={upcomingMatch.kickoff_at}
+            homeName={upcomingMatch.home_team?.name ?? upcomingMatch.home_placeholder ?? '?'}
+            awayName={upcomingMatch.away_team?.name ?? upcomingMatch.away_placeholder ?? '?'}
+            homeFlag={upcomingMatch.home_team?.flag}
+            awayFlag={upcomingMatch.away_team?.flag}
+            venue={upcomingMatch.venue}
+          />
+        </Link>
       )}
 
       <div className="grid lg:grid-cols-3 gap-8">
