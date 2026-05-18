@@ -6,7 +6,7 @@ import { Match, Team, STAGE_LABELS } from '@/lib/types'
 import { Flag } from '@/components/Flag'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
-import { CheckCircle, Clock, MapPin, Filter, X } from 'lucide-react'
+import { CheckCircle, Clock, MapPin, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 // Flagga + namn. Klickbar länk till landslagssidan om laget är känt
 // (har en team-kod); annars vanlig text (för slutspels-placeholders).
@@ -137,6 +137,23 @@ export function MatchesClient({ matches, teams, initialDay = '' }: Props) {
     setGroup('')
   }
 
+  // Stega dag framåt/bakåt genom listan av speldagar
+  const dayKeys = days.map(d => d[0])
+  const curDayIdx = day ? dayKeys.indexOf(day) : -1
+  const canStepPrev = dayKeys.length > 0 && curDayIdx !== 0
+  const canStepNext = dayKeys.length > 0 && curDayIdx !== dayKeys.length - 1
+  function stepDay(delta: number) {
+    if (dayKeys.length === 0) return
+    if (curDayIdx === -1) {
+      // "Alla dagar": framåt → första dagen, bakåt → sista
+      setDay(delta > 0 ? dayKeys[0] : dayKeys[dayKeys.length - 1])
+      return
+    }
+    const next = curDayIdx + delta
+    if (next < 0 || next >= dayKeys.length) return
+    setDay(dayKeys[next])
+  }
+
   const selectStyle = {
     background: '#1f2937',
     border: '1px solid #374151',
@@ -158,17 +175,39 @@ export function MatchesClient({ matches, teams, initialDay = '' }: Props) {
         style={{ background: '#111827', border: '1px solid #1f2937' }}>
         <Filter size={16} className="text-gray-500 shrink-0" />
 
-        <select
-          value={day}
-          onChange={e => setDay(e.target.value)}
-          className="px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
-          style={selectStyle}
-        >
-          <option value="">Alla dagar</option>
-          {days.map(([key, label]) => (
-            <option key={key} value={key}>{label}</option>
-          ))}
-        </select>
+        <div className="flex items-stretch gap-1">
+          <select
+            value={day}
+            onChange={e => setDay(e.target.value)}
+            className="px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+            style={selectStyle}
+          >
+            <option value="">Alla dagar</option>
+            {days.map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => stepDay(-1)}
+            disabled={!canStepPrev}
+            title="Föregående dag"
+            aria-label="Föregående dag"
+            className="px-2 rounded-lg text-gray-300 hover:text-white disabled:opacity-30 disabled:cursor-default transition-colors"
+            style={selectStyle}
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <button
+            onClick={() => stepDay(1)}
+            disabled={!canStepNext}
+            title="Nästa dag"
+            aria-label="Nästa dag"
+            className="px-2 rounded-lg text-gray-300 hover:text-white disabled:opacity-30 disabled:cursor-default transition-colors"
+            style={selectStyle}
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
 
         <select
           value={teamId}
@@ -217,11 +256,14 @@ export function MatchesClient({ matches, teams, initialDay = '' }: Props) {
         <div className="space-y-6">
           {byDay.map(d => (
             <section key={d.key}>
-              <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-sm font-bold text-emerald-400 uppercase tracking-wider">
+              <div className="flex items-center gap-3 mb-3">
+                <h2 className="text-base sm:text-lg font-bold text-white capitalize">
                   {d.label}
                 </h2>
-                <span className="text-xs text-gray-600">{d.matches.length} matcher</span>
+                <span className="text-xs font-medium text-emerald-400 px-2 py-0.5 rounded-full"
+                  style={{ background: 'rgba(16,185,129,0.12)' }}>
+                  {d.matches.length} matcher
+                </span>
                 <div className="flex-1 h-px" style={{ background: '#1f2937' }} />
               </div>
               <div className="rounded-xl overflow-hidden divide-y"
@@ -250,9 +292,9 @@ function MatchRow({ match }: { match: Match }) {
 
   return (
     <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3">
-      <div className="text-xs shrink-0 w-12 sm:w-16 leading-tight">
-        <div className="text-emerald-400 font-bold">{time}</div>
-        <div className="text-gray-600 text-[10px] truncate">{stageLabel}</div>
+      <div className="shrink-0 w-16 sm:w-20 leading-tight">
+        <div className="text-emerald-400 font-bold text-base tabular-nums">{time}</div>
+        <div className="text-gray-300 text-[11px] font-medium truncate">{stageLabel}</div>
       </div>
       <TeamLabel team={match.home_team} fallbackName={homeName} flag={homeFlag} align="right" />
       <div className="shrink-0 w-14 sm:w-20 text-center">
