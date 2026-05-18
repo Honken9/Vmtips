@@ -16,6 +16,15 @@ const ISO_OVERRIDES: Record<string, string> = {
   // (t.ex. England 🏴󠁧󠁢󠁥󠁮󠁧󠁿 är tag-baserad, inte regional indicator)
 }
 
+// Subdivisions-flaggor (tag sequences) → FlagCDN-koder.
+// 🏴󠁧󠁢󠁥󠁮󠁧󠁿 = U+1F3F4 + tag-tecken "gbeng" + cancel-tag.
+const SUBDIVISION_MAP: Record<string, string> = {
+  gbeng: 'gb-eng', // England
+  gbsct: 'gb-sct', // Skottland
+  gbwls: 'gb-wls', // Wales
+  gbnir: 'gb-nir', // Nordirland
+}
+
 function flagEmojiToIso2(flagEmoji: string | null | undefined): string | null {
   if (!flagEmoji) return null
   const cps: number[] = []
@@ -23,6 +32,20 @@ function flagEmojiToIso2(flagEmoji: string | null | undefined): string | null {
     const cp = ch.codePointAt(0)
     if (cp != null) cps.push(cp)
   }
+
+  // Tag-sekvens: U+1F3F4 följt av tag-tecken (U+E0001–U+E007F)
+  if (cps[0] === 0x1f3f4) {
+    let code = ''
+    for (let i = 1; i < cps.length; i++) {
+      const cp = cps[i]
+      if (cp === 0xe007f) break // cancel tag
+      if (cp >= 0xe0061 && cp <= 0xe007a) {
+        code += String.fromCharCode(cp - 0xe0000) // tag a-z → ascii
+      }
+    }
+    return SUBDIVISION_MAP[code] ?? null
+  }
+
   // Standard regional-indicator-flagga: två tecken i U+1F1E6 – U+1F1FF
   const RI_BASE = 0x1f1e6
   if (cps.length === 2 && cps.every(cp => cp >= RI_BASE && cp <= 0x1f1ff)) {
