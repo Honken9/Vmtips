@@ -1,11 +1,63 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { Match, Team, STAGE_LABELS } from '@/lib/types'
 import { Flag } from '@/components/Flag'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import { CheckCircle, Clock, MapPin, Filter, X } from 'lucide-react'
+
+// Flagga + namn. Klickbar länk till landslagssidan om laget är känt
+// (har en team-kod); annars vanlig text (för slutspels-placeholders).
+function TeamLabel({
+  team, fallbackName, flag, align,
+}: {
+  team: Team | undefined
+  fallbackName: string
+  flag: string
+  align: 'left' | 'right'
+}) {
+  const name = team?.name ?? fallbackName
+  const inner = (
+    <>
+      {align === 'right' && (
+        <span className="text-sm font-medium truncate text-right group-hover/team:text-emerald-400 transition-colors">
+          {name}
+        </span>
+      )}
+      {flag && <Flag emoji={flag} name={name} width={22} height={16} className="shrink-0" />}
+      {align === 'left' && (
+        <span className="text-sm font-medium truncate group-hover/team:text-emerald-400 transition-colors">
+          {name}
+        </span>
+      )}
+    </>
+  )
+
+  if (team?.code) {
+    return (
+      <Link
+        href={`/landslag/${team.code}`}
+        title={`Visa ${name}`}
+        className={`flex items-center gap-1.5 flex-1 min-w-0 group/team text-white ${
+          align === 'right' ? 'justify-end' : ''
+        }`}
+      >
+        {inner}
+      </Link>
+    )
+  }
+  return (
+    <div
+      className={`flex items-center gap-1.5 flex-1 min-w-0 text-white ${
+        align === 'right' ? 'justify-end' : ''
+      }`}
+    >
+      {inner}
+    </div>
+  )
+}
 
 interface Props {
   matches: Match[]
@@ -202,10 +254,7 @@ function MatchRow({ match }: { match: Match }) {
         <div className="text-emerald-400 font-bold">{time}</div>
         <div className="text-gray-600 text-[10px] truncate">{stageLabel}</div>
       </div>
-      <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
-        <span className="text-sm font-medium text-white truncate text-right">{homeName}</span>
-        {homeFlag && <Flag emoji={homeFlag} name={homeName} width={22} height={16} className="shrink-0" />}
-      </div>
+      <TeamLabel team={match.home_team} fallbackName={homeName} flag={homeFlag} align="right" />
       <div className="shrink-0 w-14 sm:w-20 text-center">
         {match.result_confirmed ? (
           <div className="flex items-center justify-center gap-1">
@@ -221,10 +270,7 @@ function MatchRow({ match }: { match: Match }) {
           </div>
         )}
       </div>
-      <div className="flex items-center gap-1.5 flex-1 min-w-0">
-        {awayFlag && <Flag emoji={awayFlag} name={awayName} width={22} height={16} className="shrink-0" />}
-        <span className="text-sm font-medium text-white truncate">{awayName}</span>
-      </div>
+      <TeamLabel team={match.away_team} fallbackName={awayName} flag={awayFlag} align="left" />
       {match.venue && match.venue !== 'TBD' && (
         <div className="text-xs text-gray-500 shrink-0 hidden lg:flex items-center gap-1 w-32 truncate">
           <MapPin size={10} className="shrink-0" />
