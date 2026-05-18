@@ -136,9 +136,9 @@ export default async function HomePage() {
       {/* Nedräkning till nästa match – klickbar → matchsidan filtrerad på dagen */}
       {upcomingMatch && (
         <Link
-          href={`/matches?day=${new Date(upcomingMatch.kickoff_at).toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })}`}
+          href="/matches"
           className="block transition-transform hover:scale-[1.01]"
-          title="Visa på matchsidan"
+          title="Visa alla matcher"
         >
           <MatchCountdown
             targetIso={upcomingMatch.kickoff_at}
@@ -407,9 +407,9 @@ function TodaysMatchRow({
           )}
         </div>
         <Link
-          href={`/matches?day=${new Date(match.kickoff_at).toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })}`}
+          href="/matches"
           className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 group/match"
-          title="Visa på matchsidan"
+          title="Visa alla matcher"
         >
           <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
             <span className="text-sm text-white truncate group-hover/match:text-emerald-400 transition-colors">{homeName}</span>
