@@ -16,7 +16,7 @@ import { BonusTipsSection } from '@/components/BonusTipsSection'
 import { RandomizeOverlay } from '@/components/RandomizeOverlay'
 import { format, isPast } from 'date-fns'
 import { sv } from 'date-fns/locale'
-import { Lock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Loader2, Dices } from 'lucide-react'
+import { Lock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Loader2, Dices, Trash2 } from 'lucide-react'
 
 interface Props {
   profile: Profile
@@ -50,6 +50,36 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
   const [locked, setLocked] = useState(profile.tips_locked)
   const [openStages, setOpenStages] = useState<Set<Stage>>(new Set(['group']))
   const [randomizing, setRandomizing] = useState(false)
+  const [clearing, setClearing] = useState(false)
+
+  async function handleClearAll() {
+    if (locked) return
+    // Två varningar för säkerhets skull
+    if (!confirm('Vill du rensa ALLA dina tips och börja om? Detta går inte att ångra.')) return
+    if (!confirm('Är du HELT säker? Alla dina ifyllda resultat tas bort permanent.')) return
+
+    setClearing(true)
+    // Radera bara olåsta tips (låsta/inlämnade rörs inte)
+    await supabase
+      .from('predictions')
+      .delete()
+      .eq('user_id', userId)
+      .eq('locked', false)
+
+    // Töm lokala fält för matcher som inte är låsta
+    const lockedMatchIds = new Set(
+      predictions.filter(p => p.locked).map(p => p.match_id)
+    )
+    setPreds(prev => {
+      const next: Record<number, { home: string; away: string }> = {}
+      for (const [k, v] of Object.entries(prev)) {
+        if (lockedMatchIds.has(Number(k))) next[Number(k)] = v
+      }
+      return next
+    })
+    setClearing(false)
+    fetch('/api/backup?reason=user-clear-tips', { method: 'POST' }).catch(() => {})
+  }
 
   // Globala slumpinställningar från admin
   const randomizeDuration = settings.randomize_duration ?? 15
@@ -375,6 +405,16 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
             >
               <Dices size={16} />
               Slumpa allt
+            </button>
+            <button
+              onClick={handleClearAll}
+              disabled={randomizing || clearing}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all disabled:opacity-40"
+              style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.35)', color: '#f87171' }}
+              title="Tar bort alla dina ifyllda tips och börjar om"
+            >
+              {clearing ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+              Rensa / börja om
             </button>
           </div>
         )}
