@@ -49,6 +49,21 @@ export function AdminPoolsClient({
     setProfiles((profilesRaw ?? []) as ProfileLite[])
   }
 
+  async function restorePool(id: number) {
+    setBusy(`restore-${id}`)
+    const { error } = await supabase
+      .from('pools')
+      .update({ deleted_at: null, deleted_by: null })
+      .eq('id', id)
+    setBusy(null)
+    if (error) {
+      flash('err', error.message)
+      return
+    }
+    flash('ok', 'Liga återskapad')
+    await refreshAll()
+  }
+
   async function createPool() {
     if (!newName.trim()) return
     setCreating(true)
@@ -78,13 +93,18 @@ export function AdminPoolsClient({
     )
     if (!ok) return
     setBusy(`del-${id}`)
-    const { error } = await supabase.from('pools').delete().eq('id', id)
+    const { data: { user } } = await supabase.auth.getUser()
+    // Soft delete – hamnar i kyrkogården, återskapbar i 14 dagar
+    const { error } = await supabase
+      .from('pools')
+      .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null })
+      .eq('id', id)
     setBusy(null)
     if (error) {
       flash('err', error.message)
       return
     }
-    flash('ok', 'Liga raderad')
+    flash('ok', 'Liga flyttad till kyrkogården (återskapbar i 14 dagar)')
     await refreshAll()
   }
 
@@ -189,9 +209,9 @@ export function AdminPoolsClient({
         </button>
       </div>
 
-      {/* Lista över pools */}
+      {/* Lista över aktiva pools */}
       <div className="space-y-3">
-        {pools.map(pool => {
+        {pools.filter(p => !p.deleted_at).map(pool => {
           const members = membersByPool.get(pool.id) ?? []
           return (
             <div
@@ -266,7 +286,7 @@ export function AdminPoolsClient({
                           className="text-xs px-2 py-1 rounded bg-transparent text-gray-400 hover:text-white focus:outline-none focus:ring-1 focus:ring-emerald-400/50 disabled:opacity-40"
                           style={{ border: '1px solid #374151' }}
                         >
-                          {pools.map(p => (
+                          {pools.filter(p => !p.deleted_at).map(p => (
                             <option key={p.id} value={p.id} className="bg-gray-900 text-white">
                               {p.name}
                             </option>
@@ -283,13 +303,70 @@ export function AdminPoolsClient({
             </div>
           )
         })}
-        {pools.length === 0 && (
+        {pools.filter(p => !p.deleted_at).length === 0 && (
           <div className="rounded-xl p-8 text-center text-gray-500"
             style={{ background: '#111827', border: '1px solid #1f2937' }}>
             Inga ligor än. Skapa en ovan.
           </div>
         )}
       </div>
+
+      {/* Kyrkogård – raderade ligor, återskapbara i 14 dagar */}
+      {pools.some(p => p.deleted_at) && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-400 mb-2 flex items-center gap-2">
+            🪦 Kyrkogården
+            <span className="text-xs font-normal text-gray-600">
+              raderade ligor – återskapbara i 14 dagar, sen permanent borta
+            </span>
+          </h3>
+          <div className="space-y-2">
+            {pools.filter(p => p.deleted_at).map(pool => {
+              const deletedMs = new Date(pool.deleted_at as string).getTime()
+              const daysLeft = Math.max(
+                0,
+                14 - Math.floor((Date.now() - deletedMs) / 86_400_000)
+              )
+              return (
+                <div
+                  key={pool.id}
+                  className="rounded-xl px-4 py-3 flex items-center justify-between gap-3 flex-wrap"
+                  style={{ background: '#111827', border: '1px solid rgba(239,68,68,0.2)' }}
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-gray-300 truncate">
+                      {pool.name}
+                    </div>
+                    <div className="text-xs text-gray-600">
+                      Raderad {new Date(pool.deleted_at as string).toLocaleDateString('sv-SE')}
+                      {' · '}
+                      {daysLeft > 0
+                        ? `${daysLeft} dag${daysLeft === 1 ? '' : 'ar'} kvar`
+                        : 'tas bort permanent snart'}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => restorePool(pool.id)}
+                    disabled={busy === `restore-${pool.id}`}
+                    className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-40"
+                    style={{
+                      background: 'rgba(16,185,129,0.12)',
+                      color: '#34d399',
+                      border: '1px solid rgba(16,185,129,0.3)',
+                    }}
+                  >
+                    {busy === `restore-${pool.id}` ? (
+                      <Loader2 size={12} className="animate-spin" />
+                    ) : (
+                      'Återskapa'
+                    )}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {orphans.length > 0 && (
         <div className="rounded-xl p-4" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.25)' }}>
@@ -310,7 +387,7 @@ export function AdminPoolsClient({
                   <option value="" className="bg-gray-900 text-white">
                     – Välj liga –
                   </option>
-                  {pools.map(p => (
+                  {pools.filter(p => !p.deleted_at).map(p => (
                     <option key={p.id} value={p.id} className="bg-gray-900 text-white">
                       {p.name}
                     </option>
