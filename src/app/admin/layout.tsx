@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ShieldCheck, BarChart2, Settings, ListChecks, Star, Activity } from 'lucide-react'
+import { ShieldCheck, BarChart2, Settings, ListChecks, Star, Activity, Users } from 'lucide-react'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -20,6 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: '/admin', label: 'Översikt', icon: BarChart2 },
     { href: '/admin/results', label: 'Resultat', icon: ListChecks },
     { href: '/admin/bonus', label: 'Bonusfacit', icon: Star },
+    { href: '/admin/squads', label: 'Trupper', icon: Users },
     { href: '/admin/audit', label: 'Audit', icon: Activity },
     { href: '/admin/settings', label: 'Inställningar', icon: Settings },
   ]
