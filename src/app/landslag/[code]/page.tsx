@@ -12,26 +12,42 @@ import { ArrowLeft, MapPin, Users, User, Trophy, Star, Calendar, Globe2, ShieldC
 export const revalidate = 300
 export const dynamic = 'force-dynamic'
 
-const POSITION_ORDER: Record<string, number> = {
-  Goalkeeper: 0,
-  Defence: 1,
-  Defender: 1,
-  Midfield: 2,
-  Midfielder: 2,
-  Offence: 3,
-  Forward: 3,
-  Attacker: 3,
+type PosBucket = 'Goalkeeper' | 'Defender' | 'Midfielder' | 'Forward'
+
+// Robust normalisering: football-data.org returnerar detaljerade positioner
+// (Centre-Back, Defensive Midfield, Left Winger, Second Striker, ...) plus
+// de grova (Defence/Midfield/Offence). Mappar allt till fyra hinkar.
+function normalizePosition(raw: string | null | undefined): PosBucket | null {
+  const p = (raw ?? '').toLowerCase().trim()
+  if (!p) return null
+  if (p.includes('keeper') || p === 'gk') return 'Goalkeeper'
+  if (
+    p.includes('back') || p.includes('defen') || p.includes('defence') ||
+    p === 'cb' || p === 'lb' || p === 'rb' || p === 'wb' || p.includes('sweeper')
+  ) return 'Defender'
+  if (p.includes('midfield') || p === 'cm' || p === 'dm' || p === 'am' || p === 'cdm' || p === 'cam') {
+    return 'Midfielder'
+  }
+  if (
+    p.includes('forward') || p.includes('winger') || p.includes('wing') ||
+    p.includes('striker') || p.includes('offence') || p.includes('offense') ||
+    p.includes('attack') || p === 'st' || p === 'cf' || p === 'lw' || p === 'rw'
+  ) return 'Forward'
+  return null
 }
 
-const POSITION_LABELS: Record<string, string> = {
+const POSITION_ORDER: Record<PosBucket, number> = {
+  Goalkeeper: 0,
+  Defender: 1,
+  Midfielder: 2,
+  Forward: 3,
+}
+
+const POSITION_LABELS: Record<PosBucket, string> = {
   Goalkeeper: 'Målvakt',
-  Defence: 'Försvar',
-  Defender: 'Försvar',
-  Midfield: 'Mittfält',
+  Defender: 'Back',
   Midfielder: 'Mittfält',
-  Offence: 'Anfall',
-  Forward: 'Anfall',
-  Attacker: 'Anfall',
+  Forward: 'Anfallare',
 }
 
 function age(dob: string | null): number | null {
@@ -87,16 +103,16 @@ export default async function LandslagDetail({
         club: p.club ?? info?.currentClub ?? null,
         marketValueM:
           p.marketValueM ??
-          (p.position === 'Forward' ? 4
-            : p.position === 'Midfielder' ? 3
-            : p.position === 'Defender' ? 2.5
-            : p.position === 'Goalkeeper' ? 1.5
-            : 2),
+          ((np => np === 'Forward' ? 4
+            : np === 'Midfielder' ? 3
+            : np === 'Defender' ? 2.5
+            : np === 'Goalkeeper' ? 1.5
+            : 2)(normalizePosition(p.position))),
       }
     })
     .sort((a, b) => {
-      const pa = POSITION_ORDER[a.position ?? ''] ?? 99
-      const pb = POSITION_ORDER[b.position ?? ''] ?? 99
+      const pa = POSITION_ORDER[normalizePosition(a.position) ?? 'Forward'] ?? 99
+      const pb = POSITION_ORDER[normalizePosition(b.position) ?? 'Forward'] ?? 99
       if (pa !== pb) return pa - pb
       if ((a.shirtNumber ?? 99) !== (b.shirtNumber ?? 99)) {
         return (a.shirtNumber ?? 99) - (b.shirtNumber ?? 99)
@@ -321,13 +337,9 @@ export default async function LandslagDetail({
               </div>
             )}
             {(['Goalkeeper', 'Defender', 'Midfielder', 'Forward'] as const).map(posKey => {
-              const players = groupedSquad.filter(p => {
-                const norm = (p.position ?? '').replace(/^Defence$/, 'Defender')
-                  .replace(/^Midfield$/, 'Midfielder')
-                  .replace(/^Offence$/, 'Forward')
-                  .replace(/^Attacker$/, 'Forward')
-                return norm === posKey
-              })
+              const players = groupedSquad.filter(
+                p => normalizePosition(p.position) === posKey
+              )
               if (players.length === 0) return null
               return (
                 <div
@@ -349,8 +361,8 @@ export default async function LandslagDetail({
                 </div>
               )
             })}
-            {/* Ej kategoriserade */}
-            {groupedSquad.filter(p => !POSITION_ORDER[p.position ?? '']).length > 0 && (
+            {/* Ej kategoriserade – endast om position helt saknas/okänd */}
+            {groupedSquad.filter(p => normalizePosition(p.position) === null).length > 0 && (
               <div
                 className="rounded-xl overflow-hidden"
                 style={{ background: '#111827', border: '1px solid #1f2937' }}
@@ -363,7 +375,7 @@ export default async function LandslagDetail({
                 </div>
                 <div className="divide-y" style={{ borderColor: '#1f2937' }}>
                   {groupedSquad
-                    .filter(p => !POSITION_ORDER[p.position ?? ''])
+                    .filter(p => normalizePosition(p.position) === null)
                     .map(p => (
                       <PlayerRow key={p.id} p={p} photoUrl={photos.get(p.name) ?? null} />
                     ))}
