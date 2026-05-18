@@ -400,27 +400,33 @@ function TodaysMatchRow({
             <div className="text-[10px] text-red-400 font-bold mt-0.5 animate-pulse">LIVE</div>
           )}
         </div>
-        <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
-          <span className="text-sm text-white truncate">{homeName}</span>
-          {homeFlag && <Flag emoji={homeFlag} name={homeName} width={20} height={14} className="shrink-0" />}
-        </div>
-        <div className="shrink-0 w-14 sm:w-16 text-center">
-          {match.result_confirmed ? (
-            <span className="text-white font-bold text-sm">
-              {match.home_score}–{match.away_score}
-            </span>
-          ) : (
-            <span className="text-gray-600 text-xs font-medium px-2 py-0.5 rounded"
-              style={{ background: '#1f2937' }}>
-              <Clock size={10} className="inline mr-1" />
-              vs
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          {awayFlag && <Flag emoji={awayFlag} name={awayName} width={20} height={14} className="shrink-0" />}
-          <span className="text-sm text-white truncate">{awayName}</span>
-        </div>
+        <Link
+          href={`/matches?day=${new Date(match.kickoff_at).toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm' })}`}
+          className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 group/match"
+          title="Visa på matchsidan"
+        >
+          <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
+            <span className="text-sm text-white truncate group-hover/match:text-emerald-400 transition-colors">{homeName}</span>
+            {homeFlag && <Flag emoji={homeFlag} name={homeName} width={20} height={14} className="shrink-0" />}
+          </div>
+          <div className="shrink-0 w-14 sm:w-16 text-center">
+            {match.result_confirmed ? (
+              <span className="text-white font-bold text-sm">
+                {match.home_score}–{match.away_score}
+              </span>
+            ) : (
+              <span className="text-gray-600 text-xs font-medium px-2 py-0.5 rounded"
+                style={{ background: '#1f2937' }}>
+                <Clock size={10} className="inline mr-1" />
+                vs
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            {awayFlag && <Flag emoji={awayFlag} name={awayName} width={20} height={14} className="shrink-0" />}
+            <span className="text-sm text-white truncate group-hover/match:text-emerald-400 transition-colors">{awayName}</span>
+          </div>
+        </Link>
         <div className="hidden md:flex flex-col items-end shrink-0 w-32 text-xs">
           {myPred ? (
             <div className="flex items-center gap-1 text-gray-400">

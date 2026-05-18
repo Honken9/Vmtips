@@ -27,8 +27,13 @@ export function TrophyLogo({ size = 'md' }: Props) {
       />
 
       <div className="min-w-0">
-        {/* Wordmark + byline – egen flex-rad så Caveat har full höjd */}
-        <div className={`flex items-baseline gap-2 ${wordmarkClass}`}>
+        {/* På sm (navbar): stapla byline under för att aldrig klippa "Daniel".
+            På md/lg: inline bredvid VM-TIPS. */}
+        <div
+          className={`flex gap-x-2 ${
+            size === 'sm' ? 'flex-col gap-y-0' : 'flex-row items-baseline'
+          } ${wordmarkClass}`}
+        >
           <span className="font-black tracking-tight text-emerald-400 leading-tight">
             VM-TIPS
           </span>
@@ -37,19 +42,20 @@ export function TrophyLogo({ size = 'md' }: Props) {
             style={{
               letterSpacing: 0,
               fontSize: bylineFontSize,
-              lineHeight: 1.1,
-              // Hindrar Chrome från att klippa höga ascender på k/l/d/h
+              lineHeight: size === 'sm' ? 1 : 1.1,
               paddingBlock: '0.05em',
             }}
           >
             by Alex och Daniel
           </span>
         </div>
-        <div
-          className={`text-gray-400 font-medium tracking-widest uppercase leading-tight ${subtitleClass}`}
-        >
-          FIFA World Cup 2026
-        </div>
+        {size !== 'sm' && (
+          <div
+            className={`text-gray-400 font-medium tracking-widest uppercase leading-tight ${subtitleClass}`}
+          >
+            FIFA World Cup 2026
+          </div>
+        )}
       </div>
     </div>
   )
