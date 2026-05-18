@@ -51,6 +51,8 @@ export interface Pool {
   prize_distribution?: Record<string, number>
   tournament_mode?: TournamentMode
   mode_a_global_lock?: boolean
+  deleted_at?: string | null
+  deleted_by?: string | null
 }
 
 export interface PoolPayment {

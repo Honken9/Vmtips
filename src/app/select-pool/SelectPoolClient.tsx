@@ -43,6 +43,7 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
         .from('pools')
         .select('id, name, invite_code')
         .eq('invite_code', code)
+        .is('deleted_at', null)
         .single()
       if (poolErr || !pool) {
         setError('Hittade ingen liga med den koden.')

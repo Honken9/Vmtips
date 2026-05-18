@@ -26,6 +26,7 @@ export function ChangePool({ currentPoolId }: { currentPoolId: number | null }) 
       .from('pools')
       .select('id')
       .eq('invite_code', code)
+      .is('deleted_at', null)
       .single()
     if (poolErr || !pool) {
       setError('Hittade ingen liga med den koden.')
