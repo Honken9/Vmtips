@@ -2,6 +2,41 @@
 
 import { getFallbackSquad, type FallbackPlayer } from './wc-fallback-squads'
 import { getFallbackCoach } from './wc-fallback-coaches'
+import { createAdminClient } from './supabase/admin'
+
+interface SquadOverridePlayer {
+  name: string
+  position?: string
+  club?: string
+  marketValueM?: number
+  youthClub?: string
+}
+
+async function fetchSquadOverride(fifaCode: string): Promise<SquadPlayer[] | null> {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('team_squad_overrides')
+      .select('players')
+      .eq('team_code', fifaCode.toUpperCase())
+      .maybeSingle()
+    const players = (data?.players ?? []) as SquadOverridePlayer[]
+    if (!Array.isArray(players) || players.length === 0) return null
+    return players.map((p, i) => ({
+      id: -10000 - i,
+      name: p.name,
+      position: p.position ?? null,
+      dateOfBirth: null,
+      nationality: null,
+      shirtNumber: null,
+      club: p.club ?? null,
+      youthClub: p.youthClub ?? null,
+      marketValueM: p.marketValueM ?? null,
+    }))
+  } catch {
+    return null
+  }
+}
 
 export interface CountryInfo {
   capital: string | null
@@ -301,13 +336,17 @@ const mapSquad = (raw: FdTeam['squad']): SquadPlayer[] =>
 
 export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballInfo | null> {
   const fallback = getFallbackSquad(fifaCode)
+
+  // Steg 0: admin-spikad officiell trupp tar HÖGSTA prioritet.
+  const override = await fetchSquadOverride(fifaCode)
+
   const teams = await fetchWcTeams()
   const targetCodes = (TLA_ALIASES[fifaCode.toUpperCase()] ?? [fifaCode.toUpperCase()]).map(s =>
     s.toUpperCase()
   )
   const t = teams.find(team => team.tla && targetCodes.includes(team.tla.toUpperCase())) ?? null
 
-  let squad = t ? mapSquad(t.squad) : []
+  let squad = override ?? (t ? mapSquad(t.squad) : [])
   let provisional = false
   let coachName = t?.coach?.name ?? null
   let coachNationality = t?.coach?.nationality ?? null
