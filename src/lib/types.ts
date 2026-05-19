@@ -51,6 +51,10 @@ export interface Pool {
   prize_distribution?: Record<string, number>
   tournament_mode?: TournamentMode
   mode_a_global_lock?: boolean
+  points_correct_result?: number | null
+  points_exact_score?: number | null
+  points_winner?: number | null
+  points_finalist?: number | null
   deleted_at?: string | null
   deleted_by?: string | null
 }
