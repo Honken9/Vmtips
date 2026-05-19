@@ -393,13 +393,13 @@ export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballI
   // Inget alls hittat – returnera null bara om vi heller inte har en fallback.
   if (squad.length === 0 && !t) return null
 
-  // Fallback för förbundskapten när football-data.org inte har det.
-  if (!coachName) {
-    const fbCoach = getFallbackCoach(fifaCode)
-    if (fbCoach) {
-      coachName = fbCoach.name
-      coachNationality = coachNationality ?? fbCoach.nationality ?? null
-    }
+  // Vår kurerade förbundskaptens-lista tar PRIORITET över football-data.org
+  // (deras landslags-coach-fält är ofta fel/inaktuellt). Finns en hårdkodad
+  // tränare för landet låses den – football-data uppdaterar inte över den.
+  const fbCoach = getFallbackCoach(fifaCode)
+  if (fbCoach) {
+    coachName = fbCoach.name
+    coachNationality = fbCoach.nationality ?? coachNationality ?? null
   }
 
   return {
