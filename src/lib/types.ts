@@ -19,6 +19,7 @@ export interface Settings {
   points_exact_score: number
   points_winner: number
   points_finalist: number
+  points_total_goals?: number
   randomize_duration?: number
   randomize_phrase_1?: string | null
   randomize_phrase_2?: string | null
@@ -55,6 +56,7 @@ export interface Pool {
   points_exact_score?: number | null
   points_winner?: number | null
   points_finalist?: number | null
+  points_total_goals?: number | null
   deleted_at?: string | null
   deleted_by?: string | null
 }

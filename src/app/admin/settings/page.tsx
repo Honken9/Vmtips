@@ -27,6 +27,7 @@ export default function AdminSettingsPage() {
       points_exact_score: settings.points_exact_score,
       points_winner: settings.points_winner,
       points_finalist: settings.points_finalist,
+      points_total_goals: settings.points_total_goals ?? 5,
       randomize_duration: settings.randomize_duration ?? 15,
       randomize_phrase_1: settings.randomize_phrase_1 ?? '',
       randomize_phrase_2: settings.randomize_phrase_2 ?? '',
@@ -62,10 +63,11 @@ export default function AdminSettingsPage() {
 
         <div className="grid grid-cols-2 gap-4">
           {[
-            { key: 'points_correct_result' as const, label: 'Rätt tecken (1/X/2)', hint: 'ex. 3 poäng' },
-            { key: 'points_exact_score' as const, label: 'Exakt resultat', hint: 'ex. 5 poäng' },
-            { key: 'points_winner' as const, label: 'Rätt mästare (bonus)', hint: 'ex. 10 poäng' },
-            { key: 'points_finalist' as const, label: 'Rätt finalist (bonus)', hint: 'ex. 5 poäng' },
+            { key: 'points_correct_result' as const, label: 'Rätt tecken (1/X/2)', hint: 'standard 3' },
+            { key: 'points_exact_score' as const, label: 'Exakt resultat', hint: 'standard 5' },
+            { key: 'points_winner' as const, label: 'Rätt skytteligavinnare', hint: 'standard 10' },
+            { key: 'points_finalist' as const, label: 'Flest gula lag', hint: 'standard 5' },
+            { key: 'points_total_goals' as const, label: 'Totalt antal mål (max)', hint: 'standard 5' },
           ].map(({ key, label, hint }) => (
             <div key={key}>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">{label}</label>
