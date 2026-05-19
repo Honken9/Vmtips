@@ -14,7 +14,7 @@ export const WC_FALLBACK_COACHES: Record<string, FallbackCoach> = {
   CAN: { name: 'Jesse Marsch', nationality: 'USA' },
 
   // UEFA
-  SWE: { name: 'Jon Dahl Tomasson', nationality: 'Danmark' },
+  SWE: { name: 'Graham Potter', nationality: 'England' },
   ESP: { name: 'Luis de la Fuente', nationality: 'Spanien' },
   FRA: { name: 'Didier Deschamps', nationality: 'Frankrike' },
   GER: { name: 'Julian Nagelsmann', nationality: 'Tyskland' },

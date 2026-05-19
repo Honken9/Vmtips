@@ -74,8 +74,14 @@ export default function AdminSettingsPage() {
                   type="number"
                   min="0"
                   max="99"
-                  value={settings[key]}
-                  onChange={e => setSettings(s => s ? { ...s, [key]: parseInt(e.target.value) || 0 } : s)}
+                  value={settings[key] === 0 ? '' : settings[key]}
+                  placeholder="0"
+                  onFocus={e => e.target.select()}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/[^0-9]/g, '')
+                    const n = raw === '' ? 0 : Math.min(99, parseInt(raw, 10))
+                    setSettings(s => (s ? { ...s, [key]: n } : s))
+                  }}
                   className="w-20 px-3 py-2 rounded-lg text-center text-white font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                   style={{ background: '#1f2937', border: '1px solid #374151' }}
                 />
