@@ -3,10 +3,10 @@ import { createAdminClient } from './supabase/admin'
 const BUCKET = 'backups'
 const PREFIX = 'snapshots/'
 const RATE_LIMIT_MS = 10 * 60 * 1000 // 10 min mellan automatiska backups
-const RETENTION = 50
+const RETENTION = 150
 
 export interface BackupData {
-  version: 1
+  version: 1 | 2
   created_at: string
   reason: string
   profiles: unknown[]
@@ -16,6 +16,12 @@ export interface BackupData {
   matches: unknown[]
   teams: unknown[]
   settings: unknown[]
+  // v2 – liga-strukturer (saknas i äldre snapshots → behandlas som [])
+  pools?: unknown[]
+  pool_memberships?: unknown[]
+  pool_payments?: unknown[]
+  pool_member_tags?: unknown[]
+  team_squad_overrides?: unknown[]
 }
 
 export interface SnapshotInfo {
@@ -26,18 +32,25 @@ export interface SnapshotInfo {
 
 export async function gatherBackupData(reason: string): Promise<BackupData> {
   const admin = createAdminClient()
-  const [profiles, predictions, bonusPreds, bonusResults, matches, teams, settings] =
-    await Promise.all([
-      admin.from('profiles').select('*'),
-      admin.from('predictions').select('*'),
-      admin.from('bonus_predictions').select('*'),
-      admin.from('bonus_results').select('*'),
-      admin.from('matches').select('*'),
-      admin.from('teams').select('*'),
-      admin.from('settings').select('*'),
-    ])
+  const [
+    profiles, predictions, bonusPreds, bonusResults, matches, teams, settings,
+    pools, memberships, payments, memberTags, squadOverrides,
+  ] = await Promise.all([
+    admin.from('profiles').select('*'),
+    admin.from('predictions').select('*'),
+    admin.from('bonus_predictions').select('*'),
+    admin.from('bonus_results').select('*'),
+    admin.from('matches').select('*'),
+    admin.from('teams').select('*'),
+    admin.from('settings').select('*'),
+    admin.from('pools').select('*'),
+    admin.from('pool_memberships').select('*'),
+    admin.from('pool_payments').select('*'),
+    admin.from('pool_member_tags').select('*'),
+    admin.from('team_squad_overrides').select('*'),
+  ])
   return {
-    version: 1,
+    version: 2,
     created_at: new Date().toISOString(),
     reason,
     profiles: profiles.data ?? [],
@@ -47,6 +60,11 @@ export async function gatherBackupData(reason: string): Promise<BackupData> {
     matches: matches.data ?? [],
     teams: teams.data ?? [],
     settings: settings.data ?? [],
+    pools: pools.data ?? [],
+    pool_memberships: memberships.data ?? [],
+    pool_payments: payments.data ?? [],
+    pool_member_tags: memberTags.data ?? [],
+    team_squad_overrides: squadOverrides.data ?? [],
   }
 }
 
@@ -149,6 +167,37 @@ export async function restoreFromSnapshot(
     }
     if (data.matches.length > 0) {
       const { error } = await admin.from('matches').upsert(data.matches, { onConflict: 'id' })
+      if (error) throw error
+    }
+
+    // Liga-strukturer (v2). Ordning viktig pga FK:
+    // pools före memberships/payments/tags (de FK:ar pool_id).
+    if (data.pools && data.pools.length > 0) {
+      const { error } = await admin.from('pools').upsert(data.pools, { onConflict: 'id' })
+      if (error) throw error
+    }
+    if (data.pool_memberships && data.pool_memberships.length > 0) {
+      const { error } = await admin
+        .from('pool_memberships')
+        .upsert(data.pool_memberships, { onConflict: 'pool_id,user_id' })
+      if (error) throw error
+    }
+    if (data.pool_payments && data.pool_payments.length > 0) {
+      const { error } = await admin
+        .from('pool_payments')
+        .upsert(data.pool_payments, { onConflict: 'pool_id,user_id' })
+      if (error) throw error
+    }
+    if (data.pool_member_tags && data.pool_member_tags.length > 0) {
+      const { error } = await admin
+        .from('pool_member_tags')
+        .upsert(data.pool_member_tags, { onConflict: 'pool_id,user_id' })
+      if (error) throw error
+    }
+    if (data.team_squad_overrides && data.team_squad_overrides.length > 0) {
+      const { error } = await admin
+        .from('team_squad_overrides')
+        .upsert(data.team_squad_overrides, { onConflict: 'team_code' })
       if (error) throw error
     }
 
