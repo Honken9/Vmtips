@@ -176,6 +176,11 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
         <LigaModePicker pool={pool} onChanged={() => router.refresh()} />
       )}
 
+      {/* Poängsystem per liga – bara för skapare/admin */}
+      {canManage && (
+        <LigaPoints pool={pool} onChanged={() => router.refresh()} />
+      )}
+
       {/* Inställningar – bara för skapare/admin */}
       {canManage && (
         <LigaSettings pool={pool} onSaved={() => router.refresh()} />
@@ -593,6 +598,95 @@ function MyPayment({
       )}
       {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+function LigaPoints({ pool, onChanged }: { pool: Pool; onChanged: () => void }) {
+  const supabase = createClient()
+  const fields = [
+    { key: 'points_correct_result' as const, label: 'Rätt tecken (1/X/2)', def: 3 },
+    { key: 'points_exact_score' as const, label: 'Exakt resultat', def: 5 },
+    { key: 'points_winner' as const, label: 'Rätt mästare (bonus)', def: 10 },
+    { key: 'points_finalist' as const, label: 'Flest gula lag (bonus)', def: 5 },
+  ]
+  const [vals, setVals] = useState<Record<string, string>>(() => ({
+    points_correct_result: pool.points_correct_result != null ? String(pool.points_correct_result) : '',
+    points_exact_score: pool.points_exact_score != null ? String(pool.points_exact_score) : '',
+    points_winner: pool.points_winner != null ? String(pool.points_winner) : '',
+    points_finalist: pool.points_finalist != null ? String(pool.points_finalist) : '',
+  }))
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+
+  async function save() {
+    setBusy(true)
+    setMsg(null)
+    const patch: Record<string, number | null> = {}
+    for (const f of fields) {
+      const raw = (vals[f.key] ?? '').replace(/[^0-9]/g, '')
+      patch[f.key] = raw === '' ? null : Math.min(99, parseInt(raw, 10))
+    }
+    const { error } = await supabase.from('pools').update(patch).eq('id', pool.id)
+    setBusy(false)
+    if (error) {
+      setMsg(error.message)
+      return
+    }
+    setMsg('Sparat')
+    setTimeout(() => setMsg(null), 2500)
+    onChanged()
+  }
+
+  return (
+    <section>
+      <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <Trophy size={14} className="text-amber-400" />
+        Poängsystem – {pool.name}
+      </h2>
+      <div className="rounded-xl p-5 space-y-4" style={{ background: '#111827', border: '1px solid #1f2937' }}>
+        <p className="text-xs text-gray-500">
+          Lämna tomt för att använda standardvärdet. Värden här gäller bara denna liga.
+        </p>
+        <div className="grid grid-cols-2 gap-4">
+          {fields.map(f => (
+            <div key={f.key}>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">{f.label}</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  max="99"
+                  value={vals[f.key]}
+                  placeholder={`std ${f.def}`}
+                  onFocus={e => e.target.select()}
+                  onChange={e => {
+                    const raw = e.target.value.replace(/[^0-9]/g, '')
+                    setVals(v => ({ ...v, [f.key]: raw }))
+                  }}
+                  className="w-24 px-3 py-2 rounded-lg text-center text-white font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+                  style={{ background: '#1f2937', border: '1px solid #374151' }}
+                />
+                <span className="text-xs text-gray-500">poäng</span>
+              </div>
+            </div>
+          ))}
+        </div>
+        {msg && (
+          <div className="text-sm" style={{ color: msg === 'Sparat' ? '#4ade80' : '#f87171' }}>
+            {msg}
+          </div>
+        )}
+        <button
+          onClick={save}
+          disabled={busy}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-lg font-semibold text-black transition-all disabled:opacity-50 gold-gradient"
+        >
+          {busy ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+          Spara poäng
+        </button>
+      </div>
+    </section>
   )
 }
 
