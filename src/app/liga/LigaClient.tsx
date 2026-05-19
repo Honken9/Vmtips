@@ -193,6 +193,7 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
           fee={fee}
           canManage={canManage}
           meUserId={meUserId}
+          ownerUserId={pool.created_by}
           tags={tags}
           onChanged={() => router.refresh()}
           supabase={supabase}
@@ -929,13 +930,14 @@ function colorHex(key: string | null | undefined): string | null {
 }
 
 function MemberList({
-  members, poolId, fee, canManage, meUserId, tags, onChanged, supabase,
+  members, poolId, fee, canManage, meUserId, ownerUserId, tags, onChanged, supabase,
 }: {
   members: MemberRow[]
   poolId: number
   fee: number
   canManage: boolean
   meUserId: string
+  ownerUserId: string | null
   tags: PoolMemberTag[]
   onChanged: () => void
   supabase: ReturnType<typeof createClient>
@@ -943,6 +945,21 @@ function MemberList({
   const [busy, setBusy] = useState<string | null>(null)
   const [editingTag, setEditingTag] = useState<string | null>(null)
   const tagByUser = new Map(tags.map(t => [t.user_id, t]))
+
+  async function removeMember(m: MemberRow) {
+    if (!confirm(`Ta bort ${m.display_name} ur ligan? Personen förlorar sin koppling och måste gå med på nytt med invite-kod.`)) return
+    setBusy(`rm-${m.user_id}`)
+    const { error } = await supabase.rpc('remove_pool_member', {
+      p_pool_id: poolId,
+      p_user_id: m.user_id,
+    })
+    setBusy(null)
+    if (error) {
+      alert(`Kunde inte ta bort: ${error.message}`)
+      return
+    }
+    onChanged()
+  }
 
   async function saveTag(userId: string, color: string | null, department: string | null) {
     setBusy(`tag-${userId}`)
@@ -1072,6 +1089,26 @@ function MemberList({
                 </button>
               )}
             </>
+          )}
+
+          {canManage && m.user_id !== meUserId && m.user_id !== ownerUserId && (
+            <button
+              onClick={() => removeMember(m)}
+              disabled={busy === `rm-${m.user_id}`}
+              title="Ta bort ur ligan"
+              className="text-xs px-2 py-1 rounded shrink-0 transition-colors disabled:opacity-40"
+              style={{
+                background: 'rgba(239,68,68,0.12)',
+                color: '#f87171',
+                border: '1px solid rgba(239,68,68,0.3)',
+              }}
+            >
+              {busy === `rm-${m.user_id}` ? (
+                <Loader2 size={11} className="animate-spin" />
+              ) : (
+                'Ta bort'
+              )}
+            </button>
           )}
         </div>
 
