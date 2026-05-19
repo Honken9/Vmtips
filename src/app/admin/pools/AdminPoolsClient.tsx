@@ -64,6 +64,20 @@ export function AdminPoolsClient({
     await refreshAll()
   }
 
+  async function hardDeletePool(id: number, name: string) {
+    if (!confirm(`Ta bort "${name}" PERMANENT nu? Detta går INTE att ångra och all data för ligan försvinner direkt.`)) return
+    if (!confirm('Helt säker? Sista chansen – ligan raderas oåterkalleligt.')) return
+    setBusy(`purge-${id}`)
+    const { error } = await supabase.from('pools').delete().eq('id', id)
+    setBusy(null)
+    if (error) {
+      flash('err', error.message)
+      return
+    }
+    flash('ok', 'Liga permanent raderad')
+    await refreshAll()
+  }
+
   async function createPool() {
     if (!newName.trim()) return
     setCreating(true)
@@ -101,7 +115,11 @@ export function AdminPoolsClient({
       .eq('id', id)
     setBusy(null)
     if (error) {
-      flash('err', error.message)
+      if (/deleted_at|column .* does not exist/i.test(error.message)) {
+        flash('err', 'Kyrkogården är inte aktiverad i databasen ännu – kör supabase/add_liga_graveyard.sql i Supabase SQL Editor.')
+      } else {
+        flash('err', error.message)
+      }
       return
     }
     flash('ok', 'Liga flyttad till kyrkogården (återskapbar i 14 dagar)')
@@ -345,22 +363,41 @@ export function AdminPoolsClient({
                         : 'tas bort permanent snart'}
                     </div>
                   </div>
-                  <button
-                    onClick={() => restorePool(pool.id)}
-                    disabled={busy === `restore-${pool.id}`}
-                    className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-40"
-                    style={{
-                      background: 'rgba(16,185,129,0.12)',
-                      color: '#34d399',
-                      border: '1px solid rgba(16,185,129,0.3)',
-                    }}
-                  >
-                    {busy === `restore-${pool.id}` ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      'Återskapa'
-                    )}
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => restorePool(pool.id)}
+                      disabled={busy === `restore-${pool.id}` || busy === `purge-${pool.id}`}
+                      className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-40"
+                      style={{
+                        background: 'rgba(16,185,129,0.12)',
+                        color: '#34d399',
+                        border: '1px solid rgba(16,185,129,0.3)',
+                      }}
+                    >
+                      {busy === `restore-${pool.id}` ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        'Återskapa'
+                      )}
+                    </button>
+                    <button
+                      onClick={() => hardDeletePool(pool.id, pool.name)}
+                      disabled={busy === `purge-${pool.id}` || busy === `restore-${pool.id}`}
+                      title="Ta bort permanent nu (kan inte ångras)"
+                      className="text-xs px-3 py-1.5 rounded-lg font-medium transition-colors disabled:opacity-40"
+                      style={{
+                        background: 'rgba(239,68,68,0.12)',
+                        color: '#f87171',
+                        border: '1px solid rgba(239,68,68,0.3)',
+                      }}
+                    >
+                      {busy === `purge-${pool.id}` ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        'Ta bort permanent'
+                      )}
+                    </button>
+                  </div>
                 </div>
               )
             })}
