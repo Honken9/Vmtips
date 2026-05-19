@@ -607,14 +607,16 @@ function LigaPoints({ pool, onChanged }: { pool: Pool; onChanged: () => void }) 
   const fields = [
     { key: 'points_correct_result' as const, label: 'Rätt tecken (1/X/2)', def: 3 },
     { key: 'points_exact_score' as const, label: 'Exakt resultat', def: 5 },
-    { key: 'points_winner' as const, label: 'Rätt mästare (bonus)', def: 10 },
-    { key: 'points_finalist' as const, label: 'Flest gula lag (bonus)', def: 5 },
+    { key: 'points_winner' as const, label: 'Rätt skytteligavinnare', def: 10 },
+    { key: 'points_finalist' as const, label: 'Flest gula lag', def: 5 },
+    { key: 'points_total_goals' as const, label: 'Totalt antal mål (max)', def: 5 },
   ]
   const [vals, setVals] = useState<Record<string, string>>(() => ({
     points_correct_result: pool.points_correct_result != null ? String(pool.points_correct_result) : '',
     points_exact_score: pool.points_exact_score != null ? String(pool.points_exact_score) : '',
     points_winner: pool.points_winner != null ? String(pool.points_winner) : '',
     points_finalist: pool.points_finalist != null ? String(pool.points_finalist) : '',
+    points_total_goals: pool.points_total_goals != null ? String(pool.points_total_goals) : '',
   }))
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
