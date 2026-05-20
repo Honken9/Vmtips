@@ -204,6 +204,32 @@ export function SquadOverrideClient({ teams, overrideMap }: Props) {
     setMsg({ ok: true, text: `Override borttagen för ${code}` })
   }
 
+  async function toggleLock() {
+    const next = !locked
+    setLocked(next)
+    const hasSavedOverride = !!overrideMap[code]
+    // Om det redan finns en sparad override-rad – spara låsläget direkt
+    // utan att röra spelarlistan. Då är lås-knappen "live" som användaren
+    // förväntar sig. Saknas rad än så sparas låsläget med första Save.
+    if (hasSavedOverride) {
+      setLoading(true)
+      const { error } = await supabase
+        .from('team_squad_overrides')
+        .update({ locked: next, updated_at: new Date().toISOString() })
+        .eq('team_code', code)
+      setLoading(false)
+      if (error) {
+        setLocked(!next)
+        setMsg({ ok: false, text: `Kunde inte uppdatera lås: ${error.message}` })
+        return
+      }
+      setMsg({ ok: true, text: next ? `Truppen för ${code} är låst` : `Truppen för ${code} är upplåst` })
+    } else {
+      setDirty(true)
+      setMsg({ ok: true, text: 'Lås sparas när du klickar Spara (ingen trupp finns sparad än)' })
+    }
+  }
+
   function update(id: string, patch: Partial<EditPlayer>) {
     setPlayers(prev => prev.map(p => (p.id === id ? { ...p, ...patch } : p)))
     setDirty(true)
@@ -295,8 +321,9 @@ export function SquadOverrideClient({ teams, overrideMap }: Props) {
 
           {loaded && (
             <button
-              onClick={() => { setLocked(l => !l); setDirty(true) }}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium ${locked ? 'text-amber-300' : 'text-gray-300'}`}
+              onClick={toggleLock}
+              disabled={loading}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 ${locked ? 'text-amber-300' : 'text-gray-300'}`}
               style={{
                 background: locked ? 'rgba(245,158,11,0.12)' : '#1f2937',
                 border: `1px solid ${locked ? 'rgba(245,158,11,0.4)' : '#374151'}`,
