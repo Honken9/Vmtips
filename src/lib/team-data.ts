@@ -12,27 +12,35 @@ interface SquadOverridePlayer {
   youthClub?: string
 }
 
-async function fetchSquadOverride(fifaCode: string): Promise<SquadPlayer[] | null> {
+interface OverrideResult {
+  squad: SquadPlayer[]
+  locked: boolean
+}
+
+async function fetchSquadOverride(fifaCode: string): Promise<OverrideResult | null> {
   try {
     const admin = createAdminClient()
     const { data } = await admin
       .from('team_squad_overrides')
-      .select('players')
+      .select('players, locked')
       .eq('team_code', fifaCode.toUpperCase())
       .maybeSingle()
     const players = (data?.players ?? []) as SquadOverridePlayer[]
     if (!Array.isArray(players) || players.length === 0) return null
-    return players.map((p, i) => ({
-      id: -10000 - i,
-      name: p.name,
-      position: p.position ?? null,
-      dateOfBirth: null,
-      nationality: null,
-      shirtNumber: null,
-      club: p.club ?? null,
-      youthClub: p.youthClub ?? null,
-      marketValueM: p.marketValueM ?? null,
-    }))
+    return {
+      locked: !!data?.locked,
+      squad: players.map((p, i) => ({
+        id: -10000 - i,
+        name: p.name,
+        position: p.position ?? null,
+        dateOfBirth: null,
+        nationality: null,
+        shirtNumber: null,
+        club: p.club ?? null,
+        youthClub: p.youthClub ?? null,
+        marketValueM: p.marketValueM ?? null,
+      })),
+    }
   } catch {
     return null
   }
@@ -334,11 +342,31 @@ const mapSquad = (raw: FdTeam['squad']): SquadPlayer[] =>
     shirtNumber: p.shirtNumber ?? null,
   }))
 
-export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballInfo | null> {
+export async function fetchTeamFootball(
+  fifaCode: string,
+  opts: { bypassOverride?: boolean } = {}
+): Promise<TeamFootballInfo | null> {
   const fallback = getFallbackSquad(fifaCode)
 
   // Steg 0: admin-spikad officiell trupp tar HÖGSTA prioritet.
-  const override = await fetchSquadOverride(fifaCode)
+  // bypassOverride låter admin/squads-editorn dra fram en färsk lista
+  // från football-data utan att fastna i den sparade override:n.
+  const override = opts.bypassOverride ? null : await fetchSquadOverride(fifaCode)
+
+  // Är override:n låst hoppar vi över football-data helt för truppen.
+  if (override?.locked) {
+    const fbCoach = getFallbackCoach(fifaCode)
+    return {
+      id: null,
+      name: null,
+      founded: null,
+      crestUrl: null,
+      coachName: fbCoach?.name ?? null,
+      coachNationality: fbCoach?.nationality ?? null,
+      squad: override.squad,
+      squadIsProvisional: false,
+    }
+  }
 
   const teams = await fetchWcTeams()
   const targetCodes = (TLA_ALIASES[fifaCode.toUpperCase()] ?? [fifaCode.toUpperCase()]).map(s =>
@@ -346,7 +374,7 @@ export async function fetchTeamFootball(fifaCode: string): Promise<TeamFootballI
   )
   const t = teams.find(team => team.tla && targetCodes.includes(team.tla.toUpperCase())) ?? null
 
-  let squad = override ?? (t ? mapSquad(t.squad) : [])
+  let squad = override?.squad ?? (t ? mapSquad(t.squad) : [])
   let provisional = false
   let coachName = t?.coach?.name ?? null
   let coachNationality = t?.coach?.nationality ?? null
