@@ -126,9 +126,58 @@ drop policy if exists "Admin read audit" on public.audit_log;
 create policy "Admin read audit" on public.audit_log
   for select using (public.is_admin());
 
+-- ── POOL_MEMBER_TAGS: same liga reads, own + creator + admin writes ──
+-- (defense in depth – add_member_tags.sql skapar samma policys när
+-- den körs först, men baseline ska kunna stå för sig själv)
+drop policy if exists "Same pool can read tags" on public.pool_member_tags;
+create policy "Same pool can read tags" on public.pool_member_tags
+  for select using (
+    pool_id = public.current_user_pool_id()
+    or exists (
+      select 1 from public.pool_memberships pm
+      where pm.user_id = auth.uid() and pm.pool_id = pool_member_tags.pool_id
+    )
+    or public.is_admin()
+  );
+
+drop policy if exists "Own tag" on public.pool_member_tags;
+create policy "Own tag" on public.pool_member_tags
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "Pool creator manages tags" on public.pool_member_tags;
+create policy "Pool creator manages tags" on public.pool_member_tags
+  for all using (
+    exists (
+      select 1 from public.pools p
+      where p.id = pool_member_tags.pool_id and p.created_by = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.pools p
+      where p.id = pool_member_tags.pool_id and p.created_by = auth.uid()
+    )
+  );
+
+drop policy if exists "Admin manages tags" on public.pool_member_tags;
+create policy "Admin manages tags" on public.pool_member_tags
+  for all using (public.is_admin());
+
+-- ── TEAM_SQUAD_OVERRIDES: publik läsning, admin skriver ─────
+drop policy if exists "Public read squad overrides" on public.team_squad_overrides;
+create policy "Public read squad overrides" on public.team_squad_overrides
+  for select using (true);
+
+drop policy if exists "Admin write squad overrides" on public.team_squad_overrides;
+create policy "Admin write squad overrides" on public.team_squad_overrides
+  for all using (public.is_admin());
+
 -- ── Verifiering: lista kvarvarande policies ─────────────────
 select tablename, policyname, cmd
 from pg_policies
 where schemaname = 'public'
-  and tablename in ('predictions','bonus_predictions','profiles','pools','audit_log')
+  and tablename in (
+    'predictions','bonus_predictions','profiles','pools','audit_log',
+    'pool_member_tags','team_squad_overrides'
+  )
 order by tablename, policyname;
