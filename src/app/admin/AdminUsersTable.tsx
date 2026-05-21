@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { UserAvatar } from '@/components/UserAvatar'
-import { Lock, Unlock, Loader2 } from 'lucide-react'
+import { Lock, Unlock, Loader2, Trash2 } from 'lucide-react'
 
 interface UserRow {
   id: string
@@ -14,8 +15,9 @@ interface UserRow {
   avatar_locked: boolean
 }
 
-export function AdminUsersTable({ users: initial }: { users: UserRow[] }) {
+export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]; meUserId: string }) {
   const supabase = createClient()
+  const router = useRouter()
   const [users, setUsers] = useState<UserRow[]>(initial)
   const [busy, setBusy] = useState<string | null>(null)
 
@@ -34,6 +36,36 @@ export function AdminUsersTable({ users: initial }: { users: UserRow[] }) {
     setUsers(prev => prev.map(p => (p.id === u.id ? { ...p, avatar_locked: next } : p)))
   }
 
+  async function deleteUser(u: UserRow) {
+    if (u.id === meUserId) {
+      alert('Du kan inte ta bort dig själv.')
+      return
+    }
+    if (!confirm(`Ta bort ${u.display_name} HELT? Alla deras tips, bonustips, ligamedlemskap och betalningar raderas permanent.`)) return
+    if (!confirm(`Är du säker? Detta går INTE att ångra. Skriv över "${u.display_name}" om du vill fortsätta.`)) return
+
+    setBusy(`del-${u.id}`)
+    const res = await fetch(`/api/admin/users/${u.id}`, { method: 'DELETE' })
+    setBusy(null)
+
+    if (res.ok) {
+      setUsers(prev => prev.filter(p => p.id !== u.id))
+      router.refresh()
+      return
+    }
+
+    const data = await res.json().catch(() => ({}))
+    if (res.status === 409 && data.error === 'owns_pools') {
+      const list = (data.pools as { name: string }[] ?? []).map(p => `• ${p.name}`).join('\n')
+      alert(
+        `${data.message}\n\nÄgda ligor:\n${list}\n\n` +
+        `Gå till respektive ligas "Min liga"-sida och överlåt ägandeskapet, eller ta bort ligan via Admin → Ligor först.`
+      )
+    } else {
+      alert(`Kunde inte ta bort: ${data.error ?? res.statusText}`)
+    }
+  }
+
   return (
     <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1f2937' }}>
       <table className="w-full">
@@ -43,6 +75,7 @@ export function AdminUsersTable({ users: initial }: { users: UserRow[] }) {
             <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Tips inlämnade</th>
             <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">AI-bild</th>
             <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Roll</th>
+            <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Ta bort</th>
           </tr>
         </thead>
         <tbody>
@@ -88,6 +121,21 @@ export function AdminUsersTable({ users: initial }: { users: UserRow[] }) {
                   ? <span className="text-xs text-indigo-400">Admin</span>
                   : <span className="text-xs text-gray-500">Deltagare</span>
                 }
+              </td>
+              <td className="px-4 py-3 text-right">
+                <button
+                  onClick={() => deleteUser(u)}
+                  disabled={busy === `del-${u.id}` || u.id === meUserId}
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  title={u.id === meUserId ? 'Du kan inte ta bort dig själv' : 'Ta bort användaren helt'}
+                >
+                  {busy === `del-${u.id}` ? (
+                    <Loader2 size={11} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={11} />
+                  )}
+                  Ta bort
+                </button>
               </td>
             </tr>
           ))}
