@@ -26,6 +26,7 @@ export default async function AdminPoolsPage() {
 
   return (
     <AdminPoolsClient
+      meUserId={user.id}
       initialPools={(poolsRaw ?? []) as Pool[]}
       initialProfiles={
         (profilesRaw ?? []) as Pick<Profile, 'id' | 'display_name' | 'is_admin' | 'pool_id'>[]

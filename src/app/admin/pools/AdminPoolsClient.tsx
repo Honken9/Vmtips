@@ -4,14 +4,16 @@ import { useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { generateInviteCode } from '@/lib/invite-code'
 import type { Pool, Profile } from '@/lib/types'
-import { Loader2, Plus, Trash2, Users, RefreshCw, ShieldCheck } from 'lucide-react'
+import { Loader2, Plus, Trash2, Users, RefreshCw, ShieldCheck, Crown, UserX } from 'lucide-react'
 
 type ProfileLite = Pick<Profile, 'id' | 'display_name' | 'is_admin' | 'pool_id'>
 
 export function AdminPoolsClient({
+  meUserId,
   initialPools,
   initialProfiles,
 }: {
+  meUserId: string
   initialPools: Pool[]
   initialProfiles: ProfileLite[]
 }) {
@@ -157,6 +159,84 @@ export function AdminPoolsClient({
     await refreshAll()
   }
 
+  async function changeOwner(poolId: number, newOwnerId: string, ownerName: string) {
+    const ok = window.confirm(
+      `Sätta ${ownerName} som ägare av ligan? Den tidigare ägaren blir vanlig medlem (eller utan koppling om hen inte var medlem).`
+    )
+    if (!ok) return
+    setBusy(`owner-${poolId}`)
+    // Säkerställ att den nya ägaren är medlem så hen inte hamnar utanför
+    await supabase
+      .from('pool_memberships')
+      .upsert({ pool_id: poolId, user_id: newOwnerId }, { onConflict: 'pool_id,user_id' })
+    const { error } = await supabase
+      .from('pools')
+      .update({ created_by: newOwnerId })
+      .eq('id', poolId)
+    setBusy(null)
+    if (error) {
+      flash('err', error.message)
+      return
+    }
+    flash('ok', `${ownerName} är nu ägare`)
+    await refreshAll()
+  }
+
+  async function takeOwnership(poolId: number) {
+    const me = profiles.find(p => p.id === meUserId)
+    const myName = me?.display_name ?? 'Du'
+    const ok = window.confirm(`Ta över ägarskapet av ligan själv (${myName})? Den tidigare ägaren blir vanlig medlem.`)
+    if (!ok) return
+    setBusy(`owner-${poolId}`)
+    await supabase
+      .from('pool_memberships')
+      .upsert({ pool_id: poolId, user_id: meUserId }, { onConflict: 'pool_id,user_id' })
+    const { error } = await supabase
+      .from('pools')
+      .update({ created_by: meUserId })
+      .eq('id', poolId)
+    setBusy(null)
+    if (error) {
+      flash('err', error.message)
+      return
+    }
+    flash('ok', 'Du är nu ägare')
+    await refreshAll()
+  }
+
+  async function removeAllMembers(poolId: number, poolName: string) {
+    const members = membersByPool.get(poolId) ?? []
+    if (members.length === 0) {
+      flash('err', 'Ligan har inga medlemmar')
+      return
+    }
+    if (!window.confirm(
+      `Ta bort ALLA ${members.length} medlemmar ur "${poolName}"? Deras tips ligger kvar men de förlorar sin ligakoppling.`
+    )) return
+    if (!window.confirm('Helt säker? Detta går inte att ångra automatiskt.')) return
+
+    setBusy(`wipe-${poolId}`)
+    // Nolla profile.pool_id för alla som hade detta som aktiv liga
+    const memberIds = members.map(m => m.id)
+    await supabase
+      .from('profiles')
+      .update({ pool_id: null })
+      .in('id', memberIds)
+      .eq('pool_id', poolId)
+    // Radera alla pool_memberships för ligan
+    const { error } = await supabase
+      .from('pool_memberships')
+      .delete()
+      .eq('pool_id', poolId)
+    setBusy(null)
+    if (error) {
+      flash('err', error.message)
+      return
+    }
+    flash('ok', `${members.length} medlemmar borttagna ur "${poolName}"`)
+    await refreshAll()
+  }
+
   async function renamePool(id: number, name: string) {
     setBusy(`rename-${id}`)
     const { error } = await supabase.from('pools').update({ name }).eq('id', id)
@@ -231,6 +311,7 @@ export function AdminPoolsClient({
       <div className="space-y-3">
         {pools.filter(p => !p.deleted_at).map(pool => {
           const members = membersByPool.get(pool.id) ?? []
+          const owner = profiles.find(p => p.id === pool.created_by) ?? null
           return (
             <div
               key={pool.id}
@@ -279,6 +360,64 @@ export function AdminPoolsClient({
               </div>
 
               <div className="px-3 sm:px-5 py-3">
+                {/* Ägar-kontroll: visa nuvarande ägare + admin-actions */}
+                <div className="flex items-center gap-2 flex-wrap mb-3 pb-3 border-b" style={{ borderColor: '#1f2937' }}>
+                  <Crown size={12} className="text-amber-400 shrink-0" />
+                  <span className="text-xs text-gray-500">Ägare:</span>
+                  <span className="text-xs text-amber-300 font-medium">
+                    {owner ? owner.display_name : pool.created_by ? '(okänd användare)' : '(ingen)'}
+                  </span>
+                  <div className="ml-auto flex items-center gap-1.5">
+                    {pool.created_by !== meUserId && (
+                      <button
+                        onClick={() => takeOwnership(pool.id)}
+                        disabled={busy === `owner-${pool.id}`}
+                        className="text-xs px-2.5 py-1 rounded text-amber-300 hover:bg-amber-400/10 disabled:opacity-40"
+                        style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}
+                        title="Ta över ägarskapet själv"
+                      >
+                        {busy === `owner-${pool.id}` ? <Loader2 size={11} className="animate-spin inline" /> : 'Ta över'}
+                      </button>
+                    )}
+                    {members.length > 0 && (
+                      <select
+                        value=""
+                        onChange={e => {
+                          const m = members.find(x => x.id === e.target.value)
+                          if (m && m.id !== pool.created_by) changeOwner(pool.id, m.id, m.display_name)
+                        }}
+                        disabled={busy === `owner-${pool.id}`}
+                        className="text-xs px-2 py-1 rounded text-gray-300 focus:outline-none focus:ring-1 focus:ring-emerald-400/50 disabled:opacity-40"
+                        style={{ background: '#1f2937', border: '1px solid #374151' }}
+                        title="Byt ägare till en annan medlem"
+                      >
+                        <option value="" className="bg-gray-900">Byt ägare till…</option>
+                        {members.filter(m => m.id !== pool.created_by).map(m => (
+                          <option key={m.id} value={m.id} className="bg-gray-900">
+                            {m.display_name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {members.length > 0 && (
+                      <button
+                        onClick={() => removeAllMembers(pool.id, pool.name)}
+                        disabled={busy === `wipe-${pool.id}`}
+                        className="flex items-center gap-1 text-xs px-2.5 py-1 rounded text-red-300 hover:bg-red-500/10 disabled:opacity-40"
+                        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}
+                        title="Ta bort alla medlemmar ur ligan"
+                      >
+                        {busy === `wipe-${pool.id}` ? (
+                          <Loader2 size={11} className="animate-spin" />
+                        ) : (
+                          <UserX size={11} />
+                        )}
+                        Tom liga
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 <div className="text-xs text-gray-500 mb-2">
                   {members.length === 0 ? 'Inga medlemmar' : `${members.length} medlemmar`}
                 </div>
