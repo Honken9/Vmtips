@@ -95,12 +95,16 @@ end;
 $$;
 
 -- ── 3) join_pool_by_code: ENDA godkända vägen att gå med i en liga ─
+-- OBS: #variable_conflict use_column krävs eftersom OUT-parametrarna
+-- heter samma sak som kolumnerna (pool_id, pool_name). Utan direktivet
+-- blir on conflict (pool_id, user_id) tvetydig och INSERT failar.
 create or replace function public.join_pool_by_code(p_code text)
 returns table (pool_id int, pool_name text, was_new boolean)
 language plpgsql
 security definer
 set search_path = public
 as $$
+#variable_conflict use_column
 declare
   v_uid uuid := auth.uid();
   v_pool record;
