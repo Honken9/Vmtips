@@ -15,11 +15,13 @@ import {
   Users, Trophy, CheckCircle, Loader2, Save, Settings, Wallet, QrCode,
   AlertCircle, Crown, Plus, LogOut, Check,
 } from 'lucide-react'
+import { UserAvatar } from '@/components/UserAvatar'
 
 interface MemberRow {
   user_id: string
   display_name: string
   is_admin: boolean
+  avatar_url: string | null
   paid: boolean
   paid_at: string | null
   amount: number | null
@@ -1126,6 +1128,7 @@ function MemberList({
             href={`/spelare/${m.user_id}`}
             className="flex-1 min-w-0 flex items-center gap-2 hover:underline"
           >
+            <UserAvatar src={m.avatar_url} name={m.display_name} size="sm" />
             <span className="text-sm font-medium text-white truncate">
               {m.display_name}
             </span>

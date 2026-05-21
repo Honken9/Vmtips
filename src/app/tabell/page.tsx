@@ -9,6 +9,7 @@ import { Flag } from '@/components/Flag'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import { Trophy, Users, CheckCircle, Star, Crown, Target, TrendingUp, Calendar } from 'lucide-react'
+import { UserAvatar } from '@/components/UserAvatar'
 
 export const revalidate = 30
 
@@ -50,7 +51,7 @@ export default async function LeaderboardPage() {
       .from('matches')
       .select('*, home_team:teams!matches_home_team_id_fkey(*), away_team:teams!matches_away_team_id_fkey(*)')
       .order('kickoff_at'),
-    supabase.from('profiles').select('id, display_name, pool_id').eq('pool_id', poolId),
+    supabase.from('profiles').select('id, display_name, pool_id, avatar_url').eq('pool_id', poolId),
     supabase.from('pools').select('*').eq('id', poolId).single(),
     supabase.from('pool_payments').select('paid').eq('pool_id', poolId),
     supabase.rpc('popular_picks_for_pool', { p_pool_id: poolId, p_limit: 5 }),
@@ -78,8 +79,10 @@ export default async function LeaderboardPage() {
 
   const entries = leaderboard as LeaderboardEntry[]
   const matches = (matchesRaw ?? []) as Match[]
-  const profiles = (profilesRaw ?? []) as Pick<Profile, 'id' | 'display_name'>[]
+  const profiles = (profilesRaw ?? []) as Pick<Profile, 'id' | 'display_name' | 'avatar_url'>[]
   const currentPool = pool as Pool | null
+  const avatarsByUser: Record<string, string | null> = {}
+  for (const p of profiles) avatarsByUser[p.id] = p.avatar_url ?? null
 
   const totalMatches = matches.length
   const completedMatches = matches.filter(m => m.result_confirmed).length
@@ -227,6 +230,7 @@ export default async function LeaderboardPage() {
           label="Ledare hittills"
           primary={leader?.display_name ?? '–'}
           secondary={leader ? `${leader.total_points} poäng` : 'Inga deltagare'}
+          avatarUrl={leader ? avatarsByUser[leader.user_id] : null}
         />
         <StatBox
           icon={<Calendar size={20} />}
@@ -238,6 +242,7 @@ export default async function LeaderboardPage() {
               ? `${dailyWinner.points} p · ${dailyWinner.matches} matcher`
               : 'Inga matcher avgjorda idag'
           }
+          avatarUrl={dailyWinner ? avatarsByUser[dailyWinner.user_id] : null}
         />
         <StatBox
           icon={<Target size={20} />}
@@ -245,6 +250,7 @@ export default async function LeaderboardPage() {
           label="Mest exakta resultat"
           primary={exactKing?.display_name ?? '–'}
           secondary={exactKing ? `${exactKing.exact_scores} st` : '–'}
+          avatarUrl={exactKing ? avatarsByUser[exactKing.user_id] : null}
         />
         <StatBox
           icon={<TrendingUp size={20} />}
@@ -266,7 +272,7 @@ export default async function LeaderboardPage() {
       {/* Leaderboard */}
       <section>
         <h2 className="text-xl font-bold text-white mb-4">Tabell</h2>
-        <LeaderboardTable entries={entries} participantsWithTips={participantsWithTips} tags={tags} />
+        <LeaderboardTable entries={entries} participantsWithTips={participantsWithTips} tags={tags} avatars={avatarsByUser} />
       </section>
 
       {/* Mest populära tips */}
@@ -336,12 +342,14 @@ function StatBox({
   label,
   primary,
   secondary,
+  avatarUrl,
 }: {
   icon: React.ReactNode
   color: 'blue' | 'gold' | 'green' | 'purple'
   label: string
   primary: string
   secondary: string
+  avatarUrl?: string | null
 }) {
   const colors = {
     blue: 'text-blue-400 bg-blue-400/10',
@@ -351,7 +359,12 @@ function StatBox({
   }
   return (
     <div className="rounded-xl p-4" style={{ background: '#111827', border: '1px solid #1f2937' }}>
-      <div className={`inline-flex p-2 rounded-lg ${colors[color]} mb-3`}>{icon}</div>
+      <div className="flex items-start justify-between gap-2">
+        <div className={`inline-flex p-2 rounded-lg ${colors[color]} mb-3`}>{icon}</div>
+        {avatarUrl !== undefined && primary !== '–' && (
+          <UserAvatar src={avatarUrl} name={primary} size="md" />
+        )}
+      </div>
       <div className="text-xs text-gray-500 mb-0.5">{label}</div>
       <div className="text-lg font-bold text-white truncate">{primary}</div>
       <div className="text-xs text-gray-400 mt-0.5 truncate">{secondary}</div>

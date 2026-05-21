@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { LeaderboardEntry, PoolMemberTag } from '@/lib/types'
 import { Lock } from 'lucide-react'
+import { UserAvatar } from '@/components/UserAvatar'
 
 const TAG_COLOR_HEX: Record<string, string> = {
   emerald: '#10b981', sky: '#0ea5e9', rose: '#f43f5e', amber: '#f59e0b',
@@ -14,9 +15,10 @@ interface Props {
   entries: LeaderboardEntry[]
   participantsWithTips: number
   tags?: PoolMemberTag[]
+  avatars?: Record<string, string | null>
 }
 
-export function LeaderboardTable({ entries, tags = [] }: Props) {
+export function LeaderboardTable({ entries, tags = [], avatars = {} }: Props) {
   const tagByUser = new Map(tags.map(t => [t.user_id, t]))
   if (entries.length === 0) {
     return (
@@ -65,6 +67,11 @@ export function LeaderboardTable({ entries, tags = [] }: Props) {
                     href={`/spelare/${entry.user_id}`}
                     className="flex items-center gap-2 group"
                   >
+                    <UserAvatar
+                      src={avatars[entry.user_id]}
+                      name={entry.display_name}
+                      size="sm"
+                    />
                     {(() => {
                       const tag = tagByUser.get(entry.user_id)
                       const hex = tag?.color ? TAG_COLOR_HEX[tag.color] : null
