@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, Sparkles, CheckCircle, AlertCircle, Camera, Shirt, Activity, MapPin, X } from 'lucide-react'
+import { Loader2, Sparkles, CheckCircle, AlertCircle, Camera, Shirt, Activity, MapPin, X, Lock } from 'lucide-react'
 import Image from 'next/image'
 
 interface Props {
@@ -11,6 +11,7 @@ interface Props {
   displayName: string
   userId: string
   initialGenerating: boolean
+  locked: boolean
   onAvatarChange?: (url: string) => void
 }
 
@@ -117,7 +118,7 @@ const ARENAS = [
   { value: 'Tele2 Arena', label: '🇸🇪 Tele2 Arena (Stockholm)', desc: 'Tele2 Arena in Stockholm Sweden, modern multipurpose stadium with green pitch' },
 ]
 
-export function FootballAvatarUpload({ currentAvatar, displayName, userId, initialGenerating, onAvatarChange }: Props) {
+export function FootballAvatarUpload({ currentAvatar, displayName, userId, initialGenerating, locked, onAvatarChange }: Props) {
   const router = useRouter()
   const supabase = createClient()
   const [preview, setPreview] = useState<string | null>(null)
@@ -392,8 +393,33 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
           </div>
         )}
 
-        {/* Upload-zon (visas inte under pågående generering) */}
-        {!generating && (
+        {/* Lås-vy: en bild per användare. Admin kan låsa upp via admin-vyn. */}
+        {locked && !generating && (
+          <div
+            className="rounded-xl flex flex-col items-center gap-3 py-8 px-5 text-center"
+            style={{
+              border: '1px solid rgba(245,158,11,0.3)',
+              background: 'rgba(245,158,11,0.06)',
+            }}
+          >
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center"
+              style={{ background: 'rgba(245,158,11,0.15)' }}
+            >
+              <Lock size={22} className="text-amber-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">Bilden är låst</p>
+              <p className="text-xs text-gray-400 mt-1 max-w-sm">
+                En profilbild per användare. Vill du skapa en ny – kontakta admin
+                så låser de upp åt dig.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Upload-zon (visas inte under pågående generering eller när låst) */}
+        {!generating && !locked && (
         <div
           onDrop={handleDrop}
           onDragOver={e => { e.preventDefault(); setDragOver(true) }}
@@ -437,7 +463,7 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
         />
 
         {/* Anpassa-sektion: lag, pose, arena */}
-        {preview && !generating && (
+        {preview && !generating && !locked && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-medium text-gray-400 mb-1.5 flex items-center gap-1.5">
@@ -493,7 +519,7 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
         )}
 
         {/* Generera-knapp */}
-        {preview && !generating && (
+        {preview && !generating && !locked && (
           <button
             onClick={handleGenerate}
             className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all"
