@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Match, Team } from '@/lib/types'
 import { MatchesClient } from './MatchesClient'
 
-export const revalidate = 60
+export const dynamic = 'force-dynamic'
 
 export default async function MatchesPage({
   searchParams,
@@ -11,6 +11,11 @@ export default async function MatchesPage({
 }) {
   const { day } = await searchParams
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const { data: profile } = user
+    ? await supabase.from('profiles').select('pool_id').eq('id', user.id).maybeSingle()
+    : { data: null }
 
   const [{ data: matchesData }, { data: teamsData }] = await Promise.all([
     supabase
@@ -25,6 +30,8 @@ export default async function MatchesPage({
       matches={(matchesData ?? []) as Match[]}
       teams={(teamsData ?? []) as Team[]}
       initialDay={day ?? ''}
+      meUserId={user?.id ?? null}
+      poolId={(profile as { pool_id?: number | null } | null)?.pool_id ?? null}
     />
   )
 }
