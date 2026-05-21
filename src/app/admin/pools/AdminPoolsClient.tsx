@@ -165,10 +165,9 @@ export function AdminPoolsClient({
     )
     if (!ok) return
     setBusy(`owner-${poolId}`)
-    // Säkerställ att den nya ägaren är medlem så hen inte hamnar utanför
-    await supabase
-      .from('pool_memberships')
-      .upsert({ pool_id: poolId, user_id: newOwnerId }, { onConflict: 'pool_id,user_id' })
+    // tg_add_owner_member-triggern lägger till nya ägaren i pool_memberships
+    // automatiskt vid UPDATE av created_by – ingen separat INSERT behövs
+    // (och skulle ändå nekas, eftersom INSERT på pool_memberships är revoked).
     const { error } = await supabase
       .from('pools')
       .update({ created_by: newOwnerId })
@@ -188,9 +187,6 @@ export function AdminPoolsClient({
     const ok = window.confirm(`Ta över ägarskapet av ligan själv (${myName})? Den tidigare ägaren blir vanlig medlem.`)
     if (!ok) return
     setBusy(`owner-${poolId}`)
-    await supabase
-      .from('pool_memberships')
-      .upsert({ pool_id: poolId, user_id: meUserId }, { onConflict: 'pool_id,user_id' })
     const { error } = await supabase
       .from('pools')
       .update({ created_by: meUserId })
