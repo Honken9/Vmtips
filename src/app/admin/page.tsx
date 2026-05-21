@@ -9,6 +9,8 @@ export const dynamic = 'force-dynamic'
 export default async function AdminDashboard() {
   const supabase = await createClient()
 
+  const { data: { user: me } } = await supabase.auth.getUser()
+
   const [
     { data: profiles },
     { data: matches },
@@ -65,6 +67,7 @@ export default async function AdminDashboard() {
           <p className="text-xs text-gray-500">Klicka på AI-bild-knappen för att låsa upp och tillåta ny generering.</p>
         </div>
         <AdminUsersTable
+          meUserId={me?.id ?? ''}
           users={(profiles ?? [])
             .map(p => ({
               id: p.id,
