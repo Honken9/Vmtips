@@ -142,25 +142,19 @@ export default async function HomePage() {
             </div>
           </div>
           {profile?.avatar_url && (
-            <Link
-              href="/profil"
-              className="shrink-0 group"
-              title="Gå till profil"
+            <div
+              className="shrink-0 relative w-28 h-28 sm:w-36 sm:h-36 md:w-48 md:h-48 rounded-2xl overflow-hidden shadow-2xl"
+              style={{ border: '2px solid rgba(16,185,129,0.4)' }}
             >
-              <div
-                className="relative w-28 h-28 sm:w-36 sm:h-36 md:w-48 md:h-48 rounded-2xl overflow-hidden shadow-2xl transition-transform group-hover:scale-105"
-                style={{ border: '2px solid rgba(16,185,129,0.4)' }}
-              >
-                <Image
-                  src={profile.avatar_url}
-                  alt={profile.display_name}
-                  fill
-                  sizes="(min-width: 768px) 192px, (min-width: 640px) 144px, 112px"
-                  className="object-cover"
-                  priority
-                />
-              </div>
-            </Link>
+              <Image
+                src={profile.avatar_url}
+                alt={profile.display_name}
+                fill
+                sizes="(min-width: 768px) 192px, (min-width: 640px) 144px, 112px"
+                className="object-cover"
+                priority
+              />
+            </div>
           )}
         </div>
         <div
