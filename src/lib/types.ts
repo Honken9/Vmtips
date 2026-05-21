@@ -36,6 +36,7 @@ export interface Profile {
   created_at: string
   avatar_url?: string | null
   avatar_generating?: boolean
+  avatar_locked?: boolean
   pool_id?: number | null
 }
 

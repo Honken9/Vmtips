@@ -113,12 +113,19 @@ export async function POST(request: NextRequest) {
 
   // Rate limit: max 1 generering per 30 sek per användare.
   // Plus blockera dubbel-trigger om en generering redan pågår.
+  // Plus lås: en bild per användare (admin kan låsa upp).
   const RATE_LIMIT_MS = 30_000
   const { data: existing } = await admin
     .from('profiles')
-    .select('last_avatar_generated_at, avatar_generating')
+    .select('last_avatar_generated_at, avatar_generating, avatar_locked')
     .eq('id', user.id)
     .single()
+  if (existing?.avatar_locked === true) {
+    return NextResponse.json(
+      { error: 'Din profilbild är låst. Kontakta admin om du vill skapa en ny.' },
+      { status: 403 }
+    )
+  }
   if (existing?.avatar_generating === true) {
     return NextResponse.json(
       { error: 'En generering pågår redan. Vänta tills den är klar.' },
@@ -263,10 +270,11 @@ export async function POST(request: NextRequest) {
 
     const avatarUrl = publicData.publicUrl + `?t=${Date.now()}`
 
-    // Uppdatera profilen – avatar_generating clearas i finally-blocket
+    // Uppdatera profilen + lås så bara en bild per användare kan skapas.
+    // Admin kan låsa upp igen via admin-vyn. avatar_generating clearas i finally.
     await admin
       .from('profiles')
-      .update({ avatar_url: avatarUrl })
+      .update({ avatar_url: avatarUrl, avatar_locked: true })
       .eq('id', user.id)
 
     return NextResponse.json({ avatarUrl })

@@ -45,6 +45,7 @@ export default async function ProfilPage() {
             displayName={profile.display_name}
             userId={user.id}
             initialGenerating={profile.avatar_generating === true}
+            locked={profile.avatar_locked === true}
           />
         </div>
 

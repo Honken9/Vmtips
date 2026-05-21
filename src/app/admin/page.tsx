@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Settings } from '@/lib/types'
 import { Users, CheckSquare, Trophy, Calendar } from 'lucide-react'
 import Link from 'next/link'
+import { AdminUsersTable } from './AdminUsersTable'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,7 +15,7 @@ export default async function AdminDashboard() {
     { data: predictions },
     { data: settings },
   ] = await Promise.all([
-    supabase.from('profiles').select('id, display_name, tips_locked, is_admin'),
+    supabase.from('profiles').select('id, display_name, tips_locked, is_admin, avatar_url, avatar_locked'),
     supabase.from('matches').select('id, result_confirmed, stage'),
     supabase.from('predictions').select('id, locked'),
     supabase.from('settings').select('*').single(),
@@ -61,39 +62,20 @@ export default async function AdminDashboard() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold text-white">Deltagare</h2>
+          <p className="text-xs text-gray-500">Klicka på AI-bild-knappen för att låsa upp och tillåta ny generering.</p>
         </div>
-        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1f2937' }}>
-          <table className="w-full">
-            <thead>
-              <tr style={{ background: '#1f2937' }}>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Namn</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Tips inlämnade</th>
-                <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Roll</th>
-              </tr>
-            </thead>
-            <tbody>
-              {profiles?.sort((a, b) => a.display_name.localeCompare(b.display_name)).map((p, i) => (
-                <tr key={p.id}
-                  className="border-t hover:bg-white/5 transition-colors"
-                  style={{ borderColor: '#1f2937' }}>
-                  <td className="px-4 py-3 text-sm text-white">{p.display_name}</td>
-                  <td className="px-4 py-3 text-right">
-                    {p.tips_locked
-                      ? <span className="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full">✓ Inlämnade</span>
-                      : <span className="text-xs text-gray-500">Ej inlämnade</span>
-                    }
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {p.is_admin
-                      ? <span className="text-xs text-indigo-400">Admin</span>
-                      : <span className="text-xs text-gray-500">Deltagare</span>
-                    }
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <AdminUsersTable
+          users={(profiles ?? [])
+            .map(p => ({
+              id: p.id,
+              display_name: p.display_name,
+              tips_locked: p.tips_locked === true,
+              is_admin: p.is_admin === true,
+              avatar_url: (p as { avatar_url?: string | null }).avatar_url ?? null,
+              avatar_locked: (p as { avatar_locked?: boolean }).avatar_locked === true,
+            }))
+            .sort((a, b) => a.display_name.localeCompare(b.display_name))}
+        />
       </div>
 
       {/* Snabblänkar */}
