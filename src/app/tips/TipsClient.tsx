@@ -16,7 +16,8 @@ import { BonusTipsSection } from '@/components/BonusTipsSection'
 import { RandomizeOverlay } from '@/components/RandomizeOverlay'
 import { format, isPast } from 'date-fns'
 import { sv } from 'date-fns/locale'
-import { Lock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Loader2, Dices, Trash2 } from 'lucide-react'
+import Link from 'next/link'
+import { Lock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Loader2, Dices, Trash2, GitBranch } from 'lucide-react'
 
 interface Props {
   profile: Profile
@@ -383,6 +384,17 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
           </p>
         </div>
 
+        <div className="flex flex-wrap gap-2 items-start">
+          <Link
+            href="/slutspel"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-rose-300 transition-all hover:bg-rose-400/10"
+            style={{ background: 'rgba(251,113,133,0.08)', border: '1px solid rgba(251,113,133,0.3)' }}
+            title="Se ditt slutspels-träd baserat på dina tips"
+          >
+            <GitBranch size={16} />
+            Mitt slutspel
+          </Link>
+        </div>
         {!locked && (
           <div className="flex flex-wrap gap-2">
             <button
