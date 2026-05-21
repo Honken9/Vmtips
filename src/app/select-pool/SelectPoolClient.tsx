@@ -43,14 +43,14 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
       const code = normalizeInviteCode(inviteCode)
       const { data, error: rpcErr } = await supabase.rpc('join_pool_by_code', { p_code: code })
       const row = Array.isArray(data) ? data[0] : data
-      if (rpcErr || !row?.pool_id) {
+      if (rpcErr || !row?.joined_pool_id) {
         setError(rpcErr?.message?.includes('Ogiltig')
           ? 'Hittade ingen liga med den koden.'
           : `Kunde inte gå med: ${rpcErr?.message ?? 'okänt fel'}`)
         setLoading(false)
         return
       }
-      resultName = row.pool_name
+      resultName = row.joined_pool_name
       resultCode = code
     } else {
       // tg_add_owner_member-triggern lägger till creator i pool_memberships
