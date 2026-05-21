@@ -241,7 +241,7 @@ export function BonusTipsSection({ userId, teams, bonus, bonusResults, locked, p
                         className="w-36 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
                         style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
                       />
-                      {tippedTotalGoals > 0 && (
+                      {tippedTotalGoals > 0 ? (
                         <button
                           type="button"
                           onClick={() => {
@@ -255,6 +255,17 @@ export function BonusTipsSection({ userId, teams, bonus, bonusResults, locked, p
                         >
                           <Calculator size={14} />
                           Använd mina tips: {tippedTotalGoals} mål
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled
+                          title="Lägg först några matchtips, så summerar vi målen automatiskt"
+                          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium opacity-60 cursor-not-allowed"
+                          style={{ background: '#1f2937', color: '#9ca3af', border: '1px solid #374151' }}
+                        >
+                          <Calculator size={14} />
+                          Lägg först matchtips
                         </button>
                       )}
                     </div>
