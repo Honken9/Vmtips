@@ -26,18 +26,27 @@ export function Navigation({ profile }: Props) {
     window.location.href = '/auth/login'
   }
 
-  const links = [
+  const commonLinks = [
     { href: '/',          label: 'Hem',       icon: Home,            color: '#10b981' }, // emerald
     { href: '/tabell',    label: 'Tabell',    icon: Trophy,          color: '#f59e0b' }, // gold
     { href: '/statistik', label: 'Statistik', icon: BarChart3,       color: '#60a5fa' }, // blue
     { href: '/matches',   label: 'Matcher',   icon: LayoutDashboard, color: '#22d3ee' }, // cyan
     { href: '/landslag',  label: 'Landslag',  icon: Globe,           color: '#a78bfa' }, // violet
-    ...(profile ? [{ href: '/tips', label: 'Mina tips', icon: Target, color: '#f472b6' }] : []), // pink
-    ...(profile ? [{ href: '/slutspel', label: 'Mitt slutspel', icon: GitBranch, color: '#fb7185' }] : []), // rose
-    ...(profile ? [{ href: '/liga', label: 'Min liga', icon: Wallet, color: '#34d399' }] : []), // emerald-light
+  ]
+  // "Mina"-gruppen – samma accent (rosa) så det syns att de hänger ihop
+  const personalLinks = profile
+    ? [
+        { href: '/tips',     label: 'Mina tips',    icon: Target,    color: '#f472b6' },
+        { href: '/slutspel', label: 'Mitt slutspel', icon: GitBranch, color: '#f472b6' },
+        { href: '/liga',     label: 'Min liga',     icon: Wallet,    color: '#f472b6' },
+      ]
+    : []
+  const tailLinks = [
     { href: '/regler', label: 'Regler', icon: BookOpen, color: '#fbbf24' }, // amber-light
     ...(profile?.is_admin ? [{ href: '/admin', label: 'Admin', icon: ShieldCheck, color: '#ef4444' }] : []), // red
   ]
+  // För mobil-menyn vill vi rendera alla i en lista men gruppen markeras visuellt
+  const allLinks = [...commonLinks, ...personalLinks, ...tailLinks]
 
   const initials = profile?.display_name?.slice(0, 2).toUpperCase() ?? '?'
 
@@ -59,7 +68,56 @@ export function Navigation({ profile }: Props) {
 
           {/* Desktop nav – ikoner med text på xl+, ikoner-bara på md/lg */}
           <div className="hidden md:flex items-center gap-0.5 flex-1 justify-center min-w-0">
-            {links.map(({ href, label, icon: Icon, color }) => {
+            {commonLinks.map(({ href, label, icon: Icon, color }) => {
+              const active = pathname === href || (href !== '/' && pathname.startsWith(href))
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  title={label}
+                  className={`flex items-center gap-1.5 px-2 xl:px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                    active
+                      ? 'text-white bg-white/10'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  <Icon size={16} style={{ color }} />
+                  <span className="hidden xl:inline">{label}</span>
+                </Link>
+              )
+            })}
+
+            {/* "Mina"-gruppen i en egen rosa pill så det syns att de hänger ihop */}
+            {personalLinks.length > 0 && (
+              <div
+                className="flex items-center gap-0.5 px-1 mx-1 rounded-xl"
+                style={{
+                  background: 'rgba(244,114,182,0.08)',
+                  border: '1px solid rgba(244,114,182,0.25)',
+                }}
+              >
+                {personalLinks.map(({ href, label, icon: Icon, color }) => {
+                  const active = pathname === href || (href !== '/' && pathname.startsWith(href))
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      title={label}
+                      className={`flex items-center gap-1.5 px-2 xl:px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+                        active
+                          ? 'text-white bg-pink-400/20'
+                          : 'text-pink-200/90 hover:text-white hover:bg-pink-400/10'
+                      }`}
+                    >
+                      <Icon size={16} style={{ color }} />
+                      <span className="hidden xl:inline">{label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+
+            {tailLinks.map(({ href, label, icon: Icon, color }) => {
               const active = pathname === href || (href !== '/' && pathname.startsWith(href))
               return (
                 <Link
@@ -130,8 +188,9 @@ export function Navigation({ profile }: Props) {
         {/* Mobile menu */}
         {mobileOpen && (
           <div className="md:hidden pb-4 border-t border-white/5 pt-4 space-y-1">
-            {links.map(({ href, label, icon: Icon, color }) => {
+            {allLinks.map(({ href, label, icon: Icon, color }) => {
               const active = pathname === href || (href !== '/' && pathname.startsWith(href))
+              const isPersonal = personalLinks.some(p => p.href === href)
               return (
                 <Link
                   key={href}
@@ -139,9 +198,14 @@ export function Navigation({ profile }: Props) {
                   onClick={() => setMobileOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                     active
-                      ? 'text-white bg-white/10'
-                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      ? isPersonal
+                        ? 'text-white bg-pink-400/15'
+                        : 'text-white bg-white/10'
+                      : isPersonal
+                        ? 'text-pink-200/90 hover:text-white hover:bg-pink-400/10'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
                   }`}
+                  style={isPersonal && !active ? { background: 'rgba(244,114,182,0.05)', border: '1px solid rgba(244,114,182,0.15)' } : undefined}
                 >
                   <Icon size={18} style={{ color }} />
                   {label}

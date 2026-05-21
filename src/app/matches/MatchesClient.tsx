@@ -66,6 +66,7 @@ interface Props {
   initialDay?: string
   meUserId?: string | null
   poolId?: number | null
+  canModerate?: boolean
 }
 
 function ymd(iso: string): string {
@@ -76,7 +77,7 @@ function dayLabel(iso: string): string {
   return format(new Date(iso), 'EEEE d MMMM', { locale: sv })
 }
 
-export function MatchesClient({ matches, teams, initialDay = '', meUserId = null, poolId = null }: Props) {
+export function MatchesClient({ matches, teams, initialDay = '', meUserId = null, poolId = null, canModerate = false }: Props) {
   const [day, setDay] = useState<string>(initialDay)
   const [teamId, setTeamId] = useState<string>('')
   const [group, setGroup] = useState<string>('')
@@ -272,7 +273,7 @@ export function MatchesClient({ matches, teams, initialDay = '', meUserId = null
               <div className="rounded-xl overflow-hidden divide-y"
                 style={{ background: '#111827', border: '1px solid #1f2937', borderColor: '#1f2937' }}>
                 {d.matches.map(m => (
-                  <MatchRow key={m.id} match={m} meUserId={meUserId} poolId={poolId} />
+                  <MatchRow key={m.id} match={m} meUserId={meUserId} poolId={poolId} canModerate={canModerate} />
                 ))}
               </div>
             </section>
@@ -287,10 +288,12 @@ function MatchRow({
   match,
   meUserId,
   poolId,
+  canModerate,
 }: {
   match: Match
   meUserId: string | null
   poolId: number | null
+  canModerate: boolean
 }) {
   const homeName = match.home_team?.name ?? match.home_placeholder ?? '?'
   const awayName = match.away_team?.name ?? match.away_placeholder ?? '?'
@@ -340,6 +343,7 @@ function MatchRow({
             poolId={poolId}
             meUserId={meUserId}
             matchLabel={matchLabel}
+            canModerate={canModerate}
           />
         </div>
       )}
