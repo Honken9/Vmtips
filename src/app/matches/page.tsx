@@ -14,8 +14,22 @@ export default async function MatchesPage({
   const { data: { user } } = await supabase.auth.getUser()
 
   const { data: profile } = user
-    ? await supabase.from('profiles').select('pool_id').eq('id', user.id).maybeSingle()
+    ? await supabase.from('profiles').select('pool_id, is_admin').eq('id', user.id).maybeSingle()
     : { data: null }
+
+  const poolId = (profile as { pool_id?: number | null } | null)?.pool_id ?? null
+  const isAdmin = (profile as { is_admin?: boolean } | null)?.is_admin === true
+
+  // Är jag ägare av min liga? Behövs för moderera-rätt på match-kommentarer
+  let isPoolOwner = false
+  if (user && poolId) {
+    const { data: pool } = await supabase
+      .from('pools')
+      .select('created_by')
+      .eq('id', poolId)
+      .maybeSingle()
+    isPoolOwner = (pool as { created_by?: string | null } | null)?.created_by === user.id
+  }
 
   const [{ data: matchesData }, { data: teamsData }] = await Promise.all([
     supabase
@@ -31,7 +45,8 @@ export default async function MatchesPage({
       teams={(teamsData ?? []) as Team[]}
       initialDay={day ?? ''}
       meUserId={user?.id ?? null}
-      poolId={(profile as { pool_id?: number | null } | null)?.pool_id ?? null}
+      poolId={poolId}
+      canModerate={isAdmin || isPoolOwner}
     />
   )
 }
