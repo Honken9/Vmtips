@@ -136,14 +136,14 @@ export default async function HomePage() {
               title="Gå till profil"
             >
               <div
-                className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden shadow-2xl transition-transform group-hover:scale-105"
+                className="relative w-28 h-28 sm:w-36 sm:h-36 md:w-48 md:h-48 rounded-2xl overflow-hidden shadow-2xl transition-transform group-hover:scale-105"
                 style={{ border: '2px solid rgba(16,185,129,0.4)' }}
               >
                 <Image
                   src={profile.avatar_url}
                   alt={profile.display_name}
                   fill
-                  sizes="(min-width: 768px) 160px, (min-width: 640px) 128px, 96px"
+                  sizes="(min-width: 768px) 192px, (min-width: 640px) 144px, 112px"
                   className="object-cover"
                   priority
                 />
