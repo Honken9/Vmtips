@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { FootballAvatarUpload } from '@/components/FootballAvatarUpload'
+import { EmailPreferencesToggle } from '@/components/EmailPreferencesToggle'
 import { User, Mail, Lock, Pencil, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
@@ -12,11 +13,10 @@ export default async function ProfilPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  const [{ data: profile }, { data: emailPrefs }] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', user.id).single(),
+    supabase.from('email_preferences').select('match_reminders, weekly_digest').eq('user_id', user.id).maybeSingle(),
+  ])
 
   if (!profile) redirect('/select-pool')
 
@@ -100,6 +100,12 @@ export default async function ProfilPage() {
               )}
             </div>
           </div>
+
+          <EmailPreferencesToggle
+            userId={user.id}
+            initialMatchReminders={(emailPrefs as { match_reminders?: boolean } | null)?.match_reminders ?? true}
+            initialWeeklyDigest={(emailPrefs as { weekly_digest?: boolean } | null)?.weekly_digest ?? true}
+          />
 
           <div
             className="rounded-xl p-4 text-xs text-gray-500"
