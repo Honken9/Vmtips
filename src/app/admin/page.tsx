@@ -2,14 +2,11 @@ import { createClient } from '@/lib/supabase/server'
 import { Settings } from '@/lib/types'
 import { Users, CheckSquare, Trophy, Calendar } from 'lucide-react'
 import Link from 'next/link'
-import { AdminUsersTable } from './AdminUsersTable'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
-
-  const { data: { user: me } } = await supabase.auth.getUser()
 
   const [
     { data: profiles },
@@ -17,7 +14,7 @@ export default async function AdminDashboard() {
     { data: predictions },
     { data: settings },
   ] = await Promise.all([
-    supabase.from('profiles').select('id, display_name, tips_locked, is_admin, avatar_url, avatar_locked'),
+    supabase.from('profiles').select('id, tips_locked, is_admin'),
     supabase.from('matches').select('id, result_confirmed, stage'),
     supabase.from('predictions').select('id, locked'),
     supabase.from('settings').select('*').single(),
@@ -60,26 +57,7 @@ export default async function AdminDashboard() {
         })}
       </div>
 
-      {/* Deltagarlista */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-white">Deltagare</h2>
-          <p className="text-xs text-gray-500">Klicka på AI-bild-knappen för att låsa upp och tillåta ny generering.</p>
-        </div>
-        <AdminUsersTable
-          meUserId={me?.id ?? ''}
-          users={(profiles ?? [])
-            .map(p => ({
-              id: p.id,
-              display_name: p.display_name,
-              tips_locked: p.tips_locked === true,
-              is_admin: p.is_admin === true,
-              avatar_url: (p as { avatar_url?: string | null }).avatar_url ?? null,
-              avatar_locked: (p as { avatar_locked?: boolean }).avatar_locked === true,
-            }))
-            .sort((a, b) => a.display_name.localeCompare(b.display_name))}
-        />
-      </div>
+      {/* Deltagare-listan finns nu på sin egen flik /admin/users */}
 
       {/* Snabblänkar */}
       <div className="grid md:grid-cols-2 gap-4">
@@ -112,6 +90,12 @@ export default async function AdminDashboard() {
           style={{ background: '#111827', border: '1px solid #1f2937' }}>
           <div className="font-semibold text-white mb-1">→ Ligor</div>
           <div className="text-sm text-gray-400">Hantera tipsligor – skapa, byt namn, flytta medlemmar</div>
+        </Link>
+        <Link href="/admin/users"
+          className="rounded-xl p-5 hover:bg-white/5 transition-colors"
+          style={{ background: '#111827', border: '1px solid #1f2937' }}>
+          <div className="font-semibold text-white mb-1">→ Deltagare</div>
+          <div className="text-sm text-gray-400">Alla användare – lås AI-bild, ta bort konto, se ligatillhörighet</div>
         </Link>
       </div>
     </div>
