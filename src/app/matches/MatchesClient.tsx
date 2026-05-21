@@ -7,6 +7,7 @@ import { Flag } from '@/components/Flag'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import { CheckCircle, Clock, MapPin, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { MatchCommentInline } from '@/components/MatchCommentInline'
 
 // Flagga + namn. Klickbar länk till landslagssidan om laget är känt
 // (har en team-kod); annars vanlig text (för slutspels-placeholders).
@@ -63,6 +64,8 @@ interface Props {
   matches: Match[]
   teams: Team[]
   initialDay?: string
+  meUserId?: string | null
+  poolId?: number | null
 }
 
 function ymd(iso: string): string {
@@ -73,7 +76,7 @@ function dayLabel(iso: string): string {
   return format(new Date(iso), 'EEEE d MMMM', { locale: sv })
 }
 
-export function MatchesClient({ matches, teams, initialDay = '' }: Props) {
+export function MatchesClient({ matches, teams, initialDay = '', meUserId = null, poolId = null }: Props) {
   const [day, setDay] = useState<string>(initialDay)
   const [teamId, setTeamId] = useState<string>('')
   const [group, setGroup] = useState<string>('')
@@ -269,7 +272,7 @@ export function MatchesClient({ matches, teams, initialDay = '' }: Props) {
               <div className="rounded-xl overflow-hidden divide-y"
                 style={{ background: '#111827', border: '1px solid #1f2937', borderColor: '#1f2937' }}>
                 {d.matches.map(m => (
-                  <MatchRow key={m.id} match={m} />
+                  <MatchRow key={m.id} match={m} meUserId={meUserId} poolId={poolId} />
                 ))}
               </div>
             </section>
@@ -280,7 +283,15 @@ export function MatchesClient({ matches, teams, initialDay = '' }: Props) {
   )
 }
 
-function MatchRow({ match }: { match: Match }) {
+function MatchRow({
+  match,
+  meUserId,
+  poolId,
+}: {
+  match: Match
+  meUserId: string | null
+  poolId: number | null
+}) {
   const homeName = match.home_team?.name ?? match.home_placeholder ?? '?'
   const awayName = match.away_team?.name ?? match.away_placeholder ?? '?'
   const homeFlag = match.home_team?.flag ?? ''
@@ -289,34 +300,47 @@ function MatchRow({ match }: { match: Match }) {
   const stageLabel = match.stage === 'group'
     ? (match.group_name ? `Grupp ${match.group_name}` : 'Gruppspel')
     : STAGE_LABELS[match.stage]
+  const matchLabel = `${homeName} – ${awayName}`
 
   return (
-    <div className="flex items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3">
-      <div className="shrink-0 w-16 sm:w-20 leading-tight">
-        <div className="text-emerald-400 font-bold text-base tabular-nums">{time}</div>
-        <div className="text-gray-300 text-[11px] font-medium truncate">{stageLabel}</div>
-      </div>
-      <TeamLabel team={match.home_team} fallbackName={homeName} flag={homeFlag} align="right" />
-      <div className="shrink-0 w-14 sm:w-20 text-center">
-        {match.result_confirmed ? (
-          <div className="flex items-center justify-center gap-1">
-            <span className="text-white font-bold">{match.home_score}</span>
-            <span className="text-gray-500">–</span>
-            <span className="text-white font-bold">{match.away_score}</span>
-            <CheckCircle size={12} className="text-green-500 ml-0.5 hidden sm:inline" />
-          </div>
-        ) : (
-          <div className="flex items-center justify-center gap-1 text-gray-500">
-            <Clock size={12} />
-            <span className="text-xs">vs</span>
+    <div className="px-3 sm:px-5 py-3">
+      <div className="flex items-center gap-2 sm:gap-4">
+        <div className="shrink-0 w-16 sm:w-20 leading-tight">
+          <div className="text-emerald-400 font-bold text-base tabular-nums">{time}</div>
+          <div className="text-gray-300 text-[11px] font-medium truncate">{stageLabel}</div>
+        </div>
+        <TeamLabel team={match.home_team} fallbackName={homeName} flag={homeFlag} align="right" />
+        <div className="shrink-0 w-14 sm:w-20 text-center">
+          {match.result_confirmed ? (
+            <div className="flex items-center justify-center gap-1">
+              <span className="text-white font-bold">{match.home_score}</span>
+              <span className="text-gray-500">–</span>
+              <span className="text-white font-bold">{match.away_score}</span>
+              <CheckCircle size={12} className="text-green-500 ml-0.5 hidden sm:inline" />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-1 text-gray-500">
+              <Clock size={12} />
+              <span className="text-xs">vs</span>
+            </div>
+          )}
+        </div>
+        <TeamLabel team={match.away_team} fallbackName={awayName} flag={awayFlag} align="left" />
+        {match.venue && match.venue !== 'TBD' && (
+          <div className="text-xs text-gray-500 shrink-0 hidden lg:flex items-center gap-1 w-32 truncate">
+            <MapPin size={10} className="shrink-0" />
+            <span className="truncate">{match.venue}</span>
           </div>
         )}
       </div>
-      <TeamLabel team={match.away_team} fallbackName={awayName} flag={awayFlag} align="left" />
-      {match.venue && match.venue !== 'TBD' && (
-        <div className="text-xs text-gray-500 shrink-0 hidden lg:flex items-center gap-1 w-32 truncate">
-          <MapPin size={10} className="shrink-0" />
-          <span className="truncate">{match.venue}</span>
+      {meUserId && poolId && (
+        <div className="mt-2 pl-[5.25rem] sm:pl-24">
+          <MatchCommentInline
+            matchId={match.id}
+            poolId={poolId}
+            meUserId={meUserId}
+            matchLabel={matchLabel}
+          />
         </div>
       )}
     </div>

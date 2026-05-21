@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Loader2, Send, MessageCircle, Trash2 } from 'lucide-react'
@@ -10,11 +11,19 @@ interface RawMessage {
   user_id: string
   text: string
   created_at: string
+  match_id: number | null
+}
+
+interface MatchLite {
+  id: number
+  home_name: string
+  away_name: string
 }
 
 interface DisplayedMessage extends RawMessage {
   display_name: string
   avatar_url: string | null
+  match_label: string | null
 }
 
 interface Member {
@@ -44,16 +53,47 @@ export function PoolChat({ poolId, meUserId, ownerUserId, members }: Props) {
   const listRef = useRef<HTMLDivElement>(null)
 
   const memberMap = useRef<Map<string, Member>>(new Map())
+  const matchMap = useRef<Map<number, MatchLite>>(new Map())
   useEffect(() => {
     const m = new Map<string, Member>()
     for (const u of members) m.set(u.id, u)
     memberMap.current = m
   }, [members])
 
+  // Hämta match-namn en gång så match-tags kan visas
+  useEffect(() => {
+    let cancelled = false
+    async function loadMatches() {
+      const { data } = await supabase
+        .from('matches')
+        .select('id, home_team:teams!matches_home_team_id_fkey(name), away_team:teams!matches_away_team_id_fkey(name), home_placeholder, away_placeholder')
+      if (cancelled) return
+      const m = new Map<number, MatchLite>()
+      for (const r of (data ?? []) as Array<{
+        id: number
+        home_team: { name?: string } | { name?: string }[] | null
+        away_team: { name?: string } | { name?: string }[] | null
+        home_placeholder: string | null
+        away_placeholder: string | null
+      }>) {
+        const h = Array.isArray(r.home_team) ? r.home_team[0]?.name : r.home_team?.name
+        const a = Array.isArray(r.away_team) ? r.away_team[0]?.name : r.away_team?.name
+        m.set(r.id, {
+          id: r.id,
+          home_name: h ?? r.home_placeholder ?? '?',
+          away_name: a ?? r.away_placeholder ?? '?',
+        })
+      }
+      matchMap.current = m
+    }
+    loadMatches()
+    return () => { cancelled = true }
+  }, [supabase])
+
   const fetchMessages = useCallback(async () => {
     const { data, error } = await supabase
       .from('pool_messages')
-      .select('id, user_id, text, created_at')
+      .select('id, user_id, text, created_at, match_id')
       .eq('pool_id', poolId)
       .order('created_at', { ascending: false })
       .limit(PAGE_SIZE)
@@ -65,10 +105,12 @@ export function PoolChat({ poolId, meUserId, ownerUserId, members }: Props) {
     const raw = ((data ?? []) as RawMessage[]).reverse()
     const enriched: DisplayedMessage[] = raw.map(m => {
       const mem = memberMap.current.get(m.user_id)
+      const match = m.match_id != null ? matchMap.current.get(m.match_id) : null
       return {
         ...m,
         display_name: mem?.display_name ?? '(borttagen)',
         avatar_url: mem?.avatar_url ?? null,
+        match_label: match ? `${match.home_name} – ${match.away_name}` : null,
       }
     })
     setMessages(enriched)
@@ -168,7 +210,18 @@ export function PoolChat({ poolId, meUserId, ownerUserId, members }: Props) {
                       border: `1px solid ${isMe ? 'rgba(16,185,129,0.3)' : '#374151'}`,
                     }}
                   >
-                    {m.text}
+                    {m.match_label && (
+                      <Link
+                        href="/matches"
+                        className="inline-flex items-center gap-1 mb-1 px-1.5 py-0.5 rounded text-[10px] font-semibold text-emerald-300 hover:bg-emerald-400/10 transition-colors"
+                        style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}
+                        title="Kommentar om denna match"
+                      >
+                        <MessageCircle size={9} />
+                        {m.match_label}
+                      </Link>
+                    )}
+                    <div>{m.text}</div>
                   </div>
                   {(isMe || canDelete) && (
                     <button
