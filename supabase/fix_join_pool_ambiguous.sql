@@ -3,18 +3,21 @@
 -- Kör i Supabase SQL Editor (idempotent).
 -- ============================================================
 --
--- OUT-parametrarna pool_id och pool_name krockade med kolumnnamn
--- i INSERT...ON CONFLICT och UPDATE-satserna. #variable_conflict
--- use_column gör att kolumnerna vinner vid namnkrock.
+-- Tidigare version hade OUT-params pool_id + pool_name som krockade
+-- med kolumnnamn i INSERT...ON CONFLICT och UPDATE-satserna. Här
+-- renamar vi OUT-parametrarna till joined_pool_id / joined_pool_name
+-- så det inte finns någon tvetydighet alls.
 -- ============================================================
 
+-- Drop:a den gamla signaturen om den finns (return-typen ändras)
+drop function if exists public.join_pool_by_code(text);
+
 create or replace function public.join_pool_by_code(p_code text)
-returns table (pool_id int, pool_name text, was_new boolean)
+returns table (joined_pool_id int, joined_pool_name text, joined_was_new boolean)
 language plpgsql
 security definer
 set search_path = public
 as $$
-#variable_conflict use_column
 declare
   v_uid uuid := auth.uid();
   v_pool record;
