@@ -33,27 +33,28 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
       return
     }
 
-    let poolId: number | null = null
     let resultName = ''
     let resultCode = ''
 
     if (mode === 'join') {
+      // RPC validerar invite-koden, lägger till medlemskap och sätter
+      // aktiv liga atomiskt server-side. Direkt INSERT i pool_memberships
+      // är inte längre tillåtet för authenticated.
       const code = normalizeInviteCode(inviteCode)
-      const { data: pool, error: poolErr } = await supabase
-        .from('pools')
-        .select('id, name, invite_code')
-        .eq('invite_code', code)
-        .is('deleted_at', null)
-        .single()
-      if (poolErr || !pool) {
-        setError('Hittade ingen liga med den koden.')
+      const { data, error: rpcErr } = await supabase.rpc('join_pool_by_code', { p_code: code })
+      const row = Array.isArray(data) ? data[0] : data
+      if (rpcErr || !row?.pool_id) {
+        setError(rpcErr?.message?.includes('Ogiltig')
+          ? 'Hittade ingen liga med den koden.'
+          : `Kunde inte gå med: ${rpcErr?.message ?? 'okänt fel'}`)
         setLoading(false)
         return
       }
-      poolId = pool.id
-      resultName = pool.name
-      resultCode = pool.invite_code
+      resultName = row.pool_name
+      resultCode = code
     } else {
+      // tg_add_owner_member-triggern lägger till creator i pool_memberships
+      // automatiskt, så vi kan sedan uppdatera profile.pool_id direkt.
       const code = generateInviteCode()
       const { data: pool, error: poolErr } = await supabase
         .from('pools')
@@ -65,26 +66,20 @@ export function SelectPoolClient({ displayName }: { displayName: string }) {
         setLoading(false)
         return
       }
-      poolId = pool.id
+      const { error: updErr } = await supabase
+        .from('profiles')
+        .update({ pool_id: pool.id })
+        .eq('id', user.id)
+      if (updErr) {
+        setError(`Profil kunde inte uppdateras: ${updErr.message}`)
+        setLoading(false)
+        return
+      }
       resultName = pool.name
       resultCode = pool.invite_code
     }
 
-    // Lägg till medlemskap (idempotent) + sätt aktiv liga
-    await supabase
-      .from('pool_memberships')
-      .upsert({ pool_id: poolId, user_id: user.id }, { onConflict: 'pool_id,user_id' })
-    const { error: updErr } = await supabase
-      .from('profiles')
-      .update({ pool_id: poolId })
-      .eq('id', user.id)
-
     setLoading(false)
-    if (updErr) {
-      setError(`Profil kunde inte uppdateras: ${updErr.message}`)
-      return
-    }
-
     if (mode === 'create') {
       setSuccess({ name: resultName, code: resultCode })
     } else {

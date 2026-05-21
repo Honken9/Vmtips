@@ -22,35 +22,13 @@ export function ChangePool({ currentPoolId }: { currentPoolId: number | null }) 
     setError('')
     setLoading(true)
     const code = normalizeInviteCode(inviteCode)
-    const { data: pool, error: poolErr } = await supabase
-      .from('pools')
-      .select('id')
-      .eq('invite_code', code)
-      .is('deleted_at', null)
-      .single()
-    if (poolErr || !pool) {
-      setError('Hittade ingen liga med den koden.')
-      setLoading(false)
-      return
-    }
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      setError('Inte inloggad')
-      setLoading(false)
-      return
-    }
-    await supabase
-      .from('pool_memberships')
-      .upsert({ pool_id: pool.id, user_id: user.id }, { onConflict: 'pool_id,user_id' })
-    const { error: updErr } = await supabase
-      .from('profiles')
-      .update({ pool_id: pool.id })
-      .eq('id', user.id)
+    // RPC validerar koden + lägger till medlemskap + sätter aktiv liga atomiskt
+    const { error: rpcErr } = await supabase.rpc('join_pool_by_code', { p_code: code })
     setLoading(false)
-    if (updErr) {
-      setError(updErr.message)
+    if (rpcErr) {
+      setError(rpcErr.message?.includes('Ogiltig')
+        ? 'Hittade ingen liga med den koden.'
+        : rpcErr.message)
       return
     }
     setMode('closed')
@@ -69,6 +47,8 @@ export function ChangePool({ currentPoolId }: { currentPoolId: number | null }) 
       setLoading(false)
       return
     }
+    // tg_add_owner_member-triggern lägger till skaparen i pool_memberships
+    // automatiskt. Vi behöver bara sätta profile.pool_id.
     const code = generateInviteCode()
     const { data: pool, error: insErr } = await supabase
       .from('pools')
@@ -80,9 +60,6 @@ export function ChangePool({ currentPoolId }: { currentPoolId: number | null }) 
       setLoading(false)
       return
     }
-    await supabase
-      .from('pool_memberships')
-      .upsert({ pool_id: pool.id, user_id: user.id }, { onConflict: 'pool_id,user_id' })
     const { error: updErr } = await supabase
       .from('profiles')
       .update({ pool_id: pool.id })

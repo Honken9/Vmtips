@@ -108,18 +108,19 @@ export default function RegisterPage() {
       targetInviteCode = newPool.invite_code
     }
 
-    // 4. Sätt pool_id på profilen + lägg till medlemskap (kräver inloggad session)
+    // 4. Sätt pool_id på profilen + lägg till medlemskap (kräver inloggad session).
+    //    Vid join: använd RPC som atomiskt validerar invite-koden, skapar
+    //    medlemskap och sätter aktiv liga. Vid create: tg_add_owner_member-
+    //    triggern lägger till skaparen i pool_memberships automatiskt.
     if (data.session && data.user && targetPoolId != null) {
-      await supabase
-        .from('pool_memberships')
-        .upsert(
-          { pool_id: targetPoolId, user_id: data.user.id },
-          { onConflict: 'pool_id,user_id' }
-        )
-      await supabase
-        .from('profiles')
-        .update({ pool_id: targetPoolId })
-        .eq('id', data.user.id)
+      if (poolMode === 'join' && targetInviteCode) {
+        await supabase.rpc('join_pool_by_code', { p_code: targetInviteCode })
+      } else {
+        await supabase
+          .from('profiles')
+          .update({ pool_id: targetPoolId })
+          .eq('id', data.user.id)
+      }
     }
 
     setLoading(false)
