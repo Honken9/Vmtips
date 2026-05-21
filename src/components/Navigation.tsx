@@ -33,7 +33,7 @@ export function Navigation({ profile }: Props) {
     { href: '/matches',   label: 'Matcher',   icon: LayoutDashboard, color: '#22d3ee' }, // cyan
     { href: '/landslag',  label: 'Landslag',  icon: Globe,           color: '#a78bfa' }, // violet
     ...(profile ? [{ href: '/tips', label: 'Mina tips', icon: Target, color: '#f472b6' }] : []), // pink
-    ...(profile ? [{ href: '/bracket', label: 'Bracket', icon: GitBranch, color: '#fb7185' }] : []), // rose
+    ...(profile ? [{ href: '/slutspel', label: 'Slutspel', icon: GitBranch, color: '#fb7185' }] : []), // rose
     ...(profile ? [{ href: '/liga', label: 'Min liga', icon: Wallet, color: '#34d399' }] : []), // emerald-light
     { href: '/regler', label: 'Regler', icon: BookOpen, color: '#fbbf24' }, // amber-light
     ...(profile?.is_admin ? [{ href: '/admin', label: 'Admin', icon: ShieldCheck, color: '#ef4444' }] : []), // red

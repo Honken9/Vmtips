@@ -37,9 +37,9 @@ export default async function BracketPage() {
       <div className="flex items-center gap-3">
         <GitBranch size={22} className="text-emerald-400" />
         <div>
-          <h1 className="text-2xl font-bold text-white">Bracket</h1>
+          <h1 className="text-2xl font-bold text-white">Slutspel</h1>
           <p className="text-gray-400 text-sm mt-0.5">
-            Slutspels-trädet enligt dina tips – från 16-delsfinaler till final.
+            Slutspels-trädet enligt dina tips – från 16-delar in mot finalen i mitten.
           </p>
         </div>
       </div>
