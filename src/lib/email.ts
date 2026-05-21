@@ -1,7 +1,7 @@
-// Mailutskick via Resend. Behöver RESEND_API_KEY i Vercel/.env.local
-// och en verifierad domän hos Resend (matchar sender_email i settings).
+// Mailutskick via Brevo (gratis 300 mejl/dag, obegränsat antal domäner).
+// Behöver BREVO_API_KEY i Vercel/.env.local och en verifierad domän hos Brevo
+// som matchar sender_email i email_settings.
 
-import { Resend } from 'resend'
 import { createAdminClient } from './supabase/admin'
 
 export interface EmailSettings {
@@ -25,11 +25,7 @@ export interface SendArgs {
   replyTo?: string
 }
 
-function getResend(): Resend | null {
-  const key = process.env.RESEND_API_KEY
-  if (!key) return null
-  return new Resend(key)
-}
+const BREVO_ENDPOINT = 'https://api.brevo.com/v3/smtp/email'
 
 export async function getEmailSettings(): Promise<EmailSettings | null> {
   const admin = createAdminClient()
@@ -56,36 +52,57 @@ export async function logEmail(
   })
 }
 
+interface BrevoError {
+  message?: string
+  code?: string
+}
+
 /**
- * Skicka ett mejl via Resend. Returnerar { ok, error?, id? }.
- * Batchar mottagare i grupper om 50 (Resend-gräns) – varje mejl skickas
- * som BCC så mottagare inte ser varandras adresser.
+ * Skicka via Brevo. Mottagare batchas i grupper om 90 (Brevo-gräns är 99
+ * inkl to/cc/bcc – vi har 1 to + 90 bcc). Varje batch blir ett mejl med
+ * avsändar-adressen som "to" och alla riktiga mottagare som BCC, så de
+ * inte ser varandras adresser.
  */
 export async function sendEmail(args: SendArgs): Promise<{ ok: boolean; error?: string }> {
-  const resend = getResend()
-  if (!resend) {
-    return { ok: false, error: 'RESEND_API_KEY saknas i miljövariabler' }
+  const apiKey = process.env.BREVO_API_KEY
+  if (!apiKey) {
+    return { ok: false, error: 'BREVO_API_KEY saknas i miljövariabler' }
   }
   const settings = await getEmailSettings()
   if (!settings) {
     return { ok: false, error: 'email_settings-raden saknas i databasen' }
   }
-  const from = `${settings.sender_name} <${settings.sender_email}>`
 
-  const BATCH = 50
+  const BATCH = 90
   for (let i = 0; i < args.to.length; i += BATCH) {
     const batch = args.to.slice(i, i + BATCH)
-    const { error } = await resend.emails.send({
-      from,
-      to: settings.sender_email,
-      bcc: batch,
+    const body = {
+      sender: { name: settings.sender_name, email: settings.sender_email },
+      to: [{ email: settings.sender_email, name: settings.sender_name }],
+      bcc: batch.map(email => ({ email })),
       subject: args.subject,
-      html: args.html,
-      text: args.text,
-      replyTo: args.replyTo,
+      htmlContent: args.html,
+      ...(args.text ? { textContent: args.text } : {}),
+      ...(args.replyTo ? { replyTo: { email: args.replyTo } } : {}),
+    }
+    const res = await fetch(BREVO_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey,
+        'content-type': 'application/json',
+        'accept': 'application/json',
+      },
+      body: JSON.stringify(body),
     })
-    if (error) {
-      return { ok: false, error: error.message }
+    if (!res.ok) {
+      let detail = ''
+      try {
+        const err = (await res.json()) as BrevoError
+        detail = err.message ?? err.code ?? ''
+      } catch {
+        detail = await res.text().catch(() => '')
+      }
+      return { ok: false, error: `Brevo ${res.status}: ${detail || res.statusText}` }
     }
   }
   return { ok: true }
@@ -99,7 +116,6 @@ export async function recipientsFor(
   if (userIds.length === 0) return []
   const admin = createAdminClient()
 
-  // Plocka opt-out-status
   const { data: prefs } = await admin
     .from('email_preferences')
     .select('user_id, match_reminders, weekly_digest')
@@ -110,7 +126,6 @@ export async function recipientsFor(
     if (type === 'digest' && p.weekly_digest === false) optedOut.add(p.user_id)
   }
 
-  // Plocka emails via auth admin
   const out: { user_id: string; email: string }[] = []
   for (const uid of userIds) {
     if (optedOut.has(uid)) continue

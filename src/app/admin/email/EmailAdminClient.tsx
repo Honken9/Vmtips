@@ -114,13 +114,13 @@ export function EmailAdminClient({ settings: initial, log }: { settings: EmailSe
     <div className="space-y-6">
       {/* Setup-check */}
       <div className="rounded-xl p-4 text-xs" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: '#fbbf24' }}>
-        <strong>Setup-checklista:</strong>
+        <strong>Setup-checklista (Brevo – gratis 300 mejl/dag, obegränsat antal domäner):</strong>
         <ol className="mt-2 space-y-1 list-decimal list-inside text-gray-300">
-          <li>Skapa konto på <a href="https://resend.com" target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline">resend.com</a> (gratis 3000 mejl/mån)</li>
-          <li>Verifiera domänen <code>tippavm2026.se</code> (lägg DNS-records)</li>
-          <li>Lägg <code>RESEND_API_KEY</code> i Vercel-projektets env vars (Production + Preview)</li>
-          <li>Sätt <code>CRON_SECRET</code> i Vercel + samma värde i <code>vercel.json</code>-cron</li>
-          <li>Klicka "Skicka test-mejl" nedan för att verifiera</li>
+          <li>Skapa konto på <a href="https://www.brevo.com" target="_blank" rel="noopener noreferrer" className="text-emerald-400 underline">brevo.com</a></li>
+          <li>Senders, Domains &amp; Dedicated IPs → Domains → Add → <code>tippavm2026.se</code> + lägg DNS-records (SPF + DKIM + DMARC)</li>
+          <li>SMTP &amp; API → API keys → Generate new → kopiera nyckeln (börjar med <code>xkeysib-…</code>)</li>
+          <li>Lägg <code>BREVO_API_KEY</code> i Vercel env vars (Production + Preview) → Redeploy</li>
+          <li>Klicka &quot;Skicka test-mejl&quot; nedan för att verifiera</li>
         </ol>
       </div>
 
