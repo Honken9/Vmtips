@@ -9,6 +9,7 @@ interface MemberRow {
   user_id: string
   display_name: string
   is_admin: boolean
+  avatar_url: string | null
   paid: boolean
   paid_at: string | null
   amount: number | null
@@ -38,7 +39,7 @@ export default async function LigaPage() {
     { data: tagsRaw },
   ] = await Promise.all([
     supabase.from('pools').select('*').eq('id', poolId).single(),
-    supabase.from('profiles').select('id, display_name, is_admin').eq('pool_id', poolId),
+    supabase.from('profiles').select('id, display_name, is_admin, avatar_url').eq('pool_id', poolId),
     supabase.from('pool_payments').select('*').eq('pool_id', poolId),
     supabase.from('leaderboard').select('*'),
     supabase.from('pool_memberships').select('pool:pools(*)').eq('user_id', user.id),
@@ -48,7 +49,7 @@ export default async function LigaPage() {
   if (!pool) redirect('/select-pool')
 
   const currentPool = pool as Pool
-  const profiles = (profilesRaw ?? []) as Pick<Profile, 'id' | 'display_name' | 'is_admin'>[]
+  const profiles = (profilesRaw ?? []) as Pick<Profile, 'id' | 'display_name' | 'is_admin' | 'avatar_url'>[]
   const payments = (paymentsRaw ?? []) as PoolPayment[]
   const ranking = ((leaderboardRaw ?? []) as LeaderboardEntry[]).filter(e => e.pool_id === poolId)
   const allLigor = ((membershipsRaw ?? [])
@@ -67,6 +68,7 @@ export default async function LigaPage() {
         user_id: p.id,
         display_name: p.display_name,
         is_admin: p.is_admin === true,
+        avatar_url: p.avatar_url ?? null,
         paid: pay?.paid === true,
         paid_at: pay?.paid_at ?? null,
         amount: pay?.amount ?? null,

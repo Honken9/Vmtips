@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { TrophyLogo } from '@/components/TrophyLogo'
 import { MatchCountdown } from '@/components/MatchCountdown'
 import { Flag } from '@/components/Flag'
+import { UserAvatar } from '@/components/UserAvatar'
 import { LeaderboardEntry, Match, Prediction, Settings, Profile, Pool } from '@/lib/types'
 import { stockholmToday, isMatchOnStockholmDate } from '@/lib/stats'
 import { fetchNews } from '@/lib/rss'
@@ -89,6 +90,17 @@ export default async function HomePage() {
   const myEntry = user ? entries.find(e => e.user_id === user.id) ?? null : null
   const myRank = myEntry ? entries.findIndex(e => e.user_id === user!.id) + 1 : null
   const top3 = entries.slice(0, 3)
+
+  // Hämta avatarer för topp 3 (separat query för att slippa joinen på leaderboard-vyn)
+  const top3UserIds = top3.map(e => e.user_id)
+  const { data: top3ProfilesRaw } =
+    top3UserIds.length > 0
+      ? await supabase.from('profiles').select('id, avatar_url').in('id', top3UserIds)
+      : { data: [] as { id: string; avatar_url: string | null }[] }
+  const top3Avatars: Record<string, string | null> = {}
+  for (const p of (top3ProfilesRaw ?? []) as { id: string; avatar_url: string | null }[]) {
+    top3Avatars[p.id] = p.avatar_url
+  }
 
   return (
     <div className="space-y-8">
@@ -334,7 +346,7 @@ export default async function HomePage() {
             ) : (
               <div className="space-y-2">
                 {top3.map((entry, i) => (
-                  <Top3Row key={entry.user_id} entry={entry} rank={i} />
+                  <Top3Row key={entry.user_id} entry={entry} rank={i} avatarUrl={top3Avatars[entry.user_id]} />
                 ))}
               </div>
             )}
@@ -354,7 +366,7 @@ function MiniStat({ label, value, highlight }: { label: string; value: number; h
   )
 }
 
-function Top3Row({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
+function Top3Row({ entry, rank, avatarUrl }: { entry: LeaderboardEntry; rank: number; avatarUrl?: string | null }) {
   const icons = [
     <Crown key="1" size={20} className="text-amber-400" />,
     <Medal key="2" size={20} className="text-gray-300" />,
@@ -372,6 +384,7 @@ function Top3Row({ entry, rank }: { entry: LeaderboardEntry; rank: number }) {
       style={{ background: bg, border: '1px solid #1f2937' }}
     >
       <div className="shrink-0">{icons[rank]}</div>
+      <UserAvatar src={avatarUrl} name={entry.display_name} size="md" />
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-white truncate">{entry.display_name}</div>
         <div className="text-xs text-gray-500">
