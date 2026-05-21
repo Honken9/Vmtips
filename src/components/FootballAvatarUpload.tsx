@@ -130,7 +130,20 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
   const [team, setTeam] = useState(TEAMS[0].value)
   const [pose, setPose] = useState(POSES[0].value)
   const [arena, setArena] = useState(ARENAS[0].value)
+  const [countdown, setCountdown] = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // 3-2-1-räknare → skicka till startsidan så användaren inte fastnar och
+  // väntar på Gemini. Genereringen fortsätter på servern.
+  useEffect(() => {
+    if (countdown === null) return
+    if (countdown <= 0) {
+      router.push('/')
+      return
+    }
+    const t = setTimeout(() => setCountdown(c => (c == null ? null : c - 1)), 1000)
+    return () => clearTimeout(t)
+  }, [countdown, router])
 
   // Pollar profilen var 4:e sek när en generering pågår – när
   // avatar_generating flippar till false visas den nya bilden direkt.
@@ -260,6 +273,10 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
     form.append('team', team)
     form.append('pose', pose)
     form.append('arena', arena)
+
+    // Starta 3-2-1-räkning som skickar användaren till startsidan –
+    // genereringen fortsätter på servern och bilden dyker upp senare.
+    setCountdown(3)
 
     // Fire-and-forget: servern fortsätter köra även om vi navigerar
     // bort eller stänger fliken. Status pollas via avatar_generating.
@@ -510,6 +527,52 @@ export function FootballAvatarUpload({ currentAvatar, displayName, userId, initi
           AI bevarar ditt ansikte och klär dig i en fotbollsdräkt. Tar 30–60 sekunder.
         </p>
       </div>
+
+      {/* Räknar-modal: visas direkt när generering startar och skickar
+          till startsidan på 0 så användaren slipper sitta och vänta. */}
+      {countdown !== null && (
+        <div
+          className="fixed inset-0 z-[210] flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(8px)' }}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="max-w-md w-full rounded-2xl p-8 text-center space-y-5"
+            style={{
+              background: 'linear-gradient(135deg, #0c2823 0%, #14202e 50%, #0a3d2a 100%)',
+              border: '1px solid rgba(16,185,129,0.3)',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+            }}
+          >
+            <div className="flex justify-center">
+              <div className="relative">
+                <Loader2 size={48} className="animate-spin text-emerald-400" />
+                <Sparkles size={18} className="absolute -top-1 -right-1 text-amber-400 animate-pulse" />
+              </div>
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">Du görs till ett fotbollsproffs!</h2>
+              <p className="text-sm text-gray-300 mt-2 leading-relaxed">
+                Bilden skapas i bakgrunden. Du skickas till startsidan – bilden dyker upp där så fort den är klar.
+              </p>
+            </div>
+            <div className="pt-2">
+              <div
+                className="inline-flex items-center justify-center w-20 h-20 rounded-full text-4xl font-black"
+                style={{
+                  background: 'rgba(16,185,129,0.15)',
+                  border: '2px solid rgba(16,185,129,0.5)',
+                  color: '#10b981',
+                }}
+              >
+                {countdown > 0 ? countdown : 'Klart'}
+              </div>
+              <p className="text-xs text-gray-500 mt-3">Skickar till startsidan…</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Lightbox – fullskärms-vy vid klick */}
       {lightbox && generatedAvatar && (
