@@ -249,6 +249,9 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
     if (!val || val.home === '' || val.away === '') return
     const predHome = parseInt(val.home), predAway = parseInt(val.away)
     if (isNaN(predHome) || isNaN(predAway)) return
+    // Slutspel kan inte sluta oavgjort – blockera save tills användaren rättar
+    const match = matches.find(m => m.id === matchId)
+    if (match && match.stage !== 'group' && predHome === predAway) return
     setSaving(matchId)
     await supabase.from('predictions').upsert(
       { user_id: userId, match_id: matchId, pred_home: predHome, pred_away: predAway },
@@ -258,7 +261,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
     setSaved(prev => new Set(prev).add(matchId))
     setTimeout(() => setSaved(prev => { const s = new Set(prev); s.delete(matchId); return s }), 2000)
     fetch('/api/backup?reason=user-tip-save', { method: 'POST' }).catch(() => {})
-  }, [preds, supabase, userId])
+  }, [preds, matches, supabase, userId])
 
   async function handleRandomizeAll(overwrite: boolean) {
     if (locked) return
@@ -627,6 +630,11 @@ function MatchRow({
       )
     : 'pending'
 
+  // Slutspel kan inte sluta oavgjort – flagga om bägge fyllda och lika
+  const isKnockout = match.stage !== 'group'
+  const isForbiddenDraw =
+    isKnockout && value.home !== '' && value.away !== '' && value.home === value.away
+
   const resultBg: Record<string, string> = {
     exact: 'rgba(16,185,129,0.06)',
     correct: 'rgba(34,197,94,0.05)',
@@ -635,7 +643,8 @@ function MatchRow({
   }
 
   return (
-    <div className="flex items-center gap-3 px-5 py-3.5" style={{ background: resultBg[result] }}>
+    <div className="px-5 py-3.5" style={{ background: resultBg[result] }}>
+      <div className="flex items-center gap-3">
       {/* Datum */}
       <div className="text-xs text-gray-500 w-20 shrink-0 hidden sm:block">{kickoff}</div>
 
@@ -676,8 +685,13 @@ function MatchRow({
               onBlur={onBlur}
               disabled={isHomeUnknown && isAwayUnknown}
               placeholder="–"
+              aria-invalid={isForbiddenDraw}
               className="w-10 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-all disabled:opacity-30"
-              style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
+              style={{
+                background: '#1f2937',
+                border: `1px solid ${isForbiddenDraw ? '#ef4444' : '#374151'}`,
+                color: '#f9fafb',
+              }}
             />
             <span className="text-gray-600 font-bold">–</span>
             <input
@@ -687,8 +701,13 @@ function MatchRow({
               onBlur={onBlur}
               disabled={isHomeUnknown && isAwayUnknown}
               placeholder="–"
+              aria-invalid={isForbiddenDraw}
               className="w-10 h-10 rounded-lg text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-all disabled:opacity-30"
-              style={{ background: '#1f2937', border: '1px solid #374151', color: '#f9fafb' }}
+              style={{
+                background: '#1f2937',
+                border: `1px solid ${isForbiddenDraw ? '#ef4444' : '#374151'}`,
+                color: '#f9fafb',
+              }}
             />
           </>
         )}
@@ -719,6 +738,14 @@ function MatchRow({
           {result === 'exact'   && <span className="text-xs font-semibold text-emerald-400">⭐ Exakt</span>}
           {result === 'correct' && <span className="text-xs font-semibold text-green-400">✓ Rätt</span>}
           {result === 'wrong'   && <span className="text-xs font-semibold text-red-400">✗ Fel</span>}
+        </div>
+      )}
+      </div>
+
+      {/* Varning för oavgjort i slutspel – knockout kan inte sluta lika */}
+      {isForbiddenDraw && !locked && (
+        <div className="mt-1.5 text-[11px] text-red-400 text-center sm:text-right sm:pr-7">
+          Slutspelsmatcher kan inte sluta oavgjort – ändra resultatet för att kunna spara.
         </div>
       )}
     </div>
