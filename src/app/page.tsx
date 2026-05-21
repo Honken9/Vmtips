@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { TrophyLogo } from '@/components/TrophyLogo'
@@ -99,33 +100,56 @@ export default async function HomePage() {
           border: '1px solid #1f2937',
         }}
       >
-        <div className="relative z-10">
-          <TrophyLogo size="lg" />
-          <p className="mt-3 text-gray-400 max-w-lg">
-            {profile
-              ? `Välkommen tillbaka, ${profile.display_name}.`
-              : 'Välkommen till VM-tipset! Tippa alla matcher och följ din placering live.'}
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
-              style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
-              {(() => {
-                const m = currentPool?.tournament_mode ?? s.tournament_mode
-                if (m === 'A') return '📋 Läge A – Tips lämnas in innan turneringen'
-                if (m === 'C') return '🎯 Läge C – Gruppspel som A, slutspel som B'
-                return '⚡ Läge B – Tips per match, låses vid avspark'
-              })()}
+        <div className="relative z-10 flex items-start gap-4 sm:gap-6">
+          <div className="flex-1 min-w-0">
+            <TrophyLogo size="lg" />
+            <p className="mt-3 text-gray-400 max-w-lg">
+              {profile
+                ? `Välkommen tillbaka, ${profile.display_name}.`
+                : 'Välkommen till VM-tipset! Tippa alla matcher och följ din placering live.'}
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium"
+                style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                {(() => {
+                  const m = currentPool?.tournament_mode ?? s.tournament_mode
+                  if (m === 'A') return '📋 Läge A – Tips lämnas in innan turneringen'
+                  if (m === 'C') return '🎯 Läge C – Gruppspel som A, slutspel som B'
+                  return '⚡ Läge B – Tips per match, låses vid avspark'
+                })()}
+              </div>
+              {currentPool && (
+                <Link
+                  href="/profil"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium hover:bg-white/10 transition-colors"
+                  style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}
+                >
+                  Liga: <span className="text-white">{currentPool.name}</span>
+                </Link>
+              )}
             </div>
-            {currentPool && (
-              <Link
-                href="/profil"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium hover:bg-white/10 transition-colors"
-                style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.3)' }}
-              >
-                Liga: <span className="text-white">{currentPool.name}</span>
-              </Link>
-            )}
           </div>
+          {profile?.avatar_url && (
+            <Link
+              href="/profil"
+              className="shrink-0 group"
+              title="Gå till profil"
+            >
+              <div
+                className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden shadow-2xl transition-transform group-hover:scale-105"
+                style={{ border: '2px solid rgba(16,185,129,0.4)' }}
+              >
+                <Image
+                  src={profile.avatar_url}
+                  alt={profile.display_name}
+                  fill
+                  sizes="(min-width: 768px) 160px, (min-width: 640px) 128px, 96px"
+                  className="object-cover"
+                  priority
+                />
+              </div>
+            </Link>
+          )}
         </div>
         <div
           className="absolute right-0 top-0 w-64 h-64 opacity-5"
