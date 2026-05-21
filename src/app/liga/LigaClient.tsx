@@ -16,6 +16,7 @@ import {
   AlertCircle, Crown, Plus, LogOut, Check,
 } from 'lucide-react'
 import { UserAvatar } from '@/components/UserAvatar'
+import { PoolChat } from '@/components/PoolChat'
 
 interface MemberRow {
   user_id: string
@@ -204,6 +205,22 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
           tags={tags}
           onChanged={() => router.refresh()}
           supabase={supabase}
+        />
+      </section>
+
+      <section>
+        <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3">
+          Liga-chatt
+        </h2>
+        <PoolChat
+          poolId={pool.id}
+          meUserId={meUserId}
+          ownerUserId={pool.created_by}
+          members={members.map(m => ({
+            id: m.user_id,
+            display_name: m.display_name,
+            avatar_url: m.avatar_url,
+          }))}
         />
       </section>
     </div>
