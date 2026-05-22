@@ -11,10 +11,15 @@ import { gatherDigestData, renderDigestHtml } from '@/lib/digest'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-async function isAuthorized(req: NextRequest): Promise<boolean> {
+// Bara CRON_SECRET via Bearer-header. Används för GET (Vercel Cron) så
+// en inloggad admin inte kan CSRF:as till att trigga massutskick.
+function isCronAuthorized(req: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET
-  const header = req.headers.get('authorization')
-  if (cronSecret && header === `Bearer ${cronSecret}`) return true
+  if (!cronSecret) return false
+  return req.headers.get('authorization') === `Bearer ${cronSecret}`
+}
+
+async function isAdmin(): Promise<boolean> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return false
@@ -22,18 +27,25 @@ async function isAuthorized(req: NextRequest): Promise<boolean> {
   return profile?.is_admin === true
 }
 
+// POST: admin-knappen i /admin/email ELLER cron. SameSite-cookies +
+// kravet på inloggad admin skyddar mot cross-site POST.
 export async function POST(req: NextRequest) {
+  if (!isCronAuthorized(req) && !(await isAdmin())) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  }
   return runDigest(req)
 }
+
+// GET: ENBART cron-secret – ingen cookie-fallback, annars kan en admin
+// CSRF:as via en länk till mass-utskick.
 export async function GET(req: NextRequest) {
+  if (!isCronAuthorized(req)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  }
   return runDigest(req)
 }
 
 async function runDigest(req: NextRequest) {
-  if (!(await isAuthorized(req))) {
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
-  }
-
   const admin = createAdminClient()
   const settings = await getEmailSettings()
   if (!settings) return NextResponse.json({ error: 'No email settings' }, { status: 500 })

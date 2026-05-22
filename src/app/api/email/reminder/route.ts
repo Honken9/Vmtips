@@ -11,11 +11,15 @@ import { renderReminderHtml } from '@/lib/digest'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
-async function isAuthorized(req: NextRequest): Promise<boolean> {
+// Bara CRON_SECRET via Bearer-header. Används för GET (Vercel Cron) så
+// en inloggad admin inte kan CSRF:as till att trigga massutskick.
+function isCronAuthorized(req: NextRequest): boolean {
   const cronSecret = process.env.CRON_SECRET
-  const header = req.headers.get('authorization')
-  if (cronSecret && header === `Bearer ${cronSecret}`) return true
-  // Admin-anrop går också igenom
+  if (!cronSecret) return false
+  return req.headers.get('authorization') === `Bearer ${cronSecret}`
+}
+
+async function isAdmin(): Promise<boolean> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return false
@@ -23,18 +27,23 @@ async function isAuthorized(req: NextRequest): Promise<boolean> {
   return profile?.is_admin === true
 }
 
+// POST: admin-knappen i /admin/email ELLER cron.
 export async function POST(req: NextRequest) {
+  if (!isCronAuthorized(req) && !(await isAdmin())) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  }
   return runReminder(req)
 }
+
+// GET: Vercel Cron – ENBART cron-secret, ingen cookie-fallback (CSRF-skydd).
 export async function GET(req: NextRequest) {
-  // Vercel Cron använder GET
+  if (!isCronAuthorized(req)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  }
   return runReminder(req)
 }
 
 async function runReminder(req: NextRequest) {
-  if (!(await isAuthorized(req))) {
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 })
-  }
 
   const admin = createAdminClient()
   const settings = await getEmailSettings()
