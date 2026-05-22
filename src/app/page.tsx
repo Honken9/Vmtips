@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import Image from 'next/image'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { TrophyLogo } from '@/components/TrophyLogo'
 import { MatchCountdown } from '@/components/MatchCountdown'
 import { Flag } from '@/components/Flag'
 import { UserAvatar } from '@/components/UserAvatar'
+import { HeroAvatar } from '@/components/HeroAvatar'
 import { LeaderboardEntry, Match, Prediction, Settings, Profile, Pool } from '@/lib/types'
 import { stockholmToday, isMatchOnStockholmDate } from '@/lib/stats'
 import { fetchNews } from '@/lib/rss'
@@ -142,19 +142,7 @@ export default async function HomePage() {
             </div>
           </div>
           {profile?.avatar_url && (
-            <div
-              className="shrink-0 relative w-28 h-28 sm:w-36 sm:h-36 md:w-48 md:h-48 rounded-2xl overflow-hidden shadow-2xl"
-              style={{ border: '2px solid rgba(16,185,129,0.4)' }}
-            >
-              <Image
-                src={profile.avatar_url}
-                alt={profile.display_name}
-                fill
-                sizes="(min-width: 768px) 192px, (min-width: 640px) 144px, 112px"
-                className="object-cover"
-                priority
-              />
-            </div>
+            <HeroAvatar src={profile.avatar_url} alt={profile.display_name} />
           )}
         </div>
         <div
