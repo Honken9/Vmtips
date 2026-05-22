@@ -31,17 +31,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div>
       {/* Admin-header */}
-      <div className="rounded-xl px-5 py-4 mb-6 flex items-center gap-3"
+      <div className="rounded-xl px-4 sm:px-5 py-4 mb-6"
         style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)' }}>
-        <ShieldCheck size={20} className="text-indigo-400" />
-        <span className="font-semibold text-indigo-300">Admin-panel</span>
-
-        <div className="ml-auto flex gap-2">
+        <div className="flex items-center gap-3 mb-3">
+          <ShieldCheck size={20} className="text-indigo-400" />
+          <span className="font-semibold text-indigo-300">Admin-panel</span>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
           {adminLinks.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+              style={{ background: 'rgba(255,255,255,0.04)' }}
             >
               <Icon size={15} />
               {label}
