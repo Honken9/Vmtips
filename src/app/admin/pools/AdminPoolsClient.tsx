@@ -343,14 +343,16 @@ export function AdminPoolsClient({
                   <button
                     onClick={() => deletePool(pool.id)}
                     disabled={busy === `del-${pool.id}`}
-                    className="text-red-400 hover:text-red-300 p-1.5 rounded disabled:opacity-40"
-                    title="Radera liga"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-40"
+                    style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}
+                    title="Radera ligan (hamnar i kyrkogården, återställbar i 14 dagar)"
                   >
                     {busy === `del-${pool.id}` ? (
                       <Loader2 size={14} className="animate-spin" />
                     ) : (
                       <Trash2 size={14} />
                     )}
+                    Radera liga
                   </button>
                 </div>
               </div>
