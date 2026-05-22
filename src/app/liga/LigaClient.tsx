@@ -109,17 +109,6 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
         </p>
       </div>
 
-      {/* Ägaröverlämning – bara ägaren ser detta */}
-      {isOwner && (
-        <OwnerTransfer
-          poolId={pool.id}
-          poolName={pool.name}
-          members={members.filter(m => m.user_id !== meUserId)}
-          onChanged={() => router.refresh()}
-          supabase={supabase}
-        />
-      )}
-
       {/* Mina ligor – välj aktiv */}
       <LigaSelector
         activePoolId={pool.id}
@@ -228,95 +217,6 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
 }
 
 // ─────────────────────────────────────────────────────────
-function OwnerTransfer({
-  poolId, poolName, members, onChanged, supabase,
-}: {
-  poolId: number
-  poolName: string
-  members: MemberRow[]
-  onChanged: () => void
-  supabase: ReturnType<typeof createClient>
-}) {
-  const [target, setTarget] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [open, setOpen] = useState(false)
-
-  async function transfer() {
-    const m = members.find(x => x.user_id === target)
-    if (!m) return
-    if (!confirm(
-      `Lämna över ägandeskapet av "${poolName}" till ${m.display_name}? Du blir vanlig medlem och kan inte ta tillbaka det själv.`
-    )) return
-    setBusy(true)
-    const { error } = await supabase
-      .from('pools')
-      .update({ created_by: target })
-      .eq('id', poolId)
-    setBusy(false)
-    if (error) {
-      alert(`Kunde inte lämna över: ${error.message}`)
-      return
-    }
-    onChanged()
-  }
-
-  if (members.length === 0) return null
-
-  return (
-    <section>
-      <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3 flex items-center gap-2">
-        <Crown size={14} className="text-amber-400" />
-        Ägandeskap
-      </h2>
-      <div className="rounded-xl p-4" style={{ background: '#111827', border: '1px solid #1f2937' }}>
-        {!open ? (
-          <button
-            onClick={() => setOpen(true)}
-            className="text-sm text-gray-300 hover:text-white px-3 py-2 rounded-lg"
-            style={{ background: '#1f2937', border: '1px solid #374151' }}
-          >
-            Lämna över ägandeskapet
-          </button>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-xs text-gray-500">
-              Välj en medlem som ska bli ny ägare. Du måste göra detta innan du själv kan lämna ligan.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <select
-                value={target}
-                onChange={e => setTarget(e.target.value)}
-                className="px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
-                style={{ background: '#1f2937', border: '1px solid #374151' }}
-              >
-                <option value="">Välj ny ägare…</option>
-                {members.map(m => (
-                  <option key={m.user_id} value={m.user_id}>{m.display_name}</option>
-                ))}
-              </select>
-              <button
-                onClick={transfer}
-                disabled={!target || busy}
-                className="px-4 py-2 rounded-lg text-sm font-semibold text-black gold-gradient disabled:opacity-40"
-              >
-                {busy ? 'Lämnar över…' : 'Lämna över'}
-              </button>
-              <button
-                onClick={() => { setOpen(false); setTarget('') }}
-                className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white"
-                style={{ background: '#1f2937', border: '1px solid #374151' }}
-              >
-                Avbryt
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </section>
-  )
-}
-
-// ─────────────────────────────────────────────────────────
 function LigaSelector({
   activePoolId,
   allLigor,
@@ -342,7 +242,8 @@ function LigaSelector({
   }
 
   async function leave(p: Pool) {
-    // Ägaren får inte lämna utan att först lämna över ägandeskapet
+    // Ägaren får inte lämna förrän ägandeskapet flyttats. Det görs numera
+    // bara av master-admin via Admin → Ligor.
     if (p.created_by === meUserId) {
       const { count } = await supabase
         .from('pool_memberships')
@@ -350,7 +251,7 @@ function LigaSelector({
         .eq('pool_id', p.id)
       if ((count ?? 0) > 1) {
         alert(
-          `Du äger "${p.name}". Lämna över ägandeskapet till en annan medlem på "Min liga"-sidan innan du lämnar ligan.`
+          `Du äger "${p.name}" och kan inte lämna den så länge det finns andra medlemmar. Kontakta admin som kan flytta ägandeskapet till någon annan.`
         )
         return
       }
