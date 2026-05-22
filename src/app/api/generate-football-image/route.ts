@@ -111,41 +111,55 @@ export async function POST(request: NextRequest) {
   // Admin-klient för storage & DB (kringgår RLS)
   const admin = createAdminClient()
 
-  // Rate limit: max 1 generering per 30 sek per användare.
-  // Plus blockera dubbel-trigger om en generering redan pågår.
-  // Plus lås: en bild per användare (admin kan låsa upp).
-  const RATE_LIMIT_MS = 30_000
-  const { data: existing } = await admin
-    .from('profiles')
-    .select('last_avatar_generated_at, avatar_generating, avatar_locked')
-    .eq('id', user.id)
-    .single()
-  if (existing?.avatar_locked === true) {
-    return NextResponse.json(
-      { error: 'Din profilbild är låst. Kontakta admin om du vill skapa en ny.' },
-      { status: 403 }
-    )
-  }
-  if (existing?.avatar_generating === true) {
-    return NextResponse.json(
-      { error: 'En generering pågår redan. Vänta tills den är klar.' },
-      { status: 429 }
-    )
-  }
-  if (existing?.last_avatar_generated_at) {
-    const elapsed = Date.now() - new Date(existing.last_avatar_generated_at).getTime()
-    if (elapsed < RATE_LIMIT_MS) {
-      const wait = Math.ceil((RATE_LIMIT_MS - elapsed) / 1000)
-      return NextResponse.json(
-        { error: `Vänta ${wait} sekunder innan nästa generering.` },
-        { status: 429 }
-      )
-    }
-  }
-
   const formData = await request.formData()
   const imageFile = formData.get('image') as File | null
   if (!imageFile) return NextResponse.json({ error: 'No image' }, { status: 400 })
+
+  // targetUserId: admin kan generera åt en annan deltagare. Saknas/lika
+  // med egen id → vanligt själv-flöde med lås + rate-limit.
+  const targetUserId = (formData.get('targetUserId') as string) || user.id
+  const isAdminGenerating = targetUserId !== user.id
+
+  if (isAdminGenerating) {
+    const { data: me } = await admin
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
+    if (me?.is_admin !== true) {
+      return NextResponse.json({ error: 'Endast admin får generera åt andra' }, { status: 403 })
+    }
+  } else {
+    // Själv-flöde: lås + rate-limit. Admin som genererar åt andra hoppar över.
+    const RATE_LIMIT_MS = 30_000
+    const { data: existing } = await admin
+      .from('profiles')
+      .select('last_avatar_generated_at, avatar_generating, avatar_locked')
+      .eq('id', user.id)
+      .single()
+    if (existing?.avatar_locked === true) {
+      return NextResponse.json(
+        { error: 'Din profilbild är låst. Kontakta admin om du vill skapa en ny.' },
+        { status: 403 }
+      )
+    }
+    if (existing?.avatar_generating === true) {
+      return NextResponse.json(
+        { error: 'En generering pågår redan. Vänta tills den är klar.' },
+        { status: 429 }
+      )
+    }
+    if (existing?.last_avatar_generated_at) {
+      const elapsed = Date.now() - new Date(existing.last_avatar_generated_at).getTime()
+      if (elapsed < RATE_LIMIT_MS) {
+        const wait = Math.ceil((RATE_LIMIT_MS - elapsed) / 1000)
+        return NextResponse.json(
+          { error: `Vänta ${wait} sekunder innan nästa generering.` },
+          { status: 429 }
+        )
+      }
+    }
+  }
 
   const teamName = (formData.get('team') as string) || 'Sverige'
   const poseKey = (formData.get('pose') as string) || 'celebrating'
@@ -173,7 +187,7 @@ export async function POST(request: NextRequest) {
       avatar_generating: true,
       last_avatar_generated_at: new Date().toISOString(),
     })
-    .eq('id', user.id)
+    .eq('id', targetUserId)
 
   try {
     // Läs in bilden som base64
@@ -251,7 +265,7 @@ export async function POST(request: NextRequest) {
 
     // Spara som avatar i Supabase Storage
     const ext = generatedMimeType.includes('jpeg') ? 'jpg' : 'png'
-    const avatarPath = `avatars/${user.id}.${ext}`
+    const avatarPath = `avatars/${targetUserId}.${ext}`
     const { error: uploadError } = await admin.storage
       .from('profile-images')
       .upload(avatarPath, imageBuffer, {
@@ -275,7 +289,7 @@ export async function POST(request: NextRequest) {
     await admin
       .from('profiles')
       .update({ avatar_url: avatarUrl, avatar_locked: true })
-      .eq('id', user.id)
+      .eq('id', targetUserId)
 
     return NextResponse.json({ avatarUrl })
 
@@ -288,6 +302,6 @@ export async function POST(request: NextRequest) {
     await admin
       .from('profiles')
       .update({ avatar_generating: false })
-      .eq('id', user.id)
+      .eq('id', targetUserId)
   }
 }
