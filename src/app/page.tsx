@@ -309,30 +309,32 @@ export default async function HomePage() {
             )}
           </section>
 
-          {/* Topp 3 */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Trophy size={18} className="text-emerald-400" />
-                Topp 3
-              </h2>
-              <Link href="/tabell" className="text-xs text-gray-400 hover:text-emerald-400 transition-colors">
-                Hela tabellen →
-              </Link>
-            </div>
-            {top3.length === 0 ? (
-              <div className="rounded-xl p-6 text-center text-sm text-gray-500"
-                style={{ background: '#111827', border: '1px solid #1f2937' }}>
-                Inga deltagare ännu
+          {/* Topp 3 – endast för inloggade */}
+          {user && (
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Trophy size={18} className="text-emerald-400" />
+                  Topp 3
+                </h2>
+                <Link href="/tabell" className="text-xs text-gray-400 hover:text-emerald-400 transition-colors">
+                  Hela tabellen →
+                </Link>
               </div>
-            ) : (
-              <div className="space-y-2">
-                {top3.map((entry, i) => (
-                  <Top3Row key={entry.user_id} entry={entry} rank={i} avatarUrl={top3Avatars[entry.user_id]} />
-                ))}
-              </div>
-            )}
-          </section>
+              {top3.length === 0 ? (
+                <div className="rounded-xl p-6 text-center text-sm text-gray-500"
+                  style={{ background: '#111827', border: '1px solid #1f2937' }}>
+                  Inga deltagare ännu
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {top3.map((entry, i) => (
+                    <Top3Row key={entry.user_id} entry={entry} rank={i} avatarUrl={top3Avatars[entry.user_id]} />
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </div>
       </div>
     </div>
