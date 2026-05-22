@@ -49,16 +49,28 @@ function extractCurrentClub(wikitext: string | undefined): string | undefined {
   // Försök flera infobox-fält i fallande ordning
   const fields = ['currentclub', 'current_club', 'club', 'clubnumber']
   for (const field of fields) {
-    const re = new RegExp(`\\|\\s*${field}\\s*=\\s*([^\\n|}]+)`, 'i')
+    // Fånga HELA raden efter "= " – wikilänkar kan innehålla | (t.ex.
+    // [[Club Atlético River Plate|River Plate]]) så vi får INTE stoppa
+    // capturen vid | här, då läcker [[ igenom utan matchande ]].
+    const re = new RegExp(`\\|\\s*${field}\\s*=\\s*([^\\n]+)`, 'i')
     const m = wikitext.match(re)
     if (!m) continue
     let val = m[1].trim()
     if (!val || val === 'Free agent' || val.startsWith('{{')) continue
-    // Strip wiki link syntax: [[Club Name]] eller [[Real|Real Madrid]]
+    // 1. Tolka wikilänkar [[Club]] / [[Real|Real Madrid]] → klartext
     val = val.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, p1, p2) => p2 || p1)
-    // Strip mall-anrop som {{flag|...}}
-    val = val.replace(/\{\{[^}]+\}\}/g, '')
-    val = val.replace(/<!--[\s\S]*?-->/g, '').trim()
+    // 2. Strip mall-anrop som {{flagicon|...}}
+    val = val.replace(/\{\{[^{}]*\}\}/g, '')
+    // 3. Strip HTML-kommentarer
+    val = val.replace(/<!--[\s\S]*?-->/g, '')
+    // 4. Nu är kvarvarande | en fält-separator (nästa infobox-fält
+    //    på samma rad) – klipp där
+    const pipeIdx = val.indexOf('|')
+    if (pipeIdx >= 0) val = val.slice(0, pipeIdx)
+    // 5. Skyddsnät: ta bort alla kvarvarande hakparenteser så [[ aldrig
+    //    kan läcka ut, oavsett hur konstig wikitexten är
+    val = val.replace(/[[\]]/g, '')
+    val = val.trim()
     if (val) return val.slice(0, 60)
   }
   return undefined
