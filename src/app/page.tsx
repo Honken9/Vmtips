@@ -266,26 +266,15 @@ export default async function HomePage() {
           </section>
         </div>
 
-        {/* Höger kolumn: Min stats + topp 3 */}
+        {/* Höger kolumn: Min stats + topp 3 (endast inloggade) */}
         <div className="space-y-8">
-          {/* Min statistik */}
-          <section>
-            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Target size={18} className="text-emerald-400" />
-              Din statistik
-            </h2>
-            {!user ? (
-              <div className="rounded-xl p-6 text-center"
-                style={{ background: '#111827', border: '1px solid #1f2937' }}>
-                <p className="text-sm text-gray-400 mb-3">
-                  Logga in för att se dina poäng och placering.
-                </p>
-                <Link href="/auth/login"
-                  className="inline-block text-sm font-medium px-4 py-2 rounded-lg gold-gradient text-black">
-                  Logga in
-                </Link>
-              </div>
-            ) : (
+          {/* Min statistik – endast för inloggade */}
+          {user && (
+            <section>
+              <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Target size={18} className="text-emerald-400" />
+                Din statistik
+              </h2>
               <div className="rounded-xl p-5 space-y-4"
                 style={{ background: '#111827', border: '1px solid #1f2937' }}>
                 <div>
@@ -306,8 +295,8 @@ export default async function HomePage() {
                   Mina tips →
                 </Link>
               </div>
-            )}
-          </section>
+            </section>
+          )}
 
           {/* Topp 3 – endast för inloggade */}
           {user && (
