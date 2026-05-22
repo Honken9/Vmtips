@@ -58,6 +58,19 @@ async function runDigest(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: 'digest disabled' })
   }
 
+  // Admin-redigerade intro-texter per pool (från förhandsgranskningen)
+  let introByPool: Record<number, string> = {}
+  if (req.method === 'POST') {
+    try {
+      const body = await req.json()
+      if (body && typeof body.intros === 'object' && body.intros) {
+        introByPool = body.intros as Record<number, string>
+      }
+    } catch {
+      // ingen body – kör med Gemini-genererad intro
+    }
+  }
+
   // Plocka ligor som har medlemmar
   let pools: Array<{ id: number; name: string }> = []
   if (forcePoolId) {
@@ -88,7 +101,7 @@ async function runDigest(req: NextRequest) {
       continue
     }
 
-    const data = await gatherDigestData(pool.id, oneWeekAgo)
+    const data = await gatherDigestData(pool.id, oneWeekAgo, introByPool[pool.id])
     const subject = `📰 ${pool.name} – veckans rapport`
     const html = wrapEmailHtml(subject, renderDigestHtml(data))
 

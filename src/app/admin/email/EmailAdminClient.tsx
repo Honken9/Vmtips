@@ -29,7 +29,14 @@ interface LogRow {
   error: string | null
 }
 
-const DAYS = ['', 'Måndag', 'Tisdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lördag', 'Söndag']
+interface DigestPreviewRow {
+  pool_id: number
+  pool_name: string
+  recipient_count: number
+  witty_intro: string
+  matches_count: number
+  leaderboard_count: number
+}
 
 export function EmailAdminClient({ settings: initial, log }: { settings: EmailSettings; log: LogRow[] }) {
   const supabase = createClient()
@@ -39,6 +46,8 @@ export function EmailAdminClient({ settings: initial, log }: { settings: EmailSe
   const [testEmail, setTestEmail] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [digestPreview, setDigestPreview] = useState<DigestPreviewRow[] | null>(null)
+  const [editedIntros, setEditedIntros] = useState<Record<number, string>>({})
 
   function flash(ok: boolean, text: string) {
     setMsg({ ok, text })
@@ -86,15 +95,39 @@ export function EmailAdminClient({ settings: initial, log }: { settings: EmailSe
     else flash(false, data.error ?? `HTTP ${res.status}`)
   }
 
+  async function previewDigest() {
+    setBusy('preview')
+    setDigestPreview(null)
+    const res = await fetch('/api/email/digest/preview', { method: 'POST' })
+    setBusy(null)
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      flash(false, data.error ?? `HTTP ${res.status}`)
+      return
+    }
+    const rows = (data.previews ?? []) as DigestPreviewRow[]
+    setDigestPreview(rows)
+    const intros: Record<number, string> = {}
+    for (const r of rows) intros[r.pool_id] = r.witty_intro
+    setEditedIntros(intros)
+    if (rows.length === 0) flash(false, 'Inga ligor att skicka till')
+  }
+
   async function sendDigestNow() {
-    if (!confirm('Skicka digest till ALLA ligor nu? Använder dina nuvarande inställningar.')) return
+    if (!digestPreview) return
+    if (!confirm(`Skicka digest till ${digestPreview.length} ligor nu med texterna nedan?`)) return
     setBusy('digest')
-    const res = await fetch('/api/email/digest?manual=1', { method: 'POST' })
+    const res = await fetch('/api/email/digest?manual=1', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ intros: editedIntros }),
+    })
     setBusy(null)
     const data = await res.json().catch(() => ({}))
     if (res.ok) {
       const sentPools = (data.pools ?? []).filter((p: { status: string }) => p.status === 'sent').length
       flash(true, `Digest skickad till ${sentPools} ligor`)
+      setDigestPreview(null)
     } else {
       flash(false, data.error ?? `HTTP ${res.status}`)
     }
@@ -181,32 +214,61 @@ export function EmailAdminClient({ settings: initial, log }: { settings: EmailSe
 
       {/* Digest */}
       <Section title="Veckans digest" icon={<Newspaper size={16} className="text-emerald-400" />}>
-        <Row label="Aktiverad">
-          <label className="inline-flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={s.digest_enabled} onChange={e => update('digest_enabled', e.target.checked)} />
-            {s.digest_enabled ? 'På' : 'Av'}
-          </label>
-        </Row>
-        <Row label="Veckodag">
-          <select value={s.digest_day_of_week} onChange={e => update('digest_day_of_week', parseInt(e.target.value))} className={inputCls} style={inputStyle}>
-            {[1, 2, 3, 4, 5, 6, 7].map(d => <option key={d} value={d}>{DAYS[d]}</option>)}
-          </select>
-        </Row>
-        <Row label="Klockslag (UTC)">
-          <input type="number" min="0" max="23" value={s.digest_hour} onChange={e => update('digest_hour', Math.max(0, Math.min(23, parseInt(e.target.value) || 9)))} className={`${inputCls} w-24`} style={inputStyle} />
-          <span className="ml-2 text-xs text-gray-500">Sverige är UTC+1/+2 – sätt 8 för 9:00 svensk tid (sommartid)</span>
-        </Row>
+        <p className="text-xs text-gray-500">
+          Digesten skickas manuellt nedan – så ofta du vill, inte bara en gång i veckan.
+          Förhandsgranska först, läs och redigera den fyndiga texten per liga, skicka sedan.
+        </p>
         {s.last_digest_at && (
           <Row label="Senast skickad">
             <span className="text-sm text-gray-400">{new Date(s.last_digest_at).toLocaleString('sv-SE')}</span>
           </Row>
         )}
-        <div className="pt-2">
-          <button onClick={sendDigestNow} disabled={busy === 'digest'} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-emerald-300 disabled:opacity-40" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
-            {busy === 'digest' ? <Loader2 size={14} className="animate-spin" /> : <Newspaper size={14} />}
-            Skicka digest nu (manuellt)
-          </button>
-        </div>
+
+        {!digestPreview ? (
+          <div className="pt-2">
+            <button onClick={previewDigest} disabled={busy === 'preview'} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-emerald-300 disabled:opacity-40" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
+              {busy === 'preview' ? <Loader2 size={14} className="animate-spin" /> : <Newspaper size={14} />}
+              Förhandsgranska digest
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3 pt-1">
+            <div className="text-xs text-gray-400">
+              {digestPreview.length} ligor. Läs och justera intro-texten per liga – resten
+              (tabell, matcher) genereras automatiskt från statistiken.
+            </div>
+            {digestPreview.map(p => (
+              <div key={p.pool_id} className="rounded-lg p-3 space-y-2" style={{ background: '#0f172a', border: '1px solid #1f2937' }}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-white">{p.pool_name}</span>
+                  <span className="text-[11px] text-gray-500">
+                    {p.recipient_count} mottagare · {p.matches_count} matcher · {p.leaderboard_count} i tabell
+                  </span>
+                </div>
+                <textarea
+                  value={editedIntros[p.pool_id] ?? ''}
+                  onChange={e => setEditedIntros(prev => ({ ...prev, [p.pool_id]: e.target.value }))}
+                  rows={3}
+                  className={inputCls}
+                  style={inputStyle}
+                  placeholder="Intro-text för digesten…"
+                />
+              </div>
+            ))}
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button onClick={sendDigestNow} disabled={busy === 'digest'} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-black disabled:opacity-40 gold-gradient">
+                {busy === 'digest' ? <Loader2 size={14} className="animate-spin" /> : <Newspaper size={14} />}
+                Skicka digest till {digestPreview.length} ligor
+              </button>
+              <button onClick={() => setDigestPreview(null)} className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white" style={{ background: '#1f2937', border: '1px solid #374151' }}>
+                Avbryt
+              </button>
+              <button onClick={previewDigest} disabled={busy === 'preview'} className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-white disabled:opacity-40" style={{ background: '#1f2937', border: '1px solid #374151' }}>
+                {busy === 'preview' ? <Loader2 size={14} className="animate-spin inline" /> : 'Generera om texterna'}
+              </button>
+            </div>
+          </div>
+        )}
       </Section>
 
       {/* Save */}

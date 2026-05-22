@@ -42,7 +42,11 @@ interface SnapshotRow {
   total_points: number
 }
 
-export async function gatherDigestData(poolId: number, sinceIso: string): Promise<DigestData> {
+export async function gatherDigestData(
+  poolId: number,
+  sinceIso: string,
+  introOverride?: string
+): Promise<DigestData> {
   const admin = createAdminClient()
 
   const { data: pool } = await admin.from('pools').select('name').eq('id', poolId).maybeSingle()
@@ -143,15 +147,17 @@ export async function gatherDigestData(poolId: number, sinceIso: string): Promis
     .sort((a, b) => b.exact_in_window - a.exact_in_window)
   const topTipper = topExacts[0] && topExacts[0].exact_in_window > 0 ? topExacts[0] : null
 
-  // Generera fyndig intro via Gemini
-  const wittyIntro = await generateWittyIntro({
-    poolName,
-    matchesPlayed: matchesPlayed.length,
-    topMover,
-    topTipper,
-    leader: leaderboard[0]?.display_name ?? null,
-    leaderPoints: leaderboard[0]?.total_points ?? 0,
-  })
+  // Intro: använd admins redigerade text om sådan finns, annars Gemini
+  const wittyIntro = introOverride && introOverride.trim()
+    ? introOverride.trim()
+    : await generateWittyIntro({
+        poolName,
+        matchesPlayed: matchesPlayed.length,
+        topMover,
+        topTipper,
+        leader: leaderboard[0]?.display_name ?? null,
+        leaderPoints: leaderboard[0]?.total_points ?? 0,
+      })
 
   return {
     poolId,
