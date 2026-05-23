@@ -47,17 +47,20 @@ export function MatchCommentInline({ matchId, poolId, meUserId, matchLabel, canM
   }, [supabase, poolId, matchId])
 
   const fetchComments = useCallback(async () => {
-    const { data, error } = await supabase
+    // Hämta bara 3 senaste – håller listan kort på matchsidan.
+    // count: 'exact' ger oss totalen ändå så vi kan visa "X äldre".
+    const { data, error, count: totalCount } = await supabase
       .from('pool_messages')
-      .select('id, user_id, text, created_at')
+      .select('id, user_id, text, created_at', { count: 'exact' })
       .eq('pool_id', poolId)
       .eq('match_id', matchId)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
+      .limit(3)
     if (error) {
       setError(error.message)
       return
     }
-    const raw = (data ?? []) as RawRow[]
+    const raw = ((data ?? []) as RawRow[]).reverse()
     // Slå upp namn + avatar för varje user_id
     const ids = Array.from(new Set(raw.map(r => r.user_id)))
     let profiles: Record<string, { display_name: string; avatar_url: string | null }> = {}
@@ -76,7 +79,7 @@ export function MatchCommentInline({ matchId, poolId, meUserId, matchLabel, canM
       display_name: profiles[r.user_id]?.display_name ?? '(borttagen)',
       avatar_url: profiles[r.user_id]?.avatar_url ?? null,
     })))
-    setCount(raw.length)
+    setCount(totalCount ?? raw.length)
   }, [supabase, poolId, matchId])
 
   useEffect(() => { fetchCount() }, [fetchCount])
@@ -149,6 +152,14 @@ export function MatchCommentInline({ matchId, poolId, meUserId, matchLabel, canM
             <div className="text-gray-500 px-1 py-2">Inga kommentarer än. Skriv den första nedan!</div>
           ) : (
             <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+              {count != null && count > comments.length && (
+                <a
+                  href="/liga"
+                  className="block text-[10px] text-center text-gray-500 hover:text-emerald-400 pb-1"
+                >
+                  {count - comments.length} äldre kommentarer – se hela tråden i Liga-chatten →
+                </a>
+              )}
               {comments.map(c => {
                 const isMe = c.user_id === meUserId
                 const canDelete = isMe || canModerate
