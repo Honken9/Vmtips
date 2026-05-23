@@ -151,27 +151,6 @@ export default async function HomePage() {
         />
       </div>
 
-      {/* Liga-bild som banner om aktiv liga har en */}
-      {currentPool?.image_url && (
-        <Link
-          href="/liga"
-          className="relative block w-full h-24 sm:h-32 rounded-2xl overflow-hidden hover:brightness-110 transition-all"
-          style={{ border: '1px solid #1f2937' }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={currentPool.image_url}
-            alt={currentPool.name}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,14,26,0.85), rgba(10,14,26,0.1) 70%, transparent)' }} />
-          <div className="absolute bottom-3 left-4 right-4">
-            <div className="text-[10px] uppercase tracking-wider text-emerald-300 font-semibold">Din liga</div>
-            <div className="text-lg sm:text-xl font-bold text-white drop-shadow">{currentPool.name}</div>
-          </div>
-        </Link>
-      )}
-
       {/* Nedräkning till nästa match – klickbar → matchsidan filtrerad på dagen */}
       {upcomingMatch && (
         <Link

@@ -155,34 +155,30 @@ export default async function LeaderboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Liga-bild som hero om en finns */}
-      {currentPool?.image_url && (
-        <div className="relative w-full h-32 sm:h-44 rounded-2xl overflow-hidden" style={{ border: '1px solid #1f2937' }}>
-          <Image
-            src={currentPool.image_url}
-            alt={currentPool.name}
-            fill
-            className="object-cover"
-            sizes="(min-width: 1024px) 1000px, 100vw"
-            unoptimized
-            priority
-          />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,14,26,0.85), rgba(10,14,26,0.15) 60%, transparent)' }} />
-          <div className="absolute bottom-3 left-4 right-4">
-            <h2 className="text-2xl font-bold text-white drop-shadow">{currentPool.name}</h2>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Tabell & statistik</h1>
-          <p className="text-gray-400 text-sm mt-1">
-            <span className="text-emerald-400 font-medium">{currentPool?.name ?? 'Liga'}</span>
-            {' · '}
-            {entries.length} deltagare · {completedMatches} av {totalMatches} matcher avgjorda
-          </p>
+        <div className="flex items-center gap-3 min-w-0">
+          {currentPool?.image_url && (
+            <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden shrink-0"
+              style={{ border: '1px solid #1f2937' }}>
+              <Image
+                src={currentPool.image_url}
+                alt={currentPool.name}
+                fill
+                className="object-cover"
+                sizes="56px"
+                unoptimized
+              />
+            </div>
+          )}
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-white">Tabell & statistik</h1>
+            <p className="text-gray-400 text-sm mt-1">
+              <span className="text-emerald-400 font-medium">{currentPool?.name ?? 'Liga'}</span>
+              {' · '}
+              {entries.length} deltagare · {completedMatches} av {totalMatches} matcher avgjorda
+            </p>
+          </div>
         </div>
         {isAdmin && (
           <Link
