@@ -18,7 +18,6 @@ import {
 import { UserAvatar } from '@/components/UserAvatar'
 import { PoolChat } from '@/components/PoolChat'
 import { PoolImageUpload } from '@/components/PoolImageUpload'
-import Image from 'next/image'
 
 interface MemberRow {
   user_id: string
@@ -88,23 +87,19 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 flex-wrap">
-          {pool.image_url && (
-            <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden shrink-0"
-              style={{ border: '1px solid #1f2937' }}>
-              <Image
-                src={pool.image_url}
-                alt={pool.name}
-                fill
-                className="object-cover"
-                sizes="56px"
-                unoptimized
-              />
-            </div>
-          )}
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Users size={22} className="text-emerald-400" />
             {pool.name}
           </h1>
+          {pool.image_url && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={pool.image_url}
+              alt={pool.name}
+              className="h-12 sm:h-14 w-auto rounded-lg shrink-0"
+              style={{ border: '1px solid #1f2937', maxWidth: '160px', objectFit: 'contain' }}
+            />
+          )}
           {isOwner ? (
             <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-full"
               style={{ background: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.35)' }}>

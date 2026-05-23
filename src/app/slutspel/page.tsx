@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation'
-import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import type { Match, Team, Prediction, Profile, Pool } from '@/lib/types'
 import { BracketView } from '@/components/BracketView'
@@ -37,28 +36,23 @@ export default async function BracketPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        {pool?.image_url ? (
-          <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden shrink-0"
-            style={{ border: '1px solid #1f2937' }}>
-            <Image
-              src={pool.image_url}
-              alt={pool.name ?? 'Liga'}
-              fill
-              className="object-cover"
-              sizes="56px"
-              unoptimized
-            />
-          </div>
-        ) : (
-          <GitBranch size={22} className="text-emerald-400" />
-        )}
+      <div className="flex items-center gap-3 flex-wrap">
+        <GitBranch size={22} className="text-emerald-400" />
         <div>
           <h1 className="text-2xl font-bold text-white">Mitt slutspel</h1>
           <p className="text-gray-400 text-sm mt-0.5">
             Slutspels-trädet enligt dina tips – från 16-delar in mot finalen i mitten.
           </p>
         </div>
+        {pool?.image_url && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={pool.image_url}
+            alt={pool.name ?? 'Liga'}
+            className="h-12 sm:h-14 w-auto rounded-lg shrink-0"
+            style={{ border: '1px solid #1f2937', maxWidth: '160px', objectFit: 'contain' }}
+          />
+        )}
       </div>
 
       <BracketView
