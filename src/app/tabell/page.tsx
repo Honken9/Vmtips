@@ -10,6 +10,7 @@ import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import { Trophy, Users, CheckCircle, Star, Crown, Target, TrendingUp, Calendar } from 'lucide-react'
 import { UserAvatar } from '@/components/UserAvatar'
+import Image from 'next/image'
 
 export const revalidate = 30
 
@@ -154,6 +155,25 @@ export default async function LeaderboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Liga-bild som hero om en finns */}
+      {currentPool?.image_url && (
+        <div className="relative w-full h-32 sm:h-44 rounded-2xl overflow-hidden" style={{ border: '1px solid #1f2937' }}>
+          <Image
+            src={currentPool.image_url}
+            alt={currentPool.name}
+            fill
+            className="object-cover"
+            sizes="(min-width: 1024px) 1000px, 100vw"
+            unoptimized
+            priority
+          />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,14,26,0.85), rgba(10,14,26,0.15) 60%, transparent)' }} />
+          <div className="absolute bottom-3 left-4 right-4">
+            <h2 className="text-2xl font-bold text-white drop-shadow">{currentPool.name}</h2>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>

@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { generateInviteCode } from '@/lib/invite-code'
 import type { Pool, Profile } from '@/lib/types'
 import { Loader2, Plus, Trash2, Users, RefreshCw, ShieldCheck, Crown, UserX } from 'lucide-react'
+import { PoolImageUpload } from '@/components/PoolImageUpload'
 
 type ProfileLite = Pick<Profile, 'id' | 'display_name' | 'is_admin' | 'pool_id'>
 
@@ -358,6 +359,16 @@ export function AdminPoolsClient({
               </div>
 
               <div className="px-3 sm:px-5 py-3">
+                {/* Liga-bild */}
+                <div className="mb-3 pb-3 border-b" style={{ borderColor: '#1f2937' }}>
+                  <PoolImageUpload
+                    poolId={pool.id}
+                    poolName={pool.name}
+                    currentUrl={pool.image_url ?? null}
+                    aspect="banner"
+                  />
+                </div>
+
                 {/* Ägar-kontroll: visa nuvarande ägare + admin-actions */}
                 <div className="flex items-center gap-2 flex-wrap mb-3 pb-3 border-b" style={{ borderColor: '#1f2937' }}>
                   <Crown size={12} className="text-amber-400 shrink-0" />

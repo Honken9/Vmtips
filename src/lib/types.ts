@@ -60,6 +60,7 @@ export interface Pool {
   points_total_goals?: number | null
   deleted_at?: string | null
   deleted_by?: string | null
+  image_url?: string | null
 }
 
 export interface PoolPayment {
