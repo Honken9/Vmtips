@@ -17,7 +17,6 @@ import { RandomizeOverlay } from '@/components/RandomizeOverlay'
 import { format, isPast } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import Link from 'next/link'
-import Image from 'next/image'
 import { Lock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Loader2, Dices, Trash2, GitBranch } from 'lucide-react'
 
 interface Props {
@@ -374,20 +373,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3 min-w-0">
-          {pool?.image_url && (
-            <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden shrink-0"
-              style={{ border: '1px solid #1f2937' }}>
-              <Image
-                src={pool.image_url}
-                alt={pool.name}
-                fill
-                className="object-cover"
-                sizes="56px"
-                unoptimized
-              />
-            </div>
-          )}
+        <div className="flex items-center gap-3 min-w-0 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold text-white">Mina tips</h1>
           <p className="text-gray-400 text-sm mt-1">
@@ -398,6 +384,15 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
               : 'Tippa inför varje match. Tips låses automatiskt vid avspark.'}
           </p>
         </div>
+          {pool?.image_url && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={pool.image_url}
+              alt={pool.name}
+              className="h-12 sm:h-14 w-auto rounded-lg shrink-0"
+              style={{ border: '1px solid #1f2937', maxWidth: '160px', objectFit: 'contain' }}
+            />
+          )}
         </div>
 
         <div className="flex flex-wrap gap-2 items-start">

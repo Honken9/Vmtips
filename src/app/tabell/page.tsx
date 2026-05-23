@@ -10,7 +10,6 @@ import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import { Trophy, Users, CheckCircle, Star, Crown, Target, TrendingUp, Calendar } from 'lucide-react'
 import { UserAvatar } from '@/components/UserAvatar'
-import Image from 'next/image'
 
 export const revalidate = 30
 
@@ -157,20 +156,7 @@ export default async function LeaderboardPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3 min-w-0">
-          {currentPool?.image_url && (
-            <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden shrink-0"
-              style={{ border: '1px solid #1f2937' }}>
-              <Image
-                src={currentPool.image_url}
-                alt={currentPool.name}
-                fill
-                className="object-cover"
-                sizes="56px"
-                unoptimized
-              />
-            </div>
-          )}
+        <div className="flex items-center gap-3 min-w-0 flex-wrap">
           <div className="min-w-0">
             <h1 className="text-2xl font-bold text-white">Tabell & statistik</h1>
             <p className="text-gray-400 text-sm mt-1">
@@ -179,6 +165,15 @@ export default async function LeaderboardPage() {
               {entries.length} deltagare · {completedMatches} av {totalMatches} matcher avgjorda
             </p>
           </div>
+          {currentPool?.image_url && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={currentPool.image_url}
+              alt={currentPool.name}
+              className="h-12 sm:h-14 w-auto rounded-lg shrink-0"
+              style={{ border: '1px solid #1f2937', maxWidth: '160px', objectFit: 'contain' }}
+            />
+          )}
         </div>
         {isAdmin && (
           <Link
