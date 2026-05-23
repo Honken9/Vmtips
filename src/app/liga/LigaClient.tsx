@@ -85,35 +85,23 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
 
   return (
     <div className="space-y-8">
-      {/* Hero med liga-bild */}
-      {pool.image_url && (
-        <div className="relative w-full h-40 sm:h-56 rounded-2xl overflow-hidden" style={{ border: '1px solid #1f2937' }}>
-          <Image
-            src={pool.image_url}
-            alt={pool.name}
-            fill
-            className="object-cover"
-            sizes="(min-width: 1024px) 1000px, 100vw"
-            unoptimized
-            priority
-          />
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(10,14,26,0.85) 0%, rgba(10,14,26,0.15) 60%, transparent 100%)' }} />
-          <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between gap-3">
-            <h1 className="text-2xl sm:text-3xl font-bold text-white drop-shadow">{pool.name}</h1>
-            {isOwner && (
-              <span className="hidden sm:flex items-center gap-1 text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-full"
-                style={{ background: 'rgba(245,158,11,0.85)', color: '#000' }}>
-                <Crown size={12} /> Du äger ligan
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <h1 className={`text-2xl font-bold text-white flex items-center gap-2 ${pool.image_url ? 'sr-only' : ''}`}>
+        <div className="flex items-center gap-3 flex-wrap">
+          {pool.image_url && (
+            <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden shrink-0"
+              style={{ border: '1px solid #1f2937' }}>
+              <Image
+                src={pool.image_url}
+                alt={pool.name}
+                fill
+                className="object-cover"
+                sizes="56px"
+                unoptimized
+              />
+            </div>
+          )}
+          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Users size={22} className="text-emerald-400" />
             {pool.name}
           </h1>
