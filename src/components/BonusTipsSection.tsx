@@ -20,16 +20,16 @@ type Field = 'top_scorer' | 'most_yellow_team_id' | 'total_goals'
 const CATEGORIES = [
   {
     field: 'top_scorer' as Field,
-    label: 'Skytteligavinnare',
+    label: 'Skytteligavinnare (spelarens namn)',
     emoji: '⚽',
-    description: 'Vilken spelare gör flest mål i turneringen?',
+    description: 'Skriv NAMNET på spelaren – inte laget – som gör flest mål under turneringen.',
     type: 'text' as const,
   },
   {
     field: 'most_yellow_team_id' as Field,
-    label: 'Flest gula kort',
+    label: 'Flest gula kort (lag)',
     emoji: '🟨',
-    description: 'Vilket lag får flest gula kort totalt?',
+    description: 'Välj LAGET som får flest gula kort sammanlagt i turneringen.',
     type: 'team' as const,
   },
   {
@@ -159,6 +159,13 @@ export function BonusTipsSection({ userId, teams, bonus, bonusResults, locked, p
           <span className="text-sm font-bold text-emerald-400">+{earnedBonus}p</span>
         )}
       </div>
+
+      {/* Hjälptext – syns alltid */}
+      {!locked && (
+        <div className="px-5 py-2.5 text-xs text-emerald-300 border-b" style={{ background: 'rgba(16,185,129,0.05)', borderColor: '#1f2937' }}>
+          Dina bonustips sparas automatiskt och du kan ändra dem ända fram tills du låser dina tips.
+        </div>
+      )}
 
       <div className="divide-y" style={{ borderColor: '#1f2937' }}>
         {CATEGORIES.map(cat => {
