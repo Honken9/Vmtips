@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { UserAvatar } from '@/components/UserAvatar'
+import { MessageLike } from '@/components/MessageLike'
 import { MessageCircle, Loader2, Send, Trash2 } from 'lucide-react'
 
 interface Props {
@@ -23,6 +24,8 @@ interface RawRow {
 interface DisplayedComment extends RawRow {
   display_name: string
   avatar_url: string | null
+  like_count: number
+  liked_by_me: boolean
 }
 
 const MAX_LEN = 500
@@ -74,13 +77,28 @@ export function MatchCommentInline({ matchId, poolId, meUserId, matchLabel, canM
           .map(p => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url ?? null }])
       )
     }
+    // Hämta likes för dessa kommentarer
+    const likeCounts: Record<number, number> = {}
+    const likedByMe: Record<number, boolean> = {}
+    if (raw.length > 0) {
+      const { data: likes } = await supabase
+        .from('pool_message_likes')
+        .select('message_id, user_id')
+        .in('message_id', raw.map(r => r.id))
+      for (const l of (likes ?? []) as { message_id: number; user_id: string }[]) {
+        likeCounts[l.message_id] = (likeCounts[l.message_id] ?? 0) + 1
+        if (l.user_id === meUserId) likedByMe[l.message_id] = true
+      }
+    }
     setComments(raw.map(r => ({
       ...r,
       display_name: profiles[r.user_id]?.display_name ?? '(borttagen)',
       avatar_url: profiles[r.user_id]?.avatar_url ?? null,
+      like_count: likeCounts[r.id] ?? 0,
+      liked_by_me: !!likedByMe[r.id],
     })))
     setCount(totalCount ?? raw.length)
-  }, [supabase, poolId, matchId])
+  }, [supabase, poolId, matchId, meUserId])
 
   useEffect(() => { fetchCount() }, [fetchCount])
 
@@ -172,6 +190,12 @@ export function MatchCommentInline({ matchId, poolId, meUserId, matchLabel, canM
                         <span className="text-[10px] text-gray-600 shrink-0">{formatTime(c.created_at)}</span>
                       </div>
                       <div className="text-xs text-gray-200 whitespace-pre-wrap break-words">{c.text}</div>
+                      <MessageLike
+                        messageId={c.id}
+                        meUserId={meUserId}
+                        initialCount={c.like_count}
+                        initialLiked={c.liked_by_me}
+                      />
                     </div>
                     {canDelete && (
                       <button
