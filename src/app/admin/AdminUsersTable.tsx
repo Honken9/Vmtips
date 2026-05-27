@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { UserAvatar } from '@/components/UserAvatar'
 import { AdminAvatarManager } from '@/components/AdminAvatarManager'
-import { Lock, Unlock, Loader2, Trash2, ImageIcon, Users as UsersIcon, Filter } from 'lucide-react'
+import { Lock, Unlock, Loader2, Trash2, ImageIcon, Users as UsersIcon, Filter, CheckCircle, AlertCircle } from 'lucide-react'
 
 interface UserRow {
   id: string
@@ -16,6 +16,7 @@ interface UserRow {
   avatar_locked: boolean
   pool_name: string | null
   pool_id: number | null
+  payment_status: 'free' | 'paid' | 'unpaid' | 'no_pool'
 }
 
 type FilterValue = 'all' | 'none' | number
@@ -144,6 +145,7 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
                 <tr style={{ background: '#1f2937' }}>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Namn</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Tips inlämnade</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Betalt</th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">AI-bild</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Roll</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Ta bort</th>
@@ -166,6 +168,24 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
                           ? <span className="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full">✓ Inlämnade</span>
                           : <span className="text-xs text-gray-500">Ej inlämnade</span>
                         }
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {u.payment_status === 'paid' && (
+                          <span className="inline-flex items-center gap-1 text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full" title="Betalt">
+                            <CheckCircle size={11} /> Betalt
+                          </span>
+                        )}
+                        {u.payment_status === 'unpaid' && (
+                          <span className="inline-flex items-center gap-1 text-xs text-red-300 bg-red-500/10 px-2 py-0.5 rounded-full" title="Ej betalt än">
+                            <AlertCircle size={11} /> Ej betalt
+                          </span>
+                        )}
+                        {u.payment_status === 'free' && (
+                          <span className="text-xs text-gray-500" title="Liga utan avgift">Gratis</span>
+                        )}
+                        {u.payment_status === 'no_pool' && (
+                          <span className="text-xs text-gray-600 italic">–</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-center gap-1.5">
@@ -223,7 +243,7 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
                     </tr>
                     {expanded === u.id && (
                       <tr style={{ background: '#0b1120' }}>
-                        <td colSpan={5} className="px-4 pb-4 pt-1">
+                        <td colSpan={6} className="px-4 pb-4 pt-1">
                           <AdminAvatarManager
                             userId={u.id}
                             displayName={u.display_name}

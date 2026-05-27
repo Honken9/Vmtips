@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { UserAvatar } from '@/components/UserAvatar'
+import { MessageLike } from '@/components/MessageLike'
 import { Loader2, Send, MessageCircle, Trash2 } from 'lucide-react'
 
 interface RawMessage {
@@ -24,6 +25,8 @@ interface DisplayedMessage extends RawMessage {
   display_name: string
   avatar_url: string | null
   match_label: string | null
+  like_count: number
+  liked_by_me: boolean
 }
 
 interface Member {
@@ -103,6 +106,19 @@ export function PoolChat({ poolId, meUserId, ownerUserId, members }: Props) {
       return
     }
     const raw = ((data ?? []) as RawMessage[]).reverse()
+    // Hämta likes för dessa meddelanden
+    const likeCounts: Record<number, number> = {}
+    const likedByMe: Record<number, boolean> = {}
+    if (raw.length > 0) {
+      const { data: likes } = await supabase
+        .from('pool_message_likes')
+        .select('message_id, user_id')
+        .in('message_id', raw.map(r => r.id))
+      for (const l of (likes ?? []) as { message_id: number; user_id: string }[]) {
+        likeCounts[l.message_id] = (likeCounts[l.message_id] ?? 0) + 1
+        if (l.user_id === meUserId) likedByMe[l.message_id] = true
+      }
+    }
     const enriched: DisplayedMessage[] = raw.map(m => {
       const mem = memberMap.current.get(m.user_id)
       const match = m.match_id != null ? matchMap.current.get(m.match_id) : null
@@ -111,11 +127,13 @@ export function PoolChat({ poolId, meUserId, ownerUserId, members }: Props) {
         display_name: mem?.display_name ?? '(borttagen)',
         avatar_url: mem?.avatar_url ?? null,
         match_label: match ? `${match.home_name} – ${match.away_name}` : null,
+        like_count: likeCounts[m.id] ?? 0,
+        liked_by_me: !!likedByMe[m.id],
       }
     })
     setMessages(enriched)
     setLoading(false)
-  }, [poolId, supabase])
+  }, [poolId, supabase, meUserId])
 
   // Initial load + polling var 10:e sek
   useEffect(() => {
@@ -223,15 +241,23 @@ export function PoolChat({ poolId, meUserId, ownerUserId, members }: Props) {
                     )}
                     <div>{m.text}</div>
                   </div>
-                  {(isMe || canDelete) && (
-                    <button
-                      onClick={() => deleteMessage(m.id)}
-                      className="ml-2 text-[10px] text-gray-600 hover:text-red-400 transition-colors"
-                      title="Ta bort meddelande"
-                    >
-                      <Trash2 size={10} className="inline" />
-                    </button>
-                  )}
+                  <div className={`flex items-center gap-1 mt-0.5 ${isMe ? 'justify-end' : ''}`}>
+                    <MessageLike
+                      messageId={m.id}
+                      meUserId={meUserId}
+                      initialCount={m.like_count}
+                      initialLiked={m.liked_by_me}
+                    />
+                    {(isMe || canDelete) && (
+                      <button
+                        onClick={() => deleteMessage(m.id)}
+                        className="text-[10px] text-gray-600 hover:text-red-400 transition-colors"
+                        title="Ta bort meddelande"
+                      >
+                        <Trash2 size={10} className="inline" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )
