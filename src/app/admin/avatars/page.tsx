@@ -16,37 +16,86 @@ interface PoolRow {
   name: string
 }
 
+interface HistoryRow {
+  id: number
+  user_id: string
+  url: string
+  created_at: string
+}
+
 export default async function AdminAvatarsPage() {
   const supabase = await createClient()
-  const [{ data: profilesRaw }, { data: poolsRaw }] = await Promise.all([
+  const [{ data: profilesRaw }, { data: poolsRaw }, { data: historyRaw }] = await Promise.all([
     supabase
       .from('profiles')
       .select('id, display_name, avatar_url, pool_id')
-      .not('avatar_url', 'is', null)
       .order('display_name'),
     supabase.from('pools').select('id, name').is('deleted_at', null).order('name'),
+    // Hämta alla historiska bilder. Tabellen kan saknas i någon miljö –
+    // då faller vi tillbaka på nuvarande avatar_url.
+    supabase
+      .from('avatar_history')
+      .select('id, user_id, url, created_at')
+      .order('created_at', { ascending: false }),
   ])
 
   const profiles = (profilesRaw ?? []) as ProfileRow[]
   const pools = (poolsRaw ?? []) as PoolRow[]
-  const poolName = new Map(pools.map(p => [p.id, p.name]))
+  const history = (historyRaw ?? []) as HistoryRow[]
+  const profileById = new Map(profiles.map(p => [p.id, p]))
 
   type Item = { id: string; name: string; url: string }
-  const byPool = new Map<number | null, Item[]>()
-  for (const p of profiles) {
-    if (!p.avatar_url) continue
-    const key = p.pool_id ?? null
-    if (!byPool.has(key)) byPool.set(key, [])
-    byPool.get(key)!.push({ id: p.id, name: p.display_name, url: p.avatar_url })
+
+  // Vilka URL:er vi redan har visat – så vi inte dubbelvisar nuvarande
+  // avatar_url om den också ligger i historiken.
+  const seen = new Set<string>()
+  const itemsByPool = new Map<number | null, Item[]>()
+
+  function add(key: number | null, item: Item) {
+    if (!itemsByPool.has(key)) itemsByPool.set(key, [])
+    itemsByPool.get(key)!.push(item)
   }
 
-  // Sortera: först alla ligor i bokstavsordning, sen "utan liga" sist
-  const poolSections = pools
-    .filter(p => byPool.has(p.id))
-    .map(p => ({ id: p.id, name: p.name, items: byPool.get(p.id) ?? [] }))
-  const orphanItems = byPool.get(null) ?? []
+  // Normalisera URL för dedupe (utan ?t=... query)
+  function baseUrl(u: string): string {
+    const q = u.indexOf('?')
+    return q >= 0 ? u.slice(0, q) : u
+  }
 
-  const totalAvatars = profiles.length
+  // 1) Lägg in alla historik-rader (nyast först)
+  for (const h of history) {
+    const prof = profileById.get(h.user_id)
+    if (!prof) continue
+    const base = baseUrl(h.url)
+    if (seen.has(base)) continue
+    seen.add(base)
+    add(prof.pool_id ?? null, {
+      id: `h${h.id}`,
+      name: prof.display_name,
+      url: h.url,
+    })
+  }
+
+  // 2) Backfill – nuvarande avatar_url om den inte redan finns i historiken
+  for (const p of profiles) {
+    if (!p.avatar_url) continue
+    const base = baseUrl(p.avatar_url)
+    if (seen.has(base)) continue
+    seen.add(base)
+    add(p.pool_id ?? null, {
+      id: `p${p.id}`,
+      name: p.display_name,
+      url: p.avatar_url,
+    })
+  }
+
+  const poolSections = pools
+    .filter(p => itemsByPool.has(p.id))
+    .map(p => ({ id: p.id, name: p.name, items: itemsByPool.get(p.id) ?? [] }))
+  const orphanItems = itemsByPool.get(null) ?? []
+
+  const totalAvatars =
+    poolSections.reduce((sum, s) => sum + s.items.length, 0) + orphanItems.length
 
   return (
     <div className="space-y-6">
@@ -55,7 +104,7 @@ export default async function AdminAvatarsPage() {
         <div>
           <h1 className="text-2xl font-bold text-white">Bildcollage</h1>
           <p className="text-gray-400 text-sm mt-0.5">
-            Alla AI-genererade profilbilder grupperade per liga – {totalAvatars} st totalt.
+            Alla AI-genererade profilbilder (inklusive tidigare versioner) grupperade per liga – {totalAvatars} st totalt.
             Klicka en bild för fullskärm.
           </p>
         </div>
@@ -92,10 +141,6 @@ export default async function AdminAvatarsPage() {
               </h2>
               <AvatarCollage avatars={orphanItems} />
             </section>
-          )}
-
-          {poolName.size > 0 && poolSections.length === 0 && orphanItems.length === 0 && (
-            <p className="text-sm text-gray-500 italic">Inga avatarer per liga än.</p>
           )}
         </div>
       )}
