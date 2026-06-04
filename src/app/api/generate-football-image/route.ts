@@ -164,6 +164,12 @@ export async function POST(request: NextRequest) {
   const teamName = (formData.get('team') as string) || 'Sverige'
   const poseKey = (formData.get('pose') as string) || 'celebrating'
   const arenaKey = (formData.get('arena') as string) || 'Friends Arena'
+  // Admin-only fritextfält. Vi sanerar och kapar för säkerhets skull –
+  // icke-admin-flöden ignorerar fältet helt.
+  const rawCustomWords = (formData.get('customWords') as string) || ''
+  const customWords = isAdminGenerating
+    ? rawCustomWords.replace(/[\r\n]+/g, ' ').trim().slice(0, 300)
+    : ''
 
   const teamKit = TEAM_KITS[teamName] || TEAM_KITS['Sverige']
   const poseDesc = POSE_DESCRIPTIONS[poseKey] || POSE_DESCRIPTIONS['celebrating']
@@ -198,7 +204,10 @@ export async function POST(request: NextRequest) {
     // Gemini 2.5 Flash Image – behåller ansiktet, byter kläder/miljö
     const genAI = new GoogleGenAI({ apiKey })
 
-    const prompt = `Transform this person into a professional football (soccer) player on the ${teamName} national/club team. Generate a FULL BODY shot showing the person from head to toe, wearing the ${teamName} kit: ${teamKit}, plus matching football boots. The player is ${poseDesc}. Setting: ${arenaDesc}. Keep the person's face and identity EXACTLY the same – do NOT change their facial features, skin tone, hair color, or hairstyle. Professional sports photography style, realistic, vibrant colors, dramatic stadium lighting, sharp focus on the player. The FULL BODY must be visible in the frame, from head to toe. High quality, photorealistic, magazine cover style.`
+    const customWordsClause = customWords
+      ? ` Additional admin-provided details to incorporate naturally into the scene (do not override the face/identity rule): ${customWords}.`
+      : ''
+    const prompt = `Transform this person into a professional football (soccer) player on the ${teamName} national/club team. Generate a FULL BODY shot showing the person from head to toe, wearing the ${teamName} kit: ${teamKit}, plus matching football boots. The player is ${poseDesc}. Setting: ${arenaDesc}.${customWordsClause} Keep the person's face and identity EXACTLY the same – do NOT change their facial features, skin tone, hair color, or hairstyle. Professional sports photography style, realistic, vibrant colors, dramatic stadium lighting, sharp focus on the player. The FULL BODY must be visible in the frame, from head to toe. High quality, photorealistic, magazine cover style.`
 
     const response = await genAI.models.generateContent({
       model: 'gemini-2.5-flash-image',
@@ -263,14 +272,16 @@ export async function POST(request: NextRequest) {
     // Konvertera base64 till buffer
     const imageBuffer = Buffer.from(generatedImageData, 'base64')
 
-    // Spara som avatar i Supabase Storage
+    // Spara som avatar i Supabase Storage. Tidsstämplad sökväg så att
+    // gamla bilder finns kvar och kan visas i admin-collaget – tidigare
+    // upload med upsert skrev över historiken.
     const ext = generatedMimeType.includes('jpeg') ? 'jpg' : 'png'
-    const avatarPath = `avatars/${targetUserId}.${ext}`
+    const avatarPath = `avatars/${targetUserId}/${Date.now()}.${ext}`
     const { error: uploadError } = await admin.storage
       .from('profile-images')
       .upload(avatarPath, imageBuffer, {
         contentType: generatedMimeType,
-        upsert: true,
+        upsert: false,
       })
 
     if (uploadError) {
@@ -290,6 +301,22 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .update({ avatar_url: avatarUrl, avatar_locked: true })
       .eq('id', targetUserId)
+
+    // Spara varje generering i historiken så även "konstiga" bilder och
+    // tidigare varianter syns i admin-collaget. Tabellen kan saknas på
+    // miljöer där SQL inte körts än – då hoppar vi tyst över.
+    try {
+      await admin.from('avatar_history').insert({
+        user_id: targetUserId,
+        url: avatarUrl,
+        team: teamName,
+        pose: poseKey,
+        arena: arenaKey,
+        custom_words: customWords || null,
+      })
+    } catch (histErr) {
+      console.warn('avatar_history insert skipped:', histErr)
+    }
 
     return NextResponse.json({ avatarUrl })
 

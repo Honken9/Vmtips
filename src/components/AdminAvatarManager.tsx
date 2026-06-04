@@ -46,6 +46,7 @@ export function AdminAvatarManager({ userId, displayName, currentAvatar, onChang
   const [team, setTeam] = useState(TEAM_OPTIONS[0].value)
   const [pose, setPose] = useState(POSE_OPTIONS[0].value)
   const [arena, setArena] = useState(ARENA_OPTIONS[0].value)
+  const [customWords, setCustomWords] = useState('')
   const [busy, setBusy] = useState<'generate' | 'remove' | null>(null)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -79,6 +80,7 @@ export function AdminAvatarManager({ userId, displayName, currentAvatar, onChang
     form.append('pose', pose)
     form.append('arena', arena)
     form.append('targetUserId', userId)
+    if (customWords.trim()) form.append('customWords', customWords.trim())
 
     try {
       const res = await fetch('/api/generate-football-image', { method: 'POST', body: form })
@@ -91,6 +93,7 @@ export function AdminAvatarManager({ userId, displayName, currentAvatar, onChang
       setMsg({ ok: true, text: 'Ny bild genererad' })
       setPreview(null)
       setFile(null)
+      setCustomWords('')
       onChanged(data.avatarUrl ?? null)
     } catch {
       setBusy(null)
@@ -176,6 +179,22 @@ export function AdminAvatarManager({ userId, displayName, currentAvatar, onChang
             <select value={arena} onChange={e => setArena(e.target.value)} className={selCls} style={selStyle}>
               {ARENA_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+              Egna ord (frivilligt – endast admin)
+            </label>
+            <textarea
+              value={customWords}
+              onChange={e => setCustomWords(e.target.value.slice(0, 300))}
+              placeholder="T.ex. 'bär guldkedja, har ett brustet finger, regnar lätt'"
+              rows={2}
+              className="w-full text-xs px-2 py-1.5 rounded text-white focus:outline-none focus:ring-1 focus:ring-emerald-400/50 resize-y"
+              style={selStyle}
+            />
+            <div className="text-[10px] text-gray-500 mt-0.5 text-right">
+              {customWords.length}/300
+            </div>
           </div>
           <button
             onClick={generate}
