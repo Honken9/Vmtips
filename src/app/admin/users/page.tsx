@@ -26,24 +26,39 @@ interface PaymentRow {
   paid: boolean
 }
 
+interface TagRow {
+  pool_id: number
+  user_id: string
+  color: string | null
+  department: string | null
+}
+
 export default async function AdminUsersPage() {
   const supabase = await createClient()
   const { data: { user: me } } = await supabase.auth.getUser()
 
-  const [{ data: profilesRaw }, { data: poolsRaw }, { data: paymentsRaw }] = await Promise.all([
+  const [
+    { data: profilesRaw },
+    { data: poolsRaw },
+    { data: paymentsRaw },
+    { data: tagsRaw },
+  ] = await Promise.all([
     supabase
       .from('profiles')
       .select('id, display_name, tips_locked, is_admin, avatar_url, avatar_locked, pool_id'),
     supabase.from('pools').select('id, name, entry_fee').is('deleted_at', null),
     supabase.from('pool_payments').select('pool_id, user_id, paid'),
+    supabase.from('pool_member_tags').select('pool_id, user_id, color, department'),
   ])
 
   const profiles = (profilesRaw ?? []) as ProfileRow[]
   const pools = (poolsRaw ?? []) as PoolRow[]
   const payments = (paymentsRaw ?? []) as PaymentRow[]
+  const tags = (tagsRaw ?? []) as TagRow[]
 
   const poolById = new Map(pools.map(p => [p.id, p]))
   const paidKey = new Set(payments.filter(p => p.paid).map(p => `${p.pool_id}:${p.user_id}`))
+  const tagByKey = new Map(tags.map(t => [`${t.pool_id}:${t.user_id}`, t]))
 
   const users = profiles
     .map(p => {
@@ -58,6 +73,7 @@ export default async function AdminUsersPage() {
             : paidKey.has(`${p.pool_id}:${p.id}`)
               ? 'paid'
               : 'unpaid'
+      const tag = p.pool_id != null ? tagByKey.get(`${p.pool_id}:${p.id}`) : null
       return {
         id: p.id,
         display_name: p.display_name,
@@ -68,6 +84,8 @@ export default async function AdminUsersPage() {
         pool_id: p.pool_id ?? null,
         pool_name: pool?.name ?? null,
         payment_status: paymentStatus,
+        tag_color: tag?.color ?? null,
+        tag_department: tag?.department ?? null,
       }
     })
     .sort((a, b) => a.display_name.localeCompare(b.display_name))

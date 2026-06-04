@@ -4,12 +4,7 @@ import Link from 'next/link'
 import { LeaderboardEntry, PoolMemberTag } from '@/lib/types'
 import { Lock } from 'lucide-react'
 import { UserAvatar } from '@/components/UserAvatar'
-
-const TAG_COLOR_HEX: Record<string, string> = {
-  emerald: '#10b981', sky: '#0ea5e9', rose: '#f43f5e', amber: '#f59e0b',
-  violet: '#8b5cf6', cyan: '#06b6d4', lime: '#84cc16', pink: '#ec4899',
-  orange: '#f97316', slate: '#94a3b8',
-}
+import { TAG_COLOR_HEX } from '@/lib/tag-colors'
 
 interface Props {
   entries: LeaderboardEntry[]
