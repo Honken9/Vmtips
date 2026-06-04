@@ -77,6 +77,22 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
     setUsers(prev => prev.map(p => (p.id === u.id ? { ...p, avatar_locked: next } : p)))
   }
 
+  async function unlockTips(u: UserRow) {
+    if (!u.tips_locked) return
+    if (!confirm(`Låsa upp tipset för ${u.display_name}? Deltagaren kan då ändra alla sina match- och bonustips tills de väljer "Lås in" igen.`)) return
+
+    setBusy(`unlock-${u.id}`)
+    const res = await fetch(`/api/admin/users/${u.id}/unlock-tips`, { method: 'POST' })
+    setBusy(null)
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      alert(`Kunde inte låsa upp: ${data.error ?? res.statusText}`)
+      return
+    }
+    setUsers(prev => prev.map(p => (p.id === u.id ? { ...p, tips_locked: false } : p)))
+  }
+
   async function deleteUser(u: UserRow) {
     if (u.id === meUserId) {
       alert('Du kan inte ta bort dig själv.')
@@ -217,10 +233,28 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
                         />
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {u.tips_locked
-                          ? <span className="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full">✓ Inlämnade</span>
-                          : <span className="text-xs text-gray-500">Ej inlämnade</span>
-                        }
+                        <div className="flex items-center justify-end gap-2">
+                          {u.tips_locked
+                            ? <span className="text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full">✓ Inlämnade</span>
+                            : <span className="text-xs text-gray-500">Ej inlämnade</span>
+                          }
+                          {u.tips_locked && (
+                            <button
+                              onClick={() => unlockTips(u)}
+                              disabled={busy === `unlock-${u.id}`}
+                              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full text-amber-300 hover:bg-amber-400/15 transition-colors disabled:opacity-40"
+                              style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}
+                              title="Lås upp tipset så deltagaren kan ändra"
+                            >
+                              {busy === `unlock-${u.id}` ? (
+                                <Loader2 size={11} className="animate-spin" />
+                              ) : (
+                                <Unlock size={11} />
+                              )}
+                              Lås upp
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-center">
                         {u.payment_status === 'paid' && (
