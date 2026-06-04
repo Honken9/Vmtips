@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, Fragment, useMemo } from 'react'
+import { useState, Fragment, useMemo, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { UserAvatar } from '@/components/UserAvatar'
 import { AdminAvatarManager } from '@/components/AdminAvatarManager'
+import { TAG_COLORS, colorHex } from '@/lib/tag-colors'
 import { Lock, Unlock, Loader2, Trash2, ImageIcon, Users as UsersIcon, Filter, CheckCircle, AlertCircle } from 'lucide-react'
 
 interface UserRow {
@@ -17,6 +18,8 @@ interface UserRow {
   pool_name: string | null
   pool_id: number | null
   payment_status: 'free' | 'paid' | 'unpaid' | 'no_pool'
+  tag_color: string | null
+  tag_department: string | null
 }
 
 type FilterValue = 'all' | 'none' | number
@@ -28,6 +31,36 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
   const [busy, setBusy] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [filter, setFilter] = useState<FilterValue>('all')
+
+  async function saveTag(u: UserRow, color: string | null, department: string | null) {
+    if (u.pool_id == null) return
+    const dept = (department ?? '').trim()
+    // Tom rad (ingen färg + ingen text) → ta bort raden helt.
+    if (!color && !dept) {
+      await supabase
+        .from('pool_member_tags')
+        .delete()
+        .eq('pool_id', u.pool_id)
+        .eq('user_id', u.id)
+    } else {
+      await supabase
+        .from('pool_member_tags')
+        .upsert(
+          {
+            pool_id: u.pool_id,
+            user_id: u.id,
+            color: color,
+            department: dept || null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'pool_id,user_id' }
+        )
+    }
+  }
+
+  function updateLocal(userId: string, patch: Partial<UserRow>) {
+    setUsers(prev => prev.map(p => (p.id === userId ? { ...p, ...patch } : p)))
+  }
 
   async function toggleLock(u: UserRow) {
     const next = !u.avatar_locked
@@ -144,6 +177,8 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
               <thead>
                 <tr style={{ background: '#1f2937' }}>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Namn</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Avdelning</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Färg</th>
                   <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Tips inlämnade</th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">Betalt</th>
                   <th className="text-center px-4 py-3 text-xs font-semibold text-gray-400 uppercase">AI-bild</th>
@@ -162,6 +197,24 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
                           <UserAvatar src={u.avatar_url} name={u.display_name} size="sm" />
                           <span className="text-sm text-white">{u.display_name}</span>
                         </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <DepartmentCell
+                          user={u}
+                          onSave={(dept) => {
+                            updateLocal(u.id, { tag_department: dept })
+                            void saveTag(u, u.tag_color, dept)
+                          }}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <ColorCell
+                          user={u}
+                          onPick={(color) => {
+                            updateLocal(u.id, { tag_color: color })
+                            void saveTag(u, color, u.tag_department)
+                          }}
+                        />
                       </td>
                       <td className="px-4 py-3 text-right">
                         {u.tips_locked
@@ -243,7 +296,7 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
                     </tr>
                     {expanded === u.id && (
                       <tr style={{ background: '#0b1120' }}>
-                        <td colSpan={6} className="px-4 pb-4 pt-1">
+                        <td colSpan={8} className="px-4 pb-4 pt-1">
                           <AdminAvatarManager
                             userId={u.id}
                             displayName={u.display_name}
@@ -271,6 +324,124 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
         <div className="rounded-xl p-8 text-center text-sm text-gray-500"
           style={{ background: '#111827', border: '1px solid #1f2937' }}>
           Inga deltagare i den valda ligan.
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Avdelnings-input: lokalt state + debounce-save så vi inte spammar DB:n.
+function DepartmentCell({
+  user, onSave,
+}: {
+  user: UserRow
+  onSave: (dept: string | null) => void
+}) {
+  const [value, setValue] = useState<string>(user.tag_department ?? '')
+  const initial = useRef(user.tag_department ?? '')
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Synka när raden uppdateras utifrån
+  useEffect(() => {
+    setValue(user.tag_department ?? '')
+    initial.current = user.tag_department ?? ''
+  }, [user.tag_department])
+
+  function commit(next: string) {
+    if (next === initial.current) return
+    initial.current = next
+    onSave(next.trim() || null)
+  }
+
+  function handleChange(next: string) {
+    setValue(next)
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => commit(next), 700)
+  }
+
+  if (user.pool_id == null) {
+    return <span className="text-xs text-gray-600 italic">–</span>
+  }
+
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={e => handleChange(e.target.value)}
+      onBlur={() => {
+        if (timer.current) clearTimeout(timer.current)
+        commit(value)
+      }}
+      maxLength={30}
+      placeholder="Avdelning…"
+      className="w-full max-w-[160px] px-2 py-1 rounded text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-400/50"
+      style={{ background: '#1f2937', border: '1px solid #374151' }}
+    />
+  )
+}
+
+// Färgväljare: liten cirkel som öppnar paletten – sparar direkt vid klick.
+function ColorCell({
+  user, onPick,
+}: {
+  user: UserRow
+  onPick: (color: string | null) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onDocClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [open])
+
+  if (user.pool_id == null) {
+    return <span className="text-xs text-gray-600 italic">–</span>
+  }
+
+  const hex = colorHex(user.tag_color)
+
+  return (
+    <div ref={ref} className="relative inline-flex">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-6 h-6 rounded-full transition-transform hover:scale-110"
+        style={{
+          background: hex ?? 'transparent',
+          border: hex ? '1px solid rgba(255,255,255,0.2)' : '1px dashed #374151',
+        }}
+        title={user.tag_color ?? 'Ingen färg'}
+        aria-label="Välj färg"
+      />
+      {open && (
+        <div
+          className="absolute z-30 top-full right-0 mt-1 p-2 rounded-lg flex gap-1.5 flex-wrap w-44"
+          style={{ background: '#0f172a', border: '1px solid #374151', boxShadow: '0 8px 24px rgba(0,0,0,0.5)' }}
+        >
+          <button
+            type="button"
+            onClick={() => { onPick(null); setOpen(false) }}
+            className={`w-6 h-6 rounded-full ${user.tag_color === null ? 'ring-2 ring-emerald-400' : ''}`}
+            style={{ background: 'transparent', border: '1px dashed #374151' }}
+            title="Ingen färg"
+            aria-label="Ingen färg"
+          />
+          {TAG_COLORS.map(c => (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => { onPick(c.key); setOpen(false) }}
+              className={`w-6 h-6 rounded-full ${user.tag_color === c.key ? 'ring-2 ring-white' : ''}`}
+              style={{ background: c.hex }}
+              title={c.label}
+              aria-label={c.label}
+            />
+          ))}
         </div>
       )}
     </div>
