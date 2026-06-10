@@ -34,6 +34,11 @@ export default async function BracketPage() {
   const predictions = (predsRaw ?? []) as Prediction[]
   const pool = poolRaw as Pick<Pool, 'name' | 'image_url'> | null
 
+  const koMatches = matches.filter(m => m.stage !== 'group')
+  const koMatchIds = new Set(koMatches.map(m => m.id))
+  const koTipped = predictions.filter(p => koMatchIds.has(p.match_id)).length
+  const koTotal = koMatches.length
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
@@ -54,6 +59,24 @@ export default async function BracketPage() {
           />
         )}
       </div>
+
+      {koTotal > 0 && koTipped < koTotal && (
+        <div
+          className="rounded-xl p-4 flex items-start gap-3"
+          style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.3)' }}
+        >
+          <div className="text-2xl">🛠️</div>
+          <div className="text-sm">
+            <div className="font-semibold text-amber-200 mb-0.5">
+              Slutspelsträdet är uppdaterat enligt FIFA:s officiella format.
+            </div>
+            <div className="text-amber-100/80">
+              Gå till <a href="/tips" className="underline">Mina tips</a> och tippa
+              om slutspelsmatcherna – {koTipped} av {koTotal} tippade.
+            </div>
+          </div>
+        </div>
+      )}
 
       <BracketView
         matches={matches}

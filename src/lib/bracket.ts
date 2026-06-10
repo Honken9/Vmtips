@@ -13,6 +13,7 @@ import {
   QF_BRACKET,
   SF_BRACKET,
 } from './standings'
+import { thirdAssignments, type GroupLetter, type WinnerSlot } from './annex-c'
 
 export interface BracketResolution {
   groupMatches: Match[]
@@ -30,6 +31,8 @@ export interface BracketResolution {
   thirdTeams: [Team | null, Team | null]
   /** Champion enligt finalens tipp (eller null) */
   champion: Team | null
+  /** True om de 8 bästa treornas avgränsning inte kunnat avgöras entydigt. */
+  thirdsAmbiguous: boolean
 }
 
 export function resolveBracket(
@@ -51,10 +54,29 @@ export function resolveBracket(
   })
 
   const standings = calcAllGroupStandings(teams, groupMatches, preds)
-  const best8Third = getBest8Third(standings)
+  const { teams: best8Third, ambiguous: thirdsAmbiguous } = getBest8Third(standings)
+
+  // Slå upp i Annex C VILKEN trea (vilken grupp) som möter vilken gruppvinnare.
+  // Bara om vi har exakt 8 treor (annars har gruppspelet inte avgjorts klart).
+  let thirdGroupBySlot: Partial<Record<WinnerSlot, GroupLetter>> = {}
+  if (best8Third.length === 8) {
+    try {
+      const qualifiedGroups = best8Third.map(t => t.group as GroupLetter)
+      thirdGroupBySlot = thirdAssignments(qualifiedGroups)
+    } catch {
+      // Otillåten kombination – lämna mappningen tom så slots blir null
+      thirdGroupBySlot = {}
+    }
+  }
 
   const rSlot = (slot: string): Team | null => {
-    if (slot.startsWith('T3_')) return best8Third[parseInt(slot.substring(3)) - 1]?.team ?? null
+    if (slot.startsWith('TH_')) {
+      // TH_1A → slå upp gruppen vars trea möter vinnare A, ta tabellens 3:a
+      const winnerSlot = slot.slice(3) as WinnerSlot
+      const group = thirdGroupBySlot[winnerSlot]
+      if (!group) return null
+      return standings[group]?.[2]?.team ?? null
+    }
     const pos = parseInt(slot[0]) - 1
     return standings[slot[1]]?.[pos]?.team ?? null
   }
@@ -128,5 +150,6 @@ export function resolveBracket(
     finalMatch, thirdMatch,
     r32Teams, r16Teams, qfTeams, sfTeams, finalTeams, thirdTeams,
     champion,
+    thirdsAmbiguous,
   }
 }
