@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
-import { GitBranch, AlertTriangle, CheckCircle2, Users } from 'lucide-react'
+import { GitBranch, AlertTriangle, CheckCircle2, Users, ArrowRight } from 'lucide-react'
+import { calcAllGroupStandings, getBest8Third, type StandingsRow } from '@/lib/standings'
+import type { Match, Team } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,6 +66,69 @@ interface PoolRow {
   name: string
 }
 
+// ─── Simulering: vilka lag hamnar i R32 enligt gammal vs ny mappning ───────
+
+// Slår upp '1A' / '2B' / 'T3_N' mot en deltagares tippade tabeller.
+function resolveCurrentSlot(
+  slot: string,
+  standings: Record<string, StandingsRow[]>,
+  best8: StandingsRow[]
+): Team | null {
+  if (slot.startsWith('T3_')) return best8[parseInt(slot.slice(3)) - 1]?.team ?? null
+  const pos = parseInt(slot[0]) - 1
+  return standings[slot[1]]?.[pos]?.team ?? null
+}
+
+// Tilldelar de 8 bästa treorna till treorslots ('3B|C|D') girigt:
+// bäst rankad trea vars grupp är tillåten och inte redan använd.
+// Faller tillbaka på bästa otilldelade trea om ingen passar (markeras).
+// OBS: FIFA:s riktiga allokering använder en officiell tabell – det här är
+// en nära approximation för jämförelsen.
+function allocateThirds(
+  best8: StandingsRow[],
+  thirdSlots: { matchIdx: number; allowed: string[] }[]
+): Map<number, { team: Team; fallback: boolean } | null> {
+  const used = new Set<string>()
+  const result = new Map<number, { team: Team; fallback: boolean } | null>()
+  for (const slot of thirdSlots) {
+    const exact = best8.find(s => !used.has(s.group) && slot.allowed.includes(s.group))
+    if (exact) {
+      used.add(exact.group)
+      result.set(slot.matchIdx, { team: exact.team, fallback: false })
+      continue
+    }
+    const fallback = best8.find(s => !used.has(s.group))
+    if (fallback) {
+      used.add(fallback.group)
+      result.set(slot.matchIdx, { team: fallback.team, fallback: true })
+    } else {
+      result.set(slot.matchIdx, null)
+    }
+  }
+  return result
+}
+
+function resolveProposedSlots(
+  standings: Record<string, StandingsRow[]>,
+  best8: StandingsRow[]
+): (Team | null)[][] {
+  const thirdSlots = PROPOSED_R32_BRACKET
+    .flatMap(([h, a], matchIdx) =>
+      [h, a]
+        .filter(s => s.startsWith('3'))
+        .map(s => ({ matchIdx, allowed: s.slice(1).split('|') }))
+    )
+  const thirds = allocateThirds(best8, thirdSlots)
+
+  return PROPOSED_R32_BRACKET.map(([h, a], matchIdx) =>
+    [h, a].map(slot => {
+      if (slot.startsWith('3')) return thirds.get(matchIdx)?.team ?? null
+      const pos = parseInt(slot[0]) - 1
+      return standings[slot[1]]?.[pos]?.team ?? null
+    })
+  )
+}
+
 export default async function BracketTestPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -79,25 +144,109 @@ export default async function BracketTestPage() {
 
   const admin = createAdminClient()
 
-  const [{ data: matchesRaw }, { data: predsRaw }, { data: profilesRaw }, { data: poolsRaw }] =
-    await Promise.all([
-      admin
-        .from('matches')
-        .select('id, match_number, home_placeholder, away_placeholder, stage')
-        .eq('stage', 'r32')
-        .order('match_number'),
-      admin.from('predictions').select('match_id, user_id, pred_home, pred_away'),
-      admin.from('profiles').select('id, display_name, pool_id'),
-      admin.from('pools').select('id, name').is('deleted_at', null),
-    ])
+  const [
+    { data: allMatchesRaw },
+    { data: teamsRaw },
+    { data: predsRaw },
+    { data: profilesRaw },
+    { data: poolsRaw },
+  ] = await Promise.all([
+    admin
+      .from('matches')
+      .select('*')
+      .order('match_number'),
+    admin.from('teams').select('*'),
+    admin.from('predictions').select('match_id, user_id, pred_home, pred_away'),
+    admin.from('profiles').select('id, display_name, pool_id'),
+    admin.from('pools').select('id, name').is('deleted_at', null),
+  ])
 
-  const matches = ((matchesRaw ?? []) as MatchRow[]).slice(0, 16)
+  const allMatches = (allMatchesRaw ?? []) as Match[]
+  const teams = (teamsRaw ?? []) as Team[]
+  const groupMatches = allMatches.filter(m => m.stage === 'group')
+  const matches: MatchRow[] = allMatches
+    .filter(m => m.stage === 'r32')
+    .sort((a, b) => a.match_number - b.match_number)
+    .slice(0, 16)
+    .map(m => ({
+      id: m.id,
+      match_number: m.match_number,
+      home_placeholder: m.home_placeholder,
+      away_placeholder: m.away_placeholder,
+    }))
   const allPreds = (predsRaw ?? []) as PredRow[]
   const profiles = (profilesRaw ?? []) as ProfileRow[]
   const pools = (poolsRaw ?? []) as PoolRow[]
 
   const profileById = new Map(profiles.map(p => [p.id, p]))
   const poolNameById = new Map(pools.map(p => [p.id, p.name]))
+
+  // ── Per-deltagare-simulering: gammal vs ny lagplacering i R32 ──
+  const groupMatchIds = new Set(groupMatches.map(m => m.id))
+  const groupPredsByUser = new Map<string, Record<number, { home: string; away: string }>>()
+  for (const p of allPreds) {
+    if (!groupMatchIds.has(p.match_id)) continue
+    if (!groupPredsByUser.has(p.user_id)) groupPredsByUser.set(p.user_id, {})
+    groupPredsByUser.get(p.user_id)![p.match_id] = {
+      home: String(p.pred_home),
+      away: String(p.pred_away),
+    }
+  }
+
+  interface UserDiff {
+    userId: string
+    name: string
+    poolName: string
+    groupTipCount: number
+    changes: {
+      matchNumber: number
+      oldHome: string
+      oldAway: string
+      newHome: string
+      newAway: string
+    }[]
+  }
+
+  const fmt = (t: Team | null) => (t ? `${t.flag} ${t.name}` : '?')
+
+  const userDiffs: UserDiff[] = []
+  for (const [userId, preds] of groupPredsByUser.entries()) {
+    const prof = profileById.get(userId)
+    if (!prof) continue
+    const standings = calcAllGroupStandings(teams, groupMatches, preds)
+    const best8 = getBest8Third(standings)
+
+    const oldTeams = CURRENT_R32_BRACKET.map(([h, a]) =>
+      [resolveCurrentSlot(h, standings, best8), resolveCurrentSlot(a, standings, best8)]
+    )
+    const newTeams = resolveProposedSlots(standings, best8)
+
+    const changes: UserDiff['changes'] = []
+    for (let i = 0; i < 16; i++) {
+      const [oh, oa] = oldTeams[i]
+      const [nh, na] = newTeams[i]
+      if (oh?.id === nh?.id && oa?.id === na?.id) continue
+      changes.push({
+        matchNumber: matches[i]?.match_number ?? 73 + i,
+        oldHome: fmt(oh ?? null),
+        oldAway: fmt(oa ?? null),
+        newHome: fmt(nh ?? null),
+        newAway: fmt(na ?? null),
+      })
+    }
+    if (changes.length === 0) continue
+    userDiffs.push({
+      userId,
+      name: prof.display_name,
+      poolName: prof.pool_id != null ? poolNameById.get(prof.pool_id) ?? '–' : '–',
+      groupTipCount: Object.keys(preds).length,
+      changes,
+    })
+  }
+  userDiffs.sort((a, b) =>
+    a.poolName.localeCompare(b.poolName) || a.name.localeCompare(b.name)
+  )
+  const totalGroupMatches = groupMatches.length
 
   // Filtrera ner till bara tips på R32-matcher
   const r32MatchIds = new Set(matches.map(m => m.id))
@@ -231,6 +380,78 @@ export default async function BracketTestPage() {
           </tbody>
         </table>
       </div>
+
+      <section>
+        <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+          <ArrowRight size={18} className="text-amber-400" />
+          Simulering: så förändras lagen per deltagare
+        </h2>
+        <p className="text-xs text-gray-500 mb-4">
+          Beräknat från varje deltagares redan inlagda gruppspelstips. Visar bara matcher där
+          laguppsättningen skiljer sig mellan gammal och ny mappning. Treornas placering i nya
+          mappningen är en nära approximation av FIFA:s allokeringstabell (girig tilldelning:
+          bäst rankad trea till första tillåtna slot). {userDiffs.length} av{' '}
+          {groupPredsByUser.size} deltagare med grupptips påverkas.
+        </p>
+
+        {userDiffs.length === 0 ? (
+          <div className="rounded-xl p-6 text-center text-sm text-gray-500"
+            style={{ background: '#111827', border: '1px solid #1f2937' }}>
+            Inga skillnader – antingen finns inga grupptips än, eller så ger båda
+            mappningarna samma lag.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {userDiffs.map(d => (
+              <div
+                key={d.userId}
+                className="rounded-xl p-4"
+                style={{ background: '#111827', border: '1px solid #1f2937' }}
+              >
+                <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white">{d.name}</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded text-gray-400"
+                      style={{ background: '#1f2937', border: '1px solid #374151' }}>
+                      {d.poolName}
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-gray-500">
+                    {d.groupTipCount}/{totalGroupMatches} grupptips ·{' '}
+                    {d.changes.length} av 16 matcher ändras
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-gray-500">
+                        <th className="text-left py-1 w-14">Match</th>
+                        <th className="text-left py-1">Gammal mappning (buggad)</th>
+                        <th className="text-left py-1 w-6"></th>
+                        <th className="text-left py-1">Ny mappning (FIFA)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {d.changes.map(c => (
+                        <tr key={c.matchNumber} className="border-t" style={{ borderColor: '#1f2937' }}>
+                          <td className="py-1.5 text-gray-500 tabular-nums">#{c.matchNumber}</td>
+                          <td className="py-1.5 text-red-300/90">
+                            {c.oldHome} – {c.oldAway}
+                          </td>
+                          <td className="py-1.5 text-gray-600">→</td>
+                          <td className="py-1.5 text-emerald-300">
+                            {c.newHome} – {c.newAway}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section>
         <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
