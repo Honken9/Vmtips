@@ -8,35 +8,49 @@ import { Loader2, Plus, Trash2, Users, RefreshCw, ShieldCheck, Crown, UserX } fr
 import { PoolImageUpload } from '@/components/PoolImageUpload'
 
 type ProfileLite = Pick<Profile, 'id' | 'display_name' | 'is_admin' | 'pool_id'>
+type Membership = { pool_id: number; user_id: string }
 
 export function AdminPoolsClient({
   meUserId,
   initialPools,
   initialProfiles,
+  initialMemberships,
 }: {
   meUserId: string
   initialPools: Pool[]
   initialProfiles: ProfileLite[]
+  initialMemberships: Membership[]
 }) {
   const supabase = createClient()
   const [pools, setPools] = useState<Pool[]>(initialPools)
   const [profiles, setProfiles] = useState<ProfileLite[]>(initialProfiles)
+  const [memberships, setMemberships] = useState<Membership[]>(initialMemberships)
   const [newName, setNewName] = useState('')
   const [creating, setCreating] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
 
+  // Medlemmar grupperas via pool_memberships (sanningens källa) – inte via
+  // profiles.pool_id, som bara är "aktiv liga". En användare i två ligor
+  // dyker upp i båda.
   const membersByPool = useMemo(() => {
+    const profById = new Map(profiles.map(p => [p.id, p]))
     const m = new Map<number, ProfileLite[]>()
-    for (const p of profiles) {
-      if (p.pool_id == null) continue
-      if (!m.has(p.pool_id)) m.set(p.pool_id, [])
-      m.get(p.pool_id)!.push(p)
+    for (const ms of memberships) {
+      const prof = profById.get(ms.user_id)
+      if (!prof) continue
+      if (!m.has(ms.pool_id)) m.set(ms.pool_id, [])
+      m.get(ms.pool_id)!.push(prof)
+    }
+    for (const arr of m.values()) {
+      arr.sort((a, b) => a.display_name.localeCompare(b.display_name))
     }
     return m
-  }, [profiles])
+  }, [memberships, profiles])
 
-  const orphans = profiles.filter(p => p.pool_id == null)
+  // Föräldralösa = saknar medlemskap helt (inte bara aktiv liga)
+  const memberUserIds = useMemo(() => new Set(memberships.map(m => m.user_id)), [memberships])
+  const orphans = profiles.filter(p => !memberUserIds.has(p.id))
 
   function flash(type: 'ok' | 'err', text: string) {
     setMessage({ type, text })
@@ -44,12 +58,14 @@ export function AdminPoolsClient({
   }
 
   async function refreshAll() {
-    const [{ data: poolsRaw }, { data: profilesRaw }] = await Promise.all([
+    const [{ data: poolsRaw }, { data: profilesRaw }, { data: membershipsRaw }] = await Promise.all([
       supabase.from('pools').select('*').order('id'),
       supabase.from('profiles').select('id, display_name, is_admin, pool_id'),
+      supabase.from('pool_memberships').select('pool_id, user_id'),
     ])
     setPools((poolsRaw ?? []) as Pool[])
     setProfiles((profilesRaw ?? []) as ProfileLite[])
+    setMemberships((membershipsRaw ?? []) as Membership[])
   }
 
   async function restorePool(id: number) {

@@ -32,14 +32,19 @@ export default async function LigaPage() {
 
   const [
     { data: pool },
-    { data: profilesRaw },
+    { data: membershipProfilesRaw },
     { data: paymentsRaw },
     { data: leaderboardRaw },
     { data: membershipsRaw },
     { data: tagsRaw },
   ] = await Promise.all([
     supabase.from('pools').select('*').eq('id', poolId).single(),
-    supabase.from('profiles').select('id, display_name, is_admin, avatar_url').eq('pool_id', poolId),
+    // Hämta medlemmar via pool_memberships (sanningens källa) – inte via
+    // profiles.pool_id, som bara visar deltagarens AKTIVA liga.
+    supabase
+      .from('pool_memberships')
+      .select('user_id, profile:profiles!inner(id, display_name, is_admin, avatar_url)')
+      .eq('pool_id', poolId),
     supabase.from('pool_payments').select('*').eq('pool_id', poolId),
     supabase.from('leaderboard').select('*'),
     supabase.from('pool_memberships').select('pool:pools(*)').eq('user_id', user.id),
@@ -49,7 +54,13 @@ export default async function LigaPage() {
   if (!pool) redirect('/select-pool')
 
   const currentPool = pool as Pool
-  const profiles = (profilesRaw ?? []) as Pick<Profile, 'id' | 'display_name' | 'is_admin' | 'avatar_url'>[]
+  type MemberProfile = Pick<Profile, 'id' | 'display_name' | 'is_admin' | 'avatar_url'>
+  const profiles = ((membershipProfilesRaw ?? [])
+    .flatMap(m => {
+      const p = (m as unknown as { profile: MemberProfile | MemberProfile[] | null }).profile
+      if (!p) return []
+      return Array.isArray(p) ? p : [p]
+    }) as MemberProfile[])
   const payments = (paymentsRaw ?? []) as PoolPayment[]
   const ranking = ((leaderboardRaw ?? []) as LeaderboardEntry[]).filter(e => e.pool_id === poolId)
   const allLigor = ((membershipsRaw ?? [])
