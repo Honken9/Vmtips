@@ -42,6 +42,7 @@ export default async function AdminUsersPage() {
     { data: poolsRaw },
     { data: paymentsRaw },
     { data: tagsRaw },
+    { data: membershipsRaw },
   ] = await Promise.all([
     supabase
       .from('profiles')
@@ -49,44 +50,62 @@ export default async function AdminUsersPage() {
     supabase.from('pools').select('id, name, entry_fee').is('deleted_at', null),
     supabase.from('pool_payments').select('pool_id, user_id, paid'),
     supabase.from('pool_member_tags').select('pool_id, user_id, color, department'),
+    supabase.from('pool_memberships').select('pool_id, user_id'),
   ])
 
   const profiles = (profilesRaw ?? []) as ProfileRow[]
   const pools = (poolsRaw ?? []) as PoolRow[]
   const payments = (paymentsRaw ?? []) as PaymentRow[]
   const tags = (tagsRaw ?? []) as TagRow[]
+  const memberships = (membershipsRaw ?? []) as { pool_id: number; user_id: string }[]
 
   const poolById = new Map(pools.map(p => [p.id, p]))
   const paidKey = new Set(payments.filter(p => p.paid).map(p => `${p.pool_id}:${p.user_id}`))
   const tagByKey = new Map(tags.map(t => [`${t.pool_id}:${t.user_id}`, t]))
 
+  // Bygg en rad per (deltagare × liga-medlemskap) så en deltagare som är
+  // med i två ligor syns i båda sektionerna. Deltagare utan medlemskap får
+  // en rad i "Utan liga".
+  const membershipsByUser = new Map<string, number[]>()
+  for (const ms of memberships) {
+    if (!membershipsByUser.has(ms.user_id)) membershipsByUser.set(ms.user_id, [])
+    // Endast pools som finns (filtrerar bort raderade)
+    if (poolById.has(ms.pool_id)) membershipsByUser.get(ms.user_id)!.push(ms.pool_id)
+  }
+
   const users = profiles
-    .map(p => {
-      const pool = p.pool_id != null ? poolById.get(p.pool_id) : null
-      const fee = pool?.entry_fee ?? 0
-      // 'free' = ingen avgift i ligan, 'paid' = betalt, 'unpaid' = ej betalt
-      const paymentStatus: 'free' | 'paid' | 'unpaid' | 'no_pool' =
-        p.pool_id == null
-          ? 'no_pool'
-          : fee <= 0
-            ? 'free'
-            : paidKey.has(`${p.pool_id}:${p.id}`)
-              ? 'paid'
-              : 'unpaid'
-      const tag = p.pool_id != null ? tagByKey.get(`${p.pool_id}:${p.id}`) : null
-      return {
-        id: p.id,
-        display_name: p.display_name,
-        tips_locked: p.tips_locked === true,
-        is_admin: p.is_admin === true,
-        avatar_url: p.avatar_url ?? null,
-        avatar_locked: p.avatar_locked === true,
-        pool_id: p.pool_id ?? null,
-        pool_name: pool?.name ?? null,
-        payment_status: paymentStatus,
-        tag_color: tag?.color ?? null,
-        tag_department: tag?.department ?? null,
-      }
+    .flatMap(p => {
+      const ligor = membershipsByUser.get(p.id) ?? []
+      // Saknar medlemskap → en rad i "Utan liga"
+      const slots: (number | null)[] = ligor.length > 0 ? ligor : [null]
+      return slots.map(poolId => {
+        const pool = poolId != null ? poolById.get(poolId) : null
+        const fee = pool?.entry_fee ?? 0
+        const paymentStatus: 'free' | 'paid' | 'unpaid' | 'no_pool' =
+          poolId == null
+            ? 'no_pool'
+            : fee <= 0
+              ? 'free'
+              : paidKey.has(`${poolId}:${p.id}`)
+                ? 'paid'
+                : 'unpaid'
+        const tag = poolId != null ? tagByKey.get(`${poolId}:${p.id}`) : null
+        return {
+          id: p.id,
+          display_name: p.display_name,
+          tips_locked: p.tips_locked === true,
+          is_admin: p.is_admin === true,
+          avatar_url: p.avatar_url ?? null,
+          avatar_locked: p.avatar_locked === true,
+          pool_id: poolId ?? null,
+          pool_name: pool?.name ?? null,
+          payment_status: paymentStatus,
+          tag_color: tag?.color ?? null,
+          tag_department: tag?.department ?? null,
+          // Sann om DENNA pool är deltagarens aktiva liga.
+          is_active_pool: poolId != null && p.pool_id === poolId,
+        }
+      })
     })
     .sort((a, b) => a.display_name.localeCompare(b.display_name))
 

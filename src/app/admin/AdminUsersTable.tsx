@@ -20,6 +20,15 @@ interface UserRow {
   payment_status: 'free' | 'paid' | 'unpaid' | 'no_pool'
   tag_color: string | null
   tag_department: string | null
+  // En deltagare som är med i flera ligor förekommer på flera rader; den
+  // här flaggan markerar vilken av raderna som är hens aktiva liga.
+  is_active_pool?: boolean
+}
+
+// Unik nyckel per (user, pool)-rad – en deltagare med två medlemskap har
+// två rader och de måste särskiljas i React-listor + lokala states.
+function rowKey(u: UserRow): string {
+  return `${u.id}:${u.pool_id ?? 'none'}`
 }
 
 type FilterValue = 'all' | 'none' | number
@@ -58,8 +67,15 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
     }
   }
 
-  function updateLocal(userId: string, patch: Partial<UserRow>) {
-    setUsers(prev => prev.map(p => (p.id === userId ? { ...p, ...patch } : p)))
+  // Uppdaterar bara raden för en specifik (user, pool)-kombination.
+  // Taggar är per liga – om Jake är med i två ligor får han två rader och
+  // varje rad har sin egen tag_color/tag_department.
+  function updateRow(userId: string, poolId: number | null, patch: Partial<UserRow>) {
+    setUsers(prev =>
+      prev.map(p =>
+        p.id === userId && p.pool_id === poolId ? { ...p, ...patch } : p
+      )
+    )
   }
 
   async function toggleLock(u: UserRow) {
@@ -170,7 +186,7 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
           className="px-3 py-1.5 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
           style={{ background: '#1f2937', border: '1px solid #374151' }}
         >
-          <option value="all">Alla ligor ({users.length})</option>
+          <option value="all">Alla ligor ({new Set(users.map(u => u.id)).size} deltagare)</option>
           {groups.filter(g => g.id != null).map(g => (
             <option key={g.id} value={g.id as number}>{g.name} ({g.users.length})</option>
           ))}
@@ -178,6 +194,11 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
             <option value="none">Utan liga ({groups.find(g => g.id == null)?.users.length})</option>
           )}
         </select>
+        <span className="text-[11px] text-gray-500 ml-auto">
+          Deltagare med flera ligor visas i alla sina ligor (markeras med
+          <span className="mx-1 text-emerald-300">aktiv</span>
+          för aktiv liga).
+        </span>
       </div>
 
       {/* Sektioner per liga */}
@@ -204,7 +225,7 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
               </thead>
               <tbody>
                 {section.users.map(u => (
-                  <Fragment key={u.id}>
+                  <Fragment key={rowKey(u)}>
                     <tr
                       className="border-t hover:bg-white/5 transition-colors"
                       style={{ borderColor: '#1f2937' }}>
@@ -212,13 +233,22 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
                         <div className="flex items-center gap-2.5">
                           <UserAvatar src={u.avatar_url} name={u.display_name} size="sm" />
                           <span className="text-sm text-white">{u.display_name}</span>
+                          {u.is_active_pool && (
+                            <span
+                              className="text-[10px] px-1.5 py-0.5 rounded-full text-emerald-300 shrink-0"
+                              style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}
+                              title="Detta är deltagarens aktiva liga"
+                            >
+                              aktiv
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <DepartmentCell
                           user={u}
                           onSave={(dept) => {
-                            updateLocal(u.id, { tag_department: dept })
+                            updateRow(u.id, u.pool_id, { tag_department: dept })
                             void saveTag(u, u.tag_color, dept)
                           }}
                         />
@@ -227,7 +257,7 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
                         <ColorCell
                           user={u}
                           onPick={(color) => {
-                            updateLocal(u.id, { tag_color: color })
+                            updateRow(u.id, u.pool_id, { tag_color: color })
                             void saveTag(u, color, u.tag_department)
                           }}
                         />
@@ -296,9 +326,9 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
                             {u.avatar_locked ? 'Låst' : 'Olåst'}
                           </button>
                           <button
-                            onClick={() => setExpanded(prev => (prev === u.id ? null : u.id))}
-                            className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors ${expanded === u.id ? 'text-white bg-indigo-500/20' : 'text-indigo-300 hover:bg-indigo-400/15'}`}
-                            style={{ background: expanded === u.id ? undefined : 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)' }}
+                            onClick={() => setExpanded(prev => (prev === rowKey(u) ? null : rowKey(u)))}
+                            className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full transition-colors ${expanded === rowKey(u) ? 'text-white bg-indigo-500/20' : 'text-indigo-300 hover:bg-indigo-400/15'}`}
+                            style={{ background: expanded === rowKey(u) ? undefined : 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.3)' }}
                             title="Hantera / generera profilbild"
                           >
                             <ImageIcon size={11} />
@@ -328,7 +358,7 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
                         </button>
                       </td>
                     </tr>
-                    {expanded === u.id && (
+                    {expanded === rowKey(u) && (
                       <tr style={{ background: '#0b1120' }}>
                         <td colSpan={8} className="px-4 pb-4 pt-1">
                           <AdminAvatarManager

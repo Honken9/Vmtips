@@ -19,9 +19,10 @@ export default async function AdminPoolsPage() {
     .single()
   if (!profile?.is_admin) redirect('/')
 
-  const [{ data: poolsRaw }, { data: profilesRaw }] = await Promise.all([
+  const [{ data: poolsRaw }, { data: profilesRaw }, { data: membershipsRaw }] = await Promise.all([
     supabase.from('pools').select('*').order('id'),
     supabase.from('profiles').select('id, display_name, is_admin, pool_id'),
+    supabase.from('pool_memberships').select('pool_id, user_id'),
   ])
 
   return (
@@ -31,6 +32,7 @@ export default async function AdminPoolsPage() {
       initialProfiles={
         (profilesRaw ?? []) as Pick<Profile, 'id' | 'display_name' | 'is_admin' | 'pool_id'>[]
       }
+      initialMemberships={(membershipsRaw ?? []) as { pool_id: number; user_id: string }[]}
     />
   )
 }
