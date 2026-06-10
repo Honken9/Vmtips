@@ -40,6 +40,22 @@ export function resolveBracket(
   teams: Team[],
   predictions: Prediction[]
 ): BracketResolution {
+  const preds: Record<number, { home: string; away: string }> = {}
+  predictions.forEach(p => {
+    preds[p.match_id] = { home: String(p.pred_home), away: String(p.pred_away) }
+  })
+  return resolveBracketFromPreds(matches, teams, preds)
+}
+
+/**
+ * Variant som tar preds-mappen direkt – används av TipsClient där användarens
+ * osparade ändringar måste reflekteras i bracket-vyn.
+ */
+export function resolveBracketFromPreds(
+  matches: Match[],
+  teams: Team[],
+  preds: Record<number, { home: string; away: string }>
+): BracketResolution {
   const groupMatches = matches.filter(m => m.stage === 'group')
   const r32Matches = matches.filter(m => m.stage === 'r32').sort((a, b) => a.match_number - b.match_number)
   const r16Matches = matches.filter(m => m.stage === 'r16').sort((a, b) => a.match_number - b.match_number)
@@ -47,11 +63,6 @@ export function resolveBracket(
   const sfMatches  = matches.filter(m => m.stage === 'sf' ).sort((a, b) => a.match_number - b.match_number)
   const finalMatch = matches.find(m => m.stage === 'final')
   const thirdMatch = matches.find(m => m.stage === '3rd')
-
-  const preds: Record<number, { home: string; away: string }> = {}
-  predictions.forEach(p => {
-    preds[p.match_id] = { home: String(p.pred_home), away: String(p.pred_away) }
-  })
 
   const standings = calcAllGroupStandings(teams, groupMatches, preds)
   const { teams: best8Third, ambiguous: thirdsAmbiguous } = getBest8Third(standings)

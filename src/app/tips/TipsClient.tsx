@@ -7,9 +7,9 @@ import {
   BonusPrediction, BonusResults, Pool, TournamentMode
 } from '@/lib/types'
 import {
-  calcAllGroupStandings, getBest8Third,
-  R32_BRACKET, R16_BRACKET, QF_BRACKET, SF_BRACKET, StandingsRow
+  calcAllGroupStandings, getBest8Third, StandingsRow
 } from '@/lib/standings'
+import { resolveBracketFromPreds } from '@/lib/bracket'
 import { GroupStandingsGrid } from '@/components/GroupStandingsGrid'
 import { Flag } from '@/components/Flag'
 import { BonusTipsSection } from '@/components/BonusTipsSection'
@@ -140,91 +140,23 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
   const thirdMatch = useMemo(() => matches.find(m => m.stage === '3rd'),   [matches])
 
   // ─── Bracket-upplösning ──────────────────────────────────────────────────────
-  // Vilken Team sitter i en grupp-slot ('1A', '2B', 'T3_3' …)?
-  const r32Teams = useMemo((): [Team | null, Team | null][] => {
-    const rSlot = (slot: string): Team | null => {
-      if (slot.startsWith('T3_')) return best8Third[parseInt(slot.substring(3)) - 1]?.team ?? null
-      const pos = parseInt(slot[0]) - 1
-      return standings[slot[1]]?.[pos]?.team ?? null
-    }
-    return r32Matches.map((_, i) => {
-      const [hs, as_] = R32_BRACKET[i] ?? ['', '']
-      return [rSlot(hs), rSlot(as_)]
-    })
-  }, [standings, best8Third, r32Matches])
+  // Använder samma resolver som /slutspel + delar Annex C-lookup.
+  // Tar preds-mappen direkt så användarens osparade ändringar reflekteras.
+  const resolved = useMemo(
+    () => resolveBracketFromPreds(matches, teams, preds),
+    [matches, teams, preds]
+  )
 
-  // Vinnaren av en given match (baserat på tippad/bekräftad)
-  const winner = useCallback((matchId: number, homeT: Team | null, awayT: Team | null): Team | null => {
-    const m = matches.find(x => x.id === matchId)
-    let hg: number, ag: number
-    if (m?.result_confirmed && m.home_score != null && m.away_score != null) {
-      hg = m.home_score; ag = m.away_score
-    } else {
-      const p = preds[matchId]
-      if (!p || p.home === '' || p.away === '') return null
-      hg = parseInt(p.home); ag = parseInt(p.away)
-      if (isNaN(hg) || isNaN(ag)) return null
-    }
-    return hg >= ag ? homeT : awayT
-  }, [matches, preds])
-
-  const loser = useCallback((matchId: number, homeT: Team | null, awayT: Team | null): Team | null => {
-    const w = winner(matchId, homeT, awayT)
-    if (!w) return null
-    return w === homeT ? awayT : homeT
-  }, [winner])
-
-  const r16Teams = useMemo((): [Team | null, Team | null][] =>
-    r16Matches.map((_, i) => {
-      const [hi, ai] = R16_BRACKET[i] ?? [0, 0]
-      return [
-        r32Matches[hi] ? winner(r32Matches[hi].id, r32Teams[hi]?.[0], r32Teams[hi]?.[1]) : null,
-        r32Matches[ai] ? winner(r32Matches[ai].id, r32Teams[ai]?.[0], r32Teams[ai]?.[1]) : null,
-      ]
-    }),
-  [r16Matches, r32Matches, r32Teams, winner])
-
-  const qfTeams = useMemo((): [Team | null, Team | null][] =>
-    qfMatches.map((_, i) => {
-      const [hi, ai] = QF_BRACKET[i] ?? [0, 0]
-      return [
-        r16Matches[hi] ? winner(r16Matches[hi].id, r16Teams[hi]?.[0], r16Teams[hi]?.[1]) : null,
-        r16Matches[ai] ? winner(r16Matches[ai].id, r16Teams[ai]?.[0], r16Teams[ai]?.[1]) : null,
-      ]
-    }),
-  [qfMatches, r16Matches, r16Teams, winner])
-
-  const sfTeams = useMemo((): [Team | null, Team | null][] =>
-    sfMatches.map((_, i) => {
-      const [hi, ai] = SF_BRACKET[i] ?? [0, 0]
-      return [
-        qfMatches[hi] ? winner(qfMatches[hi].id, qfTeams[hi]?.[0], qfTeams[hi]?.[1]) : null,
-        qfMatches[ai] ? winner(qfMatches[ai].id, qfTeams[ai]?.[0], qfTeams[ai]?.[1]) : null,
-      ]
-    }),
-  [sfMatches, qfMatches, qfTeams, winner])
-
-  const finalTeams = useMemo((): [Team | null, Team | null] => [
-    sfMatches[0] ? winner(sfMatches[0].id, sfTeams[0]?.[0], sfTeams[0]?.[1]) : null,
-    sfMatches[1] ? winner(sfMatches[1].id, sfTeams[1]?.[0], sfTeams[1]?.[1]) : null,
-  ], [sfMatches, sfTeams, winner])
-
-  const thirdTeams = useMemo((): [Team | null, Team | null] => [
-    sfMatches[0] ? loser(sfMatches[0].id, sfTeams[0]?.[0], sfTeams[0]?.[1]) : null,
-    sfMatches[1] ? loser(sfMatches[1].id, sfTeams[1]?.[0], sfTeams[1]?.[1]) : null,
-  ], [sfMatches, sfTeams, loser])
-
-  // Slå upp resolved teams per match-id
   const resolvedMap = useMemo(() => {
     const map: Record<number, [Team | null, Team | null]> = {}
-    r32Matches.forEach((m, i) => { map[m.id] = r32Teams[i] })
-    r16Matches.forEach((m, i) => { map[m.id] = r16Teams[i] })
-    qfMatches.forEach((m, i)  => { map[m.id] = qfTeams[i] })
-    sfMatches.forEach((m, i)  => { map[m.id] = sfTeams[i] })
-    if (finalMatch) map[finalMatch.id] = finalTeams
-    if (thirdMatch) map[thirdMatch.id] = thirdTeams
+    resolved.r32Matches.forEach((m, i) => { map[m.id] = resolved.r32Teams[i] })
+    resolved.r16Matches.forEach((m, i) => { map[m.id] = resolved.r16Teams[i] })
+    resolved.qfMatches.forEach((m, i)  => { map[m.id] = resolved.qfTeams[i]  })
+    resolved.sfMatches.forEach((m, i)  => { map[m.id] = resolved.sfTeams[i]  })
+    if (resolved.finalMatch) map[resolved.finalMatch.id] = resolved.finalTeams
+    if (resolved.thirdMatch) map[resolved.thirdMatch.id] = resolved.thirdTeams
     return map
-  }, [r32Matches, r16Matches, qfMatches, sfMatches, r32Teams, r16Teams, qfTeams, sfTeams, finalTeams, thirdTeams, finalMatch, thirdMatch])
+  }, [resolved])
 
   // I läge C beter sig gruppspel som A och slutspel som B.
   const isAStyleMatch = (match: Match): boolean =>
