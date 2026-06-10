@@ -128,7 +128,7 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
     [teams, groupMatches, preds]
   )
 
-  const best8Third = useMemo(() => getBest8Third(standings), [standings])
+  const best8Third = useMemo(() => getBest8Third(standings).teams, [standings])
   const best8ThirdIds = useMemo(() => new Set(best8Third.map(r => r.team.id)), [best8Third])
 
   // ─── Sorterade slutspelsmatcher ─────────────────────────────────────────────
@@ -520,6 +520,37 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
       </div>
 
       {/* ── Slutspel ── */}
+      {(() => {
+        const ko = matches.filter(m => m.stage !== 'group')
+        const tipped = ko.filter(m => {
+          const v = preds[m.id]; return v?.home !== '' && v?.away !== ''
+        }).length
+        if (ko.length === 0) return null
+        const allDone = tipped === ko.length
+        return (
+          <div
+            className="rounded-xl p-4 flex items-start gap-3"
+            style={{
+              background: allDone ? 'rgba(16,185,129,0.06)' : 'rgba(245,158,11,0.08)',
+              border: `1px solid ${allDone ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'}`,
+            }}
+          >
+            <div className="text-2xl">{allDone ? '✅' : '🛠️'}</div>
+            <div className="text-sm">
+              <div className={`font-semibold mb-0.5 ${allDone ? 'text-emerald-300' : 'text-amber-200'}`}>
+                {allDone
+                  ? 'Du har tippat alla slutspelsmatcher.'
+                  : 'Slutspelsträdet är uppdaterat enligt FIFA:s officiella format.'}
+              </div>
+              <div className="text-amber-100/80">
+                {allDone
+                  ? 'Glöm inte att trycka "Lås in" när du är nöjd.'
+                  : `Tippa om matcherna 73–104. ${tipped} av ${ko.length} slutspelsmatcher tippade.`}
+              </div>
+            </div>
+          </div>
+        )
+      })()}
       {STAGE_ORDER.filter(s => s !== 'group').map(stage => renderStage(stage))}
 
       {/* ── Bonustips ── */}
