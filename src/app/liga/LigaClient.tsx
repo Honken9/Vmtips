@@ -167,6 +167,17 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
         </div>
       )}
 
+      {/* Ligans Swish-QR – synlig för betalda + skapare/admin (de ser inte
+          "Min betalning"-rutan ovan men kan vilja visa koden för andra). */}
+      {swishQrEnabled && !(me && !me.paid) && (
+        <LigaSwishQr
+          phone={pool.swish_phone!}
+          amount={fee}
+          message={`${pool.name} – VM-Tips`}
+          recipient={pool.swish_recipient_name ?? null}
+        />
+      )}
+
       {/* Spelform & lås – bara för skapare/admin */}
       {canManage && (
         <LigaModePicker pool={pool} onChanged={() => router.refresh()} />
@@ -1216,6 +1227,50 @@ function TagEditor({
           Avbryt
         </button>
       </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+// Hopfällbar Swish-QR för ligan. Visas för betalda medlemmar och
+// skapare/admin så att koden alltid går att ta fram – t.ex. för att
+// visa upp för en deltagare som ska betala.
+function LigaSwishQr({
+  phone, amount, message, recipient,
+}: {
+  phone: string
+  amount: number
+  message: string
+  recipient: string | null
+}) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="rounded-xl p-4 space-y-3" style={{ background: '#111827', border: '1px solid #1f2937' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 text-sm font-semibold text-white w-full"
+      >
+        <QrCode size={16} className="text-emerald-400" />
+        Ligans Swish-QR
+        <span className="text-xs font-normal text-gray-500">
+          {recipient ? `· ${recipient}` : ''} · {formatKr(amount)}
+        </span>
+        <span className="ml-auto text-xs text-gray-500">{open ? 'Dölj' : 'Visa'}</span>
+      </button>
+      {open && (
+        <div className="flex flex-col items-center gap-2 pt-1">
+          <SwishQrImage
+            phone={phone}
+            amount={amount}
+            message={message}
+            size={240}
+            className="rounded-lg bg-white p-2"
+          />
+          <p className="text-xs text-gray-500">
+            Visa för deltagare som ska betala – skannas med Swish-appen
+          </p>
+        </div>
+      )}
     </div>
   )
 }
