@@ -18,6 +18,7 @@ import {
 import { UserAvatar } from '@/components/UserAvatar'
 import { PoolChat } from '@/components/PoolChat'
 import { PoolImageUpload } from '@/components/PoolImageUpload'
+import { SwishQrImage } from '@/components/SwishQrImage'
 import { TAG_COLORS, colorHex } from '@/lib/tag-colors'
 
 interface MemberRow {
@@ -71,17 +72,9 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
     })
   }, [fee, pool.swish_phone, pool.name])
 
-  // QR-bild via vår server-route som proxar Swishs officiella QR-API
-  const swishQrSrc = useMemo(() => {
-    if (!fee || !pool.swish_phone) return null
-    const params = new URLSearchParams({
-      phone: pool.swish_phone,
-      amount: String(fee),
-      message: `${pool.name} – VM-Tips`,
-      size: '300',
-    })
-    return `/api/swish-qr?${params.toString()}`
-  }, [fee, pool.swish_phone, pool.name])
+  // QR-koden renderas klient-side via SwishQrImage. swishQrEnabled styr
+  // bara om vi har data nog att visa den.
+  const swishQrEnabled = fee > 0 && !!pool.swish_phone
 
   return (
     <div className="space-y-8">
@@ -148,7 +141,7 @@ export function LigaClient({ pool, meUserId, members, ranking, canManage, allLig
           poolName={pool.name}
           recipient={pool.swish_recipient_name ?? null}
           swishUrl={swishUrl}
-          swishQrSrc={swishQrSrc}
+          swishQr={swishQrEnabled ? { phone: pool.swish_phone!, amount: fee, message: `${pool.name} – VM-Tips` } : null}
           markedByMe={!canManage}
           meUserId={meUserId}
           poolId={pool.id}
@@ -445,13 +438,13 @@ function PotSummary({
 
 // ─────────────────────────────────────────────────────────
 function MyPayment({
-  fee, poolName, recipient, swishUrl, swishQrSrc, markedByMe, meUserId, poolId, onChanged,
+  fee, poolName, recipient, swishUrl, swishQr, markedByMe, meUserId, poolId, onChanged,
 }: {
   fee: number
   poolName: string
   recipient: string | null
   swishUrl: string | null
-  swishQrSrc: string | null
+  swishQr: { phone: string; amount: number; message: string } | null
   markedByMe: boolean
   meUserId: string
   poolId: number
@@ -515,14 +508,13 @@ function MyPayment({
             <QrCode size={14} />
             {showQr ? 'Dölj QR-kod' : 'Betala via Swish – Visa QR-kod'}
           </button>
-          {showQr && swishQrSrc && (
+          {showQr && swishQr && (
             <div className="flex flex-col items-center gap-2 pt-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={swishQrSrc}
-                alt="QR-kod till Swish-betalning"
-                width={240}
-                height={240}
+              <SwishQrImage
+                phone={swishQr.phone}
+                amount={swishQr.amount}
+                message={swishQr.message}
+                size={240}
                 className="rounded-lg bg-white p-2"
               />
               <p className="text-xs text-gray-500">Skanna med Swish-appen</p>
