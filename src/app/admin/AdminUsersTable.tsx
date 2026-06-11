@@ -11,6 +11,7 @@ import { Lock, Unlock, Loader2, Trash2, ImageIcon, Users as UsersIcon, Filter, C
 interface UserRow {
   id: string
   display_name: string
+  email: string
   tips_locked: boolean
   is_admin: boolean
   avatar_url: string | null
@@ -232,16 +233,29 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
                           <UserAvatar src={u.avatar_url} name={u.display_name} size="sm" />
-                          <span className="text-sm text-white">{u.display_name}</span>
-                          {u.is_active_pool && (
-                            <span
-                              className="text-[10px] px-1.5 py-0.5 rounded-full text-emerald-300 shrink-0"
-                              style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}
-                              title="Detta är deltagarens aktiva liga"
-                            >
-                              aktiv
-                            </span>
-                          )}
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm text-white truncate">{u.display_name}</span>
+                              {u.is_active_pool && (
+                                <span
+                                  className="text-[10px] px-1.5 py-0.5 rounded-full text-emerald-300 shrink-0"
+                                  style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}
+                                  title="Detta är deltagarens aktiva liga"
+                                >
+                                  aktiv
+                                </span>
+                              )}
+                            </div>
+                            {u.email && (
+                              <a
+                                href={`mailto:${u.email}`}
+                                className="text-[11px] text-gray-500 hover:text-emerald-400 truncate block"
+                                title={u.email}
+                              >
+                                {u.email}
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
