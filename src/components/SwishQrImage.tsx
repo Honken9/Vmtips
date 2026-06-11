@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
-import { buildSwishUrl } from '@/lib/swish'
+import { buildSwishQrPayload } from '@/lib/swish'
 
 interface Props {
   phone: string
@@ -13,18 +13,21 @@ interface Props {
 }
 
 /**
- * Klient-side QR-rendering av Swishs Universal Link
- * (https://app.swish.nu/1/p/sw/?...). Den läses av både Swish-appens egen
- * skanner OCH kamera-appen på iOS/Android, och öppnar betalningsskärmen
- * förfylld.
+ * Klient-side QR-rendering av Swishs officiella C-format-payload
+ * (C{phone};{amount};{message};{editable}). Det är den dokumenterade
+ * QR-format Swish-appen läser och förfyller betalningen från.
  *
- * Vi körde tidigare Swishs C-format-payload (C{phone};{amount};{message};{lock})
- * men det visade sig att vissa Swish-app-versioner inte plockade upp det
- * från QR-skannern. Universal Link funkar överallt.
+ * Källa: github.com/lindskogen/swish-qr-format, motsvarar det officiella
+ * Swish "Prefilled QR Code"-formatet (Type C). Samma payload som tidigare
+ * gick via mpc.getswish.net-API:n.
  *
- * SVG-rendering används istället för canvas/dataURL eftersom SVG är
- * vektorbaserat och inte beroende av canvas-API:t (vissa iOS-versioner
- * råkar ut för canvas-begränsningar).
+ * VIKTIGT: Skanna med Swish-appens egen skanner – inte kamera-appen.
+ * Kameran ser bara textsträngen "C46701...;100;..." och vet inte vad
+ * den ska göra med den. Swish-appens skanner förstår C-formatet och
+ * öppnar betalningsskärmen förfylld.
+ *
+ * SVG istället för canvas/dataURL – vektor, inget canvas-beroende, mer
+ * pålitligt på äldre iOS-versioner.
  */
 export function SwishQrImage({ phone, amount, message, size = 240, className }: Props) {
   const [svg, setSvg] = useState<string | null>(null)
@@ -33,8 +36,8 @@ export function SwishQrImage({ phone, amount, message, size = 240, className }: 
   useEffect(() => {
     let cancelled = false
     setError(null)
-    const url = buildSwishUrl({ phone, amount, message: message ?? '' })
-    QRCode.toString(url, {
+    const payload = buildSwishQrPayload({ phone, amount, message })
+    QRCode.toString(payload, {
       type: 'svg',
       width: size,
       margin: 2,
@@ -87,8 +90,7 @@ export function SwishQrImage({ phone, amount, message, size = 240, className }: 
       className={className}
       style={{ width: size, height: size }}
       aria-label="QR-kod till Swish-betalning"
-      // SVG från qrcode-paketet – innehåller bara <svg>...</svg>, säkert att
-      // dangerously sätta in eftersom payload:en är vår egen Swish-URL.
+      // SVG-strängen kommer från qrcode-paketet (vår egen Swish-payload som input).
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   )

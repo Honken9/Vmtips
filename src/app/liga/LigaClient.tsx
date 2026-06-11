@@ -528,7 +528,10 @@ function MyPayment({
                 size={240}
                 className="rounded-lg bg-white p-2"
               />
-              <p className="text-xs text-gray-500">Skanna med Swish-appen</p>
+              <p className="text-xs text-amber-300 text-center">
+                Öppna <strong>Swish-appen</strong> och tryck på QR-ikonen för att skanna<br/>
+                <span className="text-gray-500 text-[11px]">(kamera-appen kan inte läsa Swish-QR)</span>
+              </p>
             </div>
           )}
         </>
@@ -1266,8 +1269,9 @@ function LigaSwishQr({
             size={240}
             className="rounded-lg bg-white p-2"
           />
-          <p className="text-xs text-gray-500">
-            Visa för deltagare som ska betala – skannas med Swish-appen
+          <p className="text-xs text-amber-300 text-center">
+            Deltagaren öppnar <strong>Swish-appen</strong> och trycker på QR-ikonen<br/>
+            <span className="text-gray-500 text-[11px]">(kamera-appen kan inte läsa Swish-QR)</span>
           </p>
         </div>
       )}
