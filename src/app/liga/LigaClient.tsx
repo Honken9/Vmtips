@@ -462,7 +462,6 @@ function MyPayment({
   onChanged: () => void
 }) {
   const supabase = createClient()
-  const [showQr, setShowQr] = useState(false)
   const [marking, setMarking] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -511,15 +510,7 @@ function MyPayment({
 
       {swishUrl ? (
         <>
-          <button
-            onClick={() => setShowQr(s => !s)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-black transition-all"
-            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
-          >
-            <QrCode size={14} />
-            {showQr ? 'Dölj QR-kod' : 'Betala via Swish – Visa QR-kod'}
-          </button>
-          {showQr && swishQr && (
+          {swishQr && (
             <div className="flex flex-col items-center gap-2 pt-2">
               <SwishQrImage
                 phone={swishQr.phone}
@@ -534,6 +525,14 @@ function MyPayment({
               </p>
             </div>
           )}
+          <a
+            href={swishUrl}
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-black transition-all"
+            style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+          >
+            <QrCode size={14} />
+            Eller öppna Swish direkt på mobilen
+          </a>
         </>
       ) : (
         <p className="text-xs text-gray-500">
@@ -1235,9 +1234,8 @@ function TagEditor({
 }
 
 // ─────────────────────────────────────────────────────────
-// Hopfällbar Swish-QR för ligan. Visas för betalda medlemmar och
-// skapare/admin så att koden alltid går att ta fram – t.ex. för att
-// visa upp för en deltagare som ska betala.
+// Swish-QR för ligan, alltid synlig. Visas för betalda medlemmar och
+// skapare/admin – t.ex. för att visa upp för en deltagare som ska betala.
 function LigaSwishQr({
   phone, amount, message, recipient,
 }: {
@@ -1246,35 +1244,28 @@ function LigaSwishQr({
   message: string
   recipient: string | null
 }) {
-  const [open, setOpen] = useState(false)
   return (
     <div className="rounded-xl p-4 space-y-3" style={{ background: '#111827', border: '1px solid #1f2937' }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-2 text-sm font-semibold text-white w-full"
-      >
+      <div className="flex items-center gap-2 text-sm font-semibold text-white">
         <QrCode size={16} className="text-emerald-400" />
         Ligans Swish-QR
         <span className="text-xs font-normal text-gray-500">
           {recipient ? `· ${recipient}` : ''} · {formatKr(amount)}
         </span>
-        <span className="ml-auto text-xs text-gray-500">{open ? 'Dölj' : 'Visa'}</span>
-      </button>
-      {open && (
-        <div className="flex flex-col items-center gap-2 pt-1">
-          <SwishQrImage
-            phone={phone}
-            amount={amount}
-            message={message}
-            size={240}
-            className="rounded-lg bg-white p-2"
-          />
-          <p className="text-xs text-amber-300 text-center">
-            Deltagaren öppnar <strong>Swish-appen</strong> och trycker på QR-ikonen<br/>
-            <span className="text-gray-500 text-[11px]">(kamera-appen kan inte läsa Swish-QR)</span>
-          </p>
-        </div>
-      )}
+      </div>
+      <div className="flex flex-col items-center gap-2 pt-1">
+        <SwishQrImage
+          phone={phone}
+          amount={amount}
+          message={message}
+          size={240}
+          className="rounded-lg bg-white p-2"
+        />
+        <p className="text-xs text-amber-300 text-center">
+          Deltagaren öppnar <strong>Swish-appen</strong> och trycker på QR-ikonen<br/>
+          <span className="text-gray-500 text-[11px]">(kamera-appen kan inte läsa Swish-QR)</span>
+        </p>
+      </div>
     </div>
   )
 }
