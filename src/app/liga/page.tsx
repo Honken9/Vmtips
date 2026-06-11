@@ -32,19 +32,19 @@ export default async function LigaPage() {
 
   const [
     { data: pool },
-    { data: membershipProfilesRaw },
+    { data: poolMembershipsRaw },
     { data: paymentsRaw },
     { data: leaderboardRaw },
     { data: membershipsRaw },
     { data: tagsRaw },
   ] = await Promise.all([
     supabase.from('pools').select('*').eq('id', poolId).single(),
-    // Hämta medlemmar via pool_memberships (sanningens källa) – inte via
-    // profiles.pool_id, som bara visar deltagarens AKTIVA liga.
-    supabase
-      .from('pool_memberships')
-      .select('user_id, profile:profiles!inner(id, display_name, is_admin, avatar_url)')
-      .eq('pool_id', poolId),
+    // Medlemmar via pool_memberships (sanningens källa) – inte via
+    // profiles.pool_id som bara visar deltagarens AKTIVA liga.
+    // OBS: ingen embedded join här – pool_memberships.user_id pekar på
+    // auth.users, inte profiles, så PostgREST kan inte resolva relationen.
+    // Profilerna hämtas separat nedan.
+    supabase.from('pool_memberships').select('user_id').eq('pool_id', poolId),
     supabase.from('pool_payments').select('*').eq('pool_id', poolId),
     supabase.from('leaderboard').select('*'),
     supabase.from('pool_memberships').select('pool:pools(*)').eq('user_id', user.id),
@@ -55,12 +55,14 @@ export default async function LigaPage() {
 
   const currentPool = pool as Pool
   type MemberProfile = Pick<Profile, 'id' | 'display_name' | 'is_admin' | 'avatar_url'>
-  const profiles = ((membershipProfilesRaw ?? [])
-    .flatMap(m => {
-      const p = (m as unknown as { profile: MemberProfile | MemberProfile[] | null }).profile
-      if (!p) return []
-      return Array.isArray(p) ? p : [p]
-    }) as MemberProfile[])
+  const memberIds = ((poolMembershipsRaw ?? []) as { user_id: string }[]).map(m => m.user_id)
+  const { data: memberProfilesRaw } = memberIds.length > 0
+    ? await supabase
+        .from('profiles')
+        .select('id, display_name, is_admin, avatar_url')
+        .in('id', memberIds)
+    : { data: [] }
+  const profiles = (memberProfilesRaw ?? []) as MemberProfile[]
   const payments = (paymentsRaw ?? []) as PoolPayment[]
   const ranking = ((leaderboardRaw ?? []) as LeaderboardEntry[]).filter(e => e.pool_id === poolId)
   const allLigor = ((membershipsRaw ?? [])
