@@ -8,6 +8,7 @@ import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import { CheckCircle, Clock, MapPin, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { MatchCommentInline } from '@/components/MatchCommentInline'
+import { stockholmTime } from '@/lib/dates'
 
 // Flagga + namn. Klickbar länk till landslagssidan om laget är känt
 // (har en team-kod); annars vanlig text (för slutspels-placeholders).
@@ -299,7 +300,7 @@ function MatchRow({
   const awayName = match.away_team?.name ?? match.away_placeholder ?? '?'
   const homeFlag = match.home_team?.flag ?? ''
   const awayFlag = match.away_team?.flag ?? ''
-  const time = format(new Date(match.kickoff_at), 'HH:mm', { locale: sv })
+  const time = stockholmTime(match.kickoff_at)
   const stageLabel = match.stage === 'group'
     ? (match.group_name ? `Grupp ${match.group_name}` : 'Gruppspel')
     : STAGE_LABELS[match.stage]

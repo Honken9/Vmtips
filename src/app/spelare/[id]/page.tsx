@@ -4,8 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { LeaderboardEntry, Match, Prediction, Profile, Settings } from '@/lib/types'
 import { Flag } from '@/components/Flag'
-import { format } from 'date-fns'
-import { sv } from 'date-fns/locale'
+import { stockholmDateTime } from '@/lib/dates'
 import {
   ArrowLeft, Crown, Trophy, Target, CheckCircle, XCircle, Clock,
   Star, Award, User as UserIcon,
@@ -251,7 +250,7 @@ function PredictionRow({
   const away = m.away_team?.name ?? m.away_placeholder ?? '?'
   const homeFlag = m.home_team?.flag ?? ''
   const awayFlag = m.away_team?.flag ?? ''
-  const date = format(new Date(m.kickoff_at), 'd MMM HH:mm', { locale: sv })
+  const date = stockholmDateTime(m.kickoff_at)
 
   return (
     <div
