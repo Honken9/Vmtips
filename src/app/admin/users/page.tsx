@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Users } from 'lucide-react'
 import { AdminUsersTable } from '../AdminUsersTable'
 
@@ -36,6 +37,14 @@ interface TagRow {
 export default async function AdminUsersPage() {
   const supabase = await createClient()
   const { data: { user: me } } = await supabase.auth.getUser()
+
+  // Email-adresser finns bara i auth.users – hämtas via service-role
+  // klient (admin). Sidan är redan admin-gated via layout.tsx.
+  const admin = createAdminClient()
+  const { data: authList } = await admin.auth.admin.listUsers({ perPage: 1000 })
+  const emailById = new Map<string, string>(
+    (authList?.users ?? []).map(u => [u.id, u.email ?? ''])
+  )
 
   const [
     { data: profilesRaw },
@@ -93,6 +102,7 @@ export default async function AdminUsersPage() {
         return {
           id: p.id,
           display_name: p.display_name,
+          email: emailById.get(p.id) ?? '',
           tips_locked: p.tips_locked === true,
           is_admin: p.is_admin === true,
           avatar_url: p.avatar_url ?? null,
