@@ -7,6 +7,7 @@ import { Flag } from '@/components/Flag'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import { CheckCircle, Loader2, Save, RefreshCw } from 'lucide-react'
+import { stockholmWeekdayDateTime } from '@/lib/dates'
 
 const STAGE_ORDER: Stage[] = ['group', 'r32', 'r16', 'qf', 'sf', '3rd', 'final']
 
@@ -236,7 +237,7 @@ export default function AdminResultsPage() {
             const awayName = match.away_team?.name ?? match.away_placeholder ?? '?'
             const homeFlag = match.home_team?.flag ?? '🏴'
             const awayFlag = match.away_team?.flag ?? '🏴'
-            const kickoff = format(new Date(match.kickoff_at), 'EEE d MMM HH:mm', { locale: sv })
+            const kickoff = stockholmWeekdayDateTime(match.kickoff_at)
             const val = scores[match.id] ?? { home: '', away: '' }
             const isSaving = saving === match.id
             const isSaved = match.result_confirmed || saved.has(match.id)

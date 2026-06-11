@@ -18,6 +18,7 @@ import { format, isPast } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import Link from 'next/link'
 import { Lock, CheckCircle, AlertCircle, ChevronDown, ChevronUp, Loader2, Dices, Trash2, GitBranch } from 'lucide-react'
+import { stockholmDateTime } from '@/lib/dates'
 
 interface Props {
   profile: Profile
@@ -607,7 +608,7 @@ function MatchRow({
   const isHomeUnknown = !resolvedHome && !match.home_team
   const isAwayUnknown = !resolvedAway && !match.away_team
 
-  const kickoff = format(new Date(match.kickoff_at), 'd MMM HH:mm', { locale: sv })
+  const kickoff = stockholmDateTime(match.kickoff_at)
 
   const result = match.result_confirmed
     ? calcPredictionResult(

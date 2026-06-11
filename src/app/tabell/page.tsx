@@ -7,8 +7,7 @@ import { LeaderboardEntry, Match, Settings, Profile, Pool, PoolMemberTag } from 
 import { stockholmToday, isMatchOnStockholmDate } from '@/lib/stats'
 import { calcPot, calcPayouts, formatKr } from '@/lib/payments'
 import { Flag } from '@/components/Flag'
-import { format } from 'date-fns'
-import { sv } from 'date-fns/locale'
+import { stockholmWeekdayDateTime } from '@/lib/dates'
 import { Trophy, Users, CheckCircle, Star, Crown, Target, TrendingUp, Calendar } from 'lucide-react'
 import { UserAvatar } from '@/components/UserAvatar'
 
@@ -135,7 +134,9 @@ export default async function LeaderboardPage() {
     }
   })
 
-  const todayLabel = format(new Date(), 'EEE d MMM', { locale: sv })
+  const todayLabel = new Date().toLocaleDateString('sv-SE', {
+    weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Europe/Stockholm',
+  }).replace(/\./g, '')
 
   // Pottberäkning (visas bara om ligan har avgift)
   const fee = currentPool?.entry_fee ?? 0
@@ -298,7 +299,7 @@ export default async function LeaderboardPage() {
             {popular.map((p, i) => {
               const home = p.home_team
               const away = p.away_team
-              const kickoff = format(new Date(p.kickoff_at), 'EEE d MMM HH:mm', { locale: sv })
+              const kickoff = stockholmWeekdayDateTime(p.kickoff_at)
               const sharePct = p.total > 0 ? Math.round((p.votes / p.total) * 100) : 0
               return (
                 <div

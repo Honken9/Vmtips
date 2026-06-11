@@ -8,8 +8,9 @@ import { UserAvatar } from '@/components/UserAvatar'
 import { HeroAvatar } from '@/components/HeroAvatar'
 import { LeaderboardEntry, Match, Prediction, Settings, Profile, Pool } from '@/lib/types'
 import { stockholmToday, isMatchOnStockholmDate } from '@/lib/stats'
+import { stockholmTime, stockholmWeekdayDateTime } from '@/lib/dates'
 import { fetchNews } from '@/lib/rss'
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import {
   Calendar, Trophy, Target, CheckCircle, Newspaper, ExternalLink,
@@ -382,7 +383,7 @@ function NextMatchHint({ matches }: { matches: Match[] }) {
   if (!next) return null
   return (
     <div className="text-xs text-gray-500 mt-3">
-      Nästa match: {format(new Date(next.kickoff_at), 'EEE d MMM HH:mm', { locale: sv })}
+      Nästa match: {stockholmWeekdayDateTime(next.kickoff_at)}
     </div>
   )
 }
@@ -400,7 +401,7 @@ function TodaysMatchRow({
   const awayName = away?.name ?? match.away_placeholder ?? '?'
   const homeFlag = home?.flag ?? ''
   const awayFlag = away?.flag ?? ''
-  const time = format(new Date(match.kickoff_at), 'HH:mm', { locale: sv })
+  const time = stockholmTime(match.kickoff_at)
   const kickoffDate = new Date(match.kickoff_at)
   const isLive = !match.result_confirmed && kickoffDate.getTime() <= Date.now()
 
