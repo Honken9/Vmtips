@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { LeaderboardEntry, Pool, PoolPayment, PoolMemberTag, Profile } from '@/lib/types'
 import { LigaClient } from './LigaClient'
 
@@ -8,6 +9,7 @@ export const dynamic = 'force-dynamic'
 interface MemberRow {
   user_id: string
   display_name: string
+  email: string | null
   is_admin: boolean
   avatar_url: string | null
   paid: boolean
@@ -73,6 +75,24 @@ export default async function LigaPage() {
     }) as Pool[])
     .sort((a, b) => a.name.localeCompare(b.name))
 
+  const isCreator = currentPool.created_by === user.id
+  const canManage = isCreator || meIsAdmin
+
+  // Email-adresser hämtas bara om besökaren får hantera ligan (skapare
+  // eller master admin). Service-role behövs eftersom email-fältet bara
+  // finns på auth.users.
+  let emailById = new Map<string, string>()
+  if (canManage && memberIds.length > 0) {
+    const admin = createAdminClient()
+    const { data: authList } = await admin.auth.admin.listUsers({ perPage: 1000 })
+    const wanted = new Set(memberIds)
+    emailById = new Map(
+      (authList?.users ?? [])
+        .filter(u => wanted.has(u.id))
+        .map(u => [u.id, u.email ?? ''])
+    )
+  }
+
   const paymentsByUser = new Map(payments.map(p => [p.user_id, p]))
   const members: MemberRow[] = profiles
     .map(p => {
@@ -80,6 +100,7 @@ export default async function LigaPage() {
       return {
         user_id: p.id,
         display_name: p.display_name,
+        email: canManage ? (emailById.get(p.id) ?? null) : null,
         is_admin: p.is_admin === true,
         avatar_url: p.avatar_url ?? null,
         paid: pay?.paid === true,
@@ -88,9 +109,6 @@ export default async function LigaPage() {
       }
     })
     .sort((a, b) => a.display_name.localeCompare(b.display_name))
-
-  const isCreator = currentPool.created_by === user.id
-  const canManage = isCreator || meIsAdmin
 
   const tags = (tagsRaw ?? []) as PoolMemberTag[]
 
