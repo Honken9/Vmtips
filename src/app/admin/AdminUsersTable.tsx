@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, Fragment, useMemo, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { UserAvatar } from '@/components/UserAvatar'
@@ -235,7 +236,13 @@ export function AdminUsersTable({ users: initial, meUserId }: { users: UserRow[]
                           <UserAvatar src={u.avatar_url} name={u.display_name} size="sm" />
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-sm text-white truncate">{u.display_name}</span>
+                              <Link
+                                href={`/spelare/${u.id}`}
+                                className="text-sm text-white truncate hover:text-emerald-400 transition-colors"
+                                title={`Visa alla tips för ${u.display_name}`}
+                              >
+                                {u.display_name}
+                              </Link>
                               {u.is_active_pool && (
                                 <span
                                   className="text-[10px] px-1.5 py-0.5 rounded-full text-emerald-300 shrink-0"

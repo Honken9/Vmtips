@@ -2,12 +2,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { LeaderboardEntry, Match, Prediction, Profile, Settings } from '@/lib/types'
+import { BonusPrediction, BonusResults, LeaderboardEntry, Match, Prediction, Profile, Settings, Team, STAGE_LABELS, Stage } from '@/lib/types'
 import { Flag } from '@/components/Flag'
 import { stockholmDateTime } from '@/lib/dates'
 import {
   ArrowLeft, Crown, Trophy, Target, CheckCircle, XCircle, Clock,
-  Star, Award, User as UserIcon,
+  Star, Award, User as UserIcon, ShieldCheck,
 } from 'lucide-react'
 
 export const revalidate = 30
@@ -25,11 +25,12 @@ export default async function SpelarePage({
 
   const { data: meProfile } = await supabase
     .from('profiles')
-    .select('pool_id')
+    .select('pool_id, is_admin')
     .eq('id', user.id)
     .single()
   if (!meProfile?.pool_id) redirect('/select-pool')
   const myPoolId = meProfile.pool_id
+  const meIsAdmin = meProfile.is_admin === true
 
   // Hämta målprofilen
   const { data: target } = await supabase
@@ -39,14 +40,17 @@ export default async function SpelarePage({
     .maybeSingle()
   if (!target) notFound()
 
-  // Bara samma pool – annars 404
-  if ((target as Profile).pool_id !== myPoolId) notFound()
+  // Vanliga spelare ser bara samma pool. Master admin ser alla.
+  if (!meIsAdmin && (target as Profile).pool_id !== myPoolId) notFound()
 
   const [
     { data: leaderboardRaw },
     { data: matchesRaw },
     { data: predictionsRaw },
     { data: settings },
+    { data: bonusRaw },
+    { data: bonusResultsRaw },
+    { data: teamsRaw },
   ] = await Promise.all([
     supabase.from('leaderboard').select('*'),
     supabase
@@ -55,6 +59,15 @@ export default async function SpelarePage({
       .order('kickoff_at'),
     supabase.from('predictions').select('*').eq('user_id', id).order('match_id'),
     supabase.from('settings').select('*').single(),
+    meIsAdmin
+      ? supabase.from('bonus_predictions').select('*').eq('user_id', id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    meIsAdmin
+      ? supabase.from('bonus_results').select('*').eq('id', 1).maybeSingle()
+      : Promise.resolve({ data: null }),
+    meIsAdmin
+      ? supabase.from('teams').select('*')
+      : Promise.resolve({ data: [] }),
   ])
 
   const leaderboard = (leaderboardRaw ?? []) as LeaderboardEntry[]
@@ -103,15 +116,36 @@ export default async function SpelarePage({
     })
     .filter((x): x is Row => x !== null)
 
+  // Vanliga spelare ser bara begränsat urval; admin ser allt.
   const recentResults = rows
     .filter(r => r.m.result_confirmed)
     .sort((a, b) => b.m.kickoff_at.localeCompare(a.m.kickoff_at))
-    .slice(0, 10)
+    .slice(0, meIsAdmin ? rows.length : 10)
 
   const upcoming = rows
     .filter(r => !r.m.result_confirmed)
     .sort((a, b) => a.m.kickoff_at.localeCompare(b.m.kickoff_at))
-    .slice(0, 5)
+    .slice(0, meIsAdmin ? rows.length : 5)
+
+  // Admin-only: gruppera alla tips per stage för komplett vy
+  const allTipsByStage = meIsAdmin
+    ? rows.reduce((acc, r) => {
+        const stage = r.m.stage as Stage
+        if (!acc[stage]) acc[stage] = []
+        acc[stage].push(r)
+        return acc
+      }, {} as Record<Stage, Row[]>)
+    : null
+  if (allTipsByStage) {
+    for (const s of Object.keys(allTipsByStage) as Stage[]) {
+      allTipsByStage[s].sort((a, b) => a.m.match_number - b.m.match_number)
+    }
+  }
+
+  const bonus = bonusRaw as BonusPrediction | null
+  const bonusResults = bonusResultsRaw as BonusResults | null
+  const teams = (teamsRaw ?? []) as Team[]
+  const teamById = new Map(teams.map(t => [t.id, t]))
 
   const targetProfile = target as Profile
 
@@ -211,6 +245,95 @@ export default async function SpelarePage({
           </div>
         </section>
       )}
+
+      {/* Admin-only: alla tips grupperade per stage + bonustips */}
+      {meIsAdmin && allTipsByStage && (
+        <>
+          <section className="rounded-xl p-4"
+            style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.25)' }}>
+            <h2 className="flex items-center gap-2 text-sm font-semibold text-indigo-300 uppercase tracking-wider mb-1">
+              <ShieldCheck size={14} />
+              Admin-vy: alla tips ({rows.length} st)
+            </h2>
+            <p className="text-xs text-indigo-200/70">
+              Detta visas bara för master admin. Vanliga spelare ser bara senaste 10 + kommande 5.
+            </p>
+          </section>
+
+          {(['group','r32','r16','qf','sf','3rd','final'] as Stage[]).map(stage => {
+            const stageRows = allTipsByStage[stage]
+            if (!stageRows || stageRows.length === 0) return null
+            return (
+              <section key={stage}>
+                <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3">
+                  {STAGE_LABELS[stage]} ({stageRows.length})
+                </h2>
+                <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1f2937' }}>
+                  {stageRows.map((r, i) => (
+                    <PredictionRow
+                      key={r.p.id}
+                      row={r}
+                      isLast={i === stageRows.length - 1}
+                      hideOutcome={!r.m.result_confirmed}
+                    />
+                  ))}
+                </div>
+              </section>
+            )
+          })}
+
+          {/* Bonustips */}
+          {bonus && (
+            <section>
+              <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3">
+                Bonustips
+              </h2>
+              <div className="rounded-xl p-4 space-y-2 text-sm"
+                style={{ background: '#111827', border: '1px solid #1f2937' }}>
+                <BonusLine
+                  label="Skytteligavinnare"
+                  pick={bonus.top_scorer}
+                  facit={bonusResults?.top_scorer ?? null}
+                />
+                <BonusLine
+                  label="Flest gula kort (lag)"
+                  pick={
+                    bonus.most_yellow_team_id != null
+                      ? teamById.get(bonus.most_yellow_team_id)?.name ?? `Team #${bonus.most_yellow_team_id}`
+                      : null
+                  }
+                  facit={
+                    bonusResults?.most_yellow_team_id != null
+                      ? teamById.get(bonusResults.most_yellow_team_id)?.name ?? null
+                      : null
+                  }
+                />
+                <BonusLine
+                  label="Totalt antal mål"
+                  pick={bonus.total_goals != null ? String(bonus.total_goals) : null}
+                  facit={bonusResults?.total_goals != null ? String(bonusResults.total_goals) : null}
+                />
+              </div>
+            </section>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function BonusLine({ label, pick, facit }: { label: string; pick: string | null; facit: string | null }) {
+  return (
+    <div className="flex items-center justify-between gap-3 flex-wrap">
+      <span className="text-xs text-gray-500 uppercase tracking-wider">{label}</span>
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-white font-medium">{pick ?? <span className="text-gray-600 italic">– inte tippat –</span>}</span>
+        {facit && (
+          <span className="text-[11px] text-gray-500">
+            facit: <span className="text-amber-400">{facit}</span>
+          </span>
+        )}
+      </div>
     </div>
   )
 }
