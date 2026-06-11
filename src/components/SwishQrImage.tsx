@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
-import { buildSwishQrPayload } from '@/lib/swish'
+import { buildSwishUrl } from '@/lib/swish'
 
 interface Props {
   phone: string
@@ -13,54 +13,83 @@ interface Props {
 }
 
 /**
- * Klient-side QR-rendering av Swishs egna QR-payload (C{phone};{amount};{message};{lock}).
+ * Klient-side QR-rendering av Swishs Universal Link
+ * (https://app.swish.nu/1/p/sw/?...). Den läses av både Swish-appens egen
+ * skanner OCH kamera-appen på iOS/Android, och öppnar betalningsskärmen
+ * förfylld.
  *
- * Tidigare gick QR:n via /api/swish-qr som proxade Swishs officiella
- * prefilled-API. Den API:n började returnera "Host not in allowlist" för
- * Vercels serverless-IP:er. Vi genererar koden lokalt istället – ingen
- * extern beroende, ingen auth, fungerar offline.
+ * Vi körde tidigare Swishs C-format-payload (C{phone};{amount};{message};{lock})
+ * men det visade sig att vissa Swish-app-versioner inte plockade upp det
+ * från QR-skannern. Universal Link funkar överallt.
  *
- * Swish-appens skanner läser C-formatet och fyller i betalningsskärmen
- * identiskt som från den officiella API:n. Visuellt saknas Swish-logon
- * mitt i koden, men funktionen är densamma.
+ * SVG-rendering används istället för canvas/dataURL eftersom SVG är
+ * vektorbaserat och inte beroende av canvas-API:t (vissa iOS-versioner
+ * råkar ut för canvas-begränsningar).
  */
 export function SwishQrImage({ phone, amount, message, size = 240, className }: Props) {
-  const [dataUrl, setDataUrl] = useState<string | null>(null)
+  const [svg, setSvg] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
-    const payload = buildSwishQrPayload({ phone, amount, message })
-    QRCode.toDataURL(payload, {
+    setError(null)
+    const url = buildSwishUrl({ phone, amount, message: message ?? '' })
+    QRCode.toString(url, {
+      type: 'svg',
       width: size,
       margin: 2,
       errorCorrectionLevel: 'M',
       color: { dark: '#000000', light: '#ffffff' },
-    }).then(url => {
-      if (!cancelled) setDataUrl(url)
-    }).catch(() => {
-      if (!cancelled) setDataUrl(null)
     })
+      .then(s => { if (!cancelled) setSvg(s) })
+      .catch(err => {
+        if (!cancelled) {
+          setSvg(null)
+          setError(err instanceof Error ? err.message : 'Kunde inte skapa QR-kod')
+        }
+      })
     return () => { cancelled = true }
   }, [phone, amount, message, size])
 
-  if (!dataUrl) {
+  if (error) {
     return (
       <div
         className={className}
-        style={{ width: size, height: size, background: '#fff', borderRadius: 8 }}
-        aria-label="Genererar QR-kod"
-      />
+        style={{
+          width: size, height: size, background: '#fff', borderRadius: 8,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 12, textAlign: 'center', color: '#b91c1c', fontSize: 12,
+        }}
+      >
+        QR-koden kunde inte genereras: {error}
+      </div>
     )
   }
 
-  // eslint-disable-next-line @next/next/no-img-element
+  if (!svg) {
+    return (
+      <div
+        className={className}
+        style={{
+          width: size, height: size, background: '#fff', borderRadius: 8,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#6b7280', fontSize: 12,
+        }}
+        aria-label="Genererar QR-kod"
+      >
+        Genererar QR-kod…
+      </div>
+    )
+  }
+
   return (
-    <img
-      src={dataUrl}
-      alt="QR-kod till Swish-betalning"
-      width={size}
-      height={size}
+    <div
       className={className}
+      style={{ width: size, height: size }}
+      aria-label="QR-kod till Swish-betalning"
+      // SVG från qrcode-paketet – innehåller bara <svg>...</svg>, säkert att
+      // dangerously sätta in eftersom payload:en är vår egen Swish-URL.
+      dangerouslySetInnerHTML={{ __html: svg }}
     />
   )
 }
