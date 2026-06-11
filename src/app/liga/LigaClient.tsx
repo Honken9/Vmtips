@@ -24,6 +24,7 @@ import { TAG_COLORS, colorHex } from '@/lib/tag-colors'
 interface MemberRow {
   user_id: string
   display_name: string
+  email: string | null
   is_admin: boolean
   avatar_url: string | null
   paid: boolean
@@ -1056,22 +1057,38 @@ function MemberList({
             aria-label="Färg-tagg"
           />
 
-          <Link
-            href={`/spelare/${m.user_id}`}
-            className="flex-1 min-w-0 flex items-center gap-2 hover:underline"
-          >
-            <UserAvatar src={m.avatar_url} name={m.display_name} size="sm" />
-            <span className="text-sm font-medium text-white truncate">
-              {m.display_name}
-            </span>
-            {m.is_admin && <Crown size={12} className="text-amber-400 shrink-0" />}
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <Link
+              href={`/spelare/${m.user_id}`}
+              className="flex items-center gap-2 min-w-0 hover:underline"
+            >
+              <UserAvatar src={m.avatar_url} name={m.display_name} size="sm" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-medium text-white truncate">
+                    {m.display_name}
+                  </span>
+                  {m.is_admin && <Crown size={12} className="text-amber-400 shrink-0" />}
+                </div>
+                {m.email && (
+                  <a
+                    href={`mailto:${m.email}`}
+                    onClick={e => e.stopPropagation()}
+                    className="text-[11px] text-gray-500 hover:text-emerald-400 truncate block"
+                    title={m.email}
+                  >
+                    {m.email}
+                  </a>
+                )}
+              </div>
+            </Link>
             {tag?.department && (
               <span className="text-[11px] px-1.5 py-0.5 rounded shrink-0 text-gray-300"
                 style={{ background: '#1f2937', border: '1px solid #374151' }}>
                 {tag.department}
               </span>
             )}
-          </Link>
+          </div>
 
           {canEditTag && (
             <button
