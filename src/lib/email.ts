@@ -34,7 +34,7 @@ export async function getEmailSettings(): Promise<EmailSettings | null> {
 }
 
 export async function logEmail(
-  type: 'reminder' | 'digest' | 'test',
+  type: 'reminder' | 'digest' | 'test' | 'last-chance-lock',
   recipientCount: number,
   subject: string,
   status: 'sent' | 'error',
