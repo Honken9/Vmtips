@@ -1,12 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Match, Team, STAGE_LABELS } from '@/lib/types'
 import { Flag } from '@/components/Flag'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
-import { CheckCircle, Clock, MapPin, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CheckCircle, Clock, MapPin, Filter, X, ChevronLeft, ChevronRight, Calendar, Copy, Check } from 'lucide-react'
 import { MatchCommentInline } from '@/components/MatchCommentInline'
 import { stockholmTime } from '@/lib/dates'
 
@@ -173,6 +173,7 @@ export function MatchesClient({ matches, teams, initialDay = '', meUserId = null
             {filtered.length} matcher{hasFilter ? ' (filtrerat)' : ''} · {completed} avklarade
           </p>
         </div>
+        <CalendarSubscribeButton />
       </div>
 
       {/* Filter */}
@@ -346,6 +347,110 @@ function MatchRow({
             matchLabel={matchLabel}
             canModerate={canModerate}
           />
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+// Knapp som öppnar en liten popover med webcal://-länk + ladda-ner.
+// Apple Calendar / Outlook / Google Kalender klarar webcal:// och
+// prenumererar då med automatisk uppdatering (resultat + slutspelslag).
+function CalendarSubscribeButton() {
+  const [open, setOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // Konstruera URL:erna när popovern öppnas (origin finns bara klient-side)
+  const httpsUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/api/calendar/matches.ics`
+    : ''
+  const webcalUrl = typeof window !== 'undefined'
+    ? `webcal://${window.location.host}/api/calendar/matches.ics`
+    : ''
+
+  useEffect(() => {
+    if (!open) return
+    function onDocClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [open])
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(httpsUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {}
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-black transition-all"
+        style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+      >
+        <Calendar size={14} />
+        Lägg till i kalender
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-2 z-30 w-80 rounded-xl p-4 space-y-3 text-sm"
+          style={{ background: '#0f172a', border: '1px solid #374151', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}
+        >
+          <div className="font-semibold text-white">Prenumerera på spelschemat</div>
+          <p className="text-xs text-gray-400">
+            Lägg till alla matcher i din kalender. Uppdateras automatiskt
+            med resultat och vilka lag som tar sig till slutspelet.
+          </p>
+
+          <a
+            href={webcalUrl}
+            className="block w-full px-3 py-2 rounded-lg text-center text-xs font-semibold text-black"
+            style={{ background: '#10b981' }}
+          >
+            📱 Öppna i Apple Calendar / iPhone
+          </a>
+
+          <div>
+            <div className="text-[11px] text-gray-500 uppercase tracking-wider mb-1">
+              Outlook / Google: kopiera länken
+            </div>
+            <div className="flex items-stretch gap-2">
+              <input
+                readOnly
+                value={httpsUrl}
+                className="flex-1 min-w-0 px-2 py-1.5 rounded text-xs text-gray-300 font-mono"
+                style={{ background: '#1f2937', border: '1px solid #374151' }}
+                onFocus={e => e.currentTarget.select()}
+              />
+              <button
+                onClick={copyLink}
+                className="px-2 py-1.5 rounded text-xs flex items-center gap-1 text-gray-300 hover:text-white"
+                style={{ background: '#1f2937', border: '1px solid #374151' }}
+              >
+                {copied ? <Check size={12} /> : <Copy size={12} />}
+                {copied ? 'Kopierat' : 'Kopiera'}
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-500 mt-1.5">
+              I Outlook/Google: lägg till kalender via prenumerations-URL.
+              Skriv inte in den manuellt – klistra in den exakt så
+              uppdateras den automatiskt.
+            </p>
+          </div>
+
+          <a
+            href={httpsUrl}
+            download="vm-2026-matches.ics"
+            className="block text-center text-[11px] text-gray-500 hover:text-emerald-400 pt-1"
+          >
+            …eller ladda ner som engångs-ICS-fil
+          </a>
         </div>
       )}
     </div>
