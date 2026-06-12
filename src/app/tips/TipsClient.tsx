@@ -167,13 +167,16 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
 
   // ─── Hjälpfunktioner ─────────────────────────────────────────────────────────
   const isLocked = (match: Match): boolean => {
+    // Oavsett spelform: en match som redan startat går inte att tippa.
+    // Annars kan den som inte lämnat in fylla i facit i efterhand.
+    if (isPast(new Date(match.kickoff_at))) return true
     if (isAStyleMatch(match)) {
       if (locked) return true
       if (globalLock) return true
       return predictions.find(p => p.match_id === match.id)?.locked ?? false
     }
     if (isBStyleMatch(match)) {
-      return isPast(new Date(match.kickoff_at))
+      return false // kickoff-checken ovan täcker B-låsningen
     }
     return predictions.find(p => p.match_id === match.id)?.locked ?? false
   }
@@ -183,9 +186,11 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
     if (!val || val.home === '' || val.away === '') return
     const predHome = parseInt(val.home), predAway = parseInt(val.away)
     if (isNaN(predHome) || isNaN(predAway)) return
-    // Slutspel kan inte sluta oavgjort – blockera save tills användaren rättar
     const match = matches.find(m => m.id === matchId)
+    // Slutspel kan inte sluta oavgjort – blockera save tills användaren rättar
     if (match && match.stage !== 'group' && predHome === predAway) return
+    // Startade matcher får inte tippas (servern blockerar också via trigger)
+    if (match && isPast(new Date(match.kickoff_at))) return
     setSaving(matchId)
     await supabase.from('predictions').upsert(
       { user_id: userId, match_id: matchId, pred_home: predHome, pred_away: predAway },
