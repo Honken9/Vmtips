@@ -143,6 +143,29 @@ export function EmailAdminClient({ settings: initial, log }: { settings: EmailSe
     else flash(false, data.error ?? `HTTP ${res.status}`)
   }
 
+  async function lockAllTips() {
+    if (!confirm(
+      'Låsa ALLA deltagares tips nu?\n\n' +
+      'De som inte lämnat in får ett sista-chansen-mail och kan höra av sig ' +
+      'för en individuell upplåsning via Admin → Deltagare → "Lås upp".'
+    )) return
+    if (!confirm('Helt säker? Detta låser tipsen för samtliga deltagare direkt.')) return
+    setBusy('lockall')
+    const res = await fetch('/api/admin/lock-all-tips', { method: 'POST' })
+    setBusy(null)
+    const data = await res.json().catch(() => ({}))
+    if (res.ok) {
+      const names = (data.notSubmittedNames ?? []) as string[]
+      flash(true,
+        `Låst. ${data.lockedProfiles} hade inte lämnat in, ${data.emailed} fick mail` +
+        (data.emailOk ? '' : ` (MAILFEL: ${data.emailError})`) +
+        (names.length > 0 ? ` – ${names.slice(0, 8).join(', ')}${names.length > 8 ? ` +${names.length - 8} till` : ''}` : '')
+      )
+    } else {
+      flash(false, data.error ?? `HTTP ${res.status}`)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Setup-check */}
@@ -269,6 +292,28 @@ export function EmailAdminClient({ settings: initial, log }: { settings: EmailSe
             </div>
           </div>
         )}
+      </Section>
+
+      {/* Lås alla tips + sista chansen-mail */}
+      <Section title="Lås alla tips">
+        <p className="text-xs text-gray-500">
+          Låser samtliga deltagares tips direkt. De som inte lämnat in får
+          automatiskt ett sista-chansen-mail med uppmaning att svara om de
+          vill bli upplåsta (du låser sedan upp individuellt via
+          Admin → Deltagare → &quot;Lås upp&quot;). Matcher som redan startat går
+          ändå inte att tippa i efterhand.
+        </p>
+        <div className="pt-2">
+          <button
+            onClick={lockAllTips}
+            disabled={busy === 'lockall'}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-red-300 disabled:opacity-40"
+            style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.35)' }}
+          >
+            {busy === 'lockall' ? <Loader2 size={14} className="animate-spin" /> : '🔒'}
+            Lås alla tips + maila de som inte lämnat in
+          </button>
+        </div>
       </Section>
 
       {/* Save */}
