@@ -48,6 +48,21 @@ export function resolveBracket(
 }
 
 /**
+ * Nollar bekräftade resultat i en kopia av matchlistan. Används av de
+ * PERSONLIGA träd-vyerna (/tips, /slutspel): trädet ska visa deltagarens
+ * tippade VM "från början", inte kollapsa till verkligheten när
+ * gruppresultaten bekräftas. calcGroupStandings/winner föredrar annars
+ * bekräftade resultat före tips (rätt för poäng/admin, fel här).
+ */
+export function stripConfirmedResults(matches: Match[]): Match[] {
+  return matches.map(m =>
+    m.result_confirmed
+      ? { ...m, result_confirmed: false, home_score: null, away_score: null }
+      : m
+  )
+}
+
+/**
  * Variant som tar preds-mappen direkt – används av TipsClient där användarens
  * osparade ändringar måste reflekteras i bracket-vyn.
  */

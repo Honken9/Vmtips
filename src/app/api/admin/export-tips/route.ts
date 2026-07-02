@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { resolveBracket } from '@/lib/bracket'
+import { resolveBracket, stripConfirmedResults } from '@/lib/bracket'
 import { STAGE_LABELS } from '@/lib/types'
 import type { Match, Team, Prediction, BonusPrediction, Stage } from '@/lib/types'
 
@@ -81,14 +81,8 @@ export async function GET() {
   const bonusByUser = new Map(allBonus.map(b => [b.user_id, b]))
 
   // För slutspelet "från början": lös upp trädet från VARJE deltagares egna
-  // tips, utan hänsyn till faktiska resultat. Vi nollar resultaten i en kopia
-  // så resolveBracket bara använder tipsen.
-  const matchesNoResults: Match[] = matches.map(m => ({
-    ...m,
-    result_confirmed: false,
-    home_score: null,
-    away_score: null,
-  }))
+  // tips, utan hänsyn till faktiska resultat (delad helper med /tips + /slutspel).
+  const matchesNoResults: Match[] = stripConfirmedResults(matches)
 
   const groupMatches = matches.filter(m => m.stage === 'group')
   const knockoutMatches = matches

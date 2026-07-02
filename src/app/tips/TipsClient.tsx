@@ -9,7 +9,7 @@ import {
 import {
   calcAllGroupStandings, getBest8Third, StandingsRow
 } from '@/lib/standings'
-import { resolveBracketFromPreds } from '@/lib/bracket'
+import { resolveBracketFromPreds, stripConfirmedResults } from '@/lib/bracket'
 import { GroupStandingsGrid } from '@/components/GroupStandingsGrid'
 import { Flag } from '@/components/Flag'
 import { BonusTipsSection } from '@/components/BonusTipsSection'
@@ -122,7 +122,11 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
   }
 
   // ─── Standings ──────────────────────────────────────────────────────────────
-  const groupMatches = useMemo(() => matches.filter(m => m.stage === 'group'), [matches])
+  // OBS: tabeller + träd bygger på deltagarens EGNA tips ("mitt VM"), inte
+  // faktiska resultat. Därför strippas bekräftade resultat innan beräkning
+  // – annars kollapsar allas träd till verkligheten när resultaten matas in.
+  const ownMatches = useMemo(() => stripConfirmedResults(matches), [matches])
+  const groupMatches = useMemo(() => ownMatches.filter(m => m.stage === 'group'), [ownMatches])
 
   const standings = useMemo(
     () => calcAllGroupStandings(teams, groupMatches, preds),
@@ -143,9 +147,10 @@ export function TipsClient({ profile, matches, predictions, settings, teams, use
   // ─── Bracket-upplösning ──────────────────────────────────────────────────────
   // Använder samma resolver som /slutspel + delar Annex C-lookup.
   // Tar preds-mappen direkt så användarens osparade ändringar reflekteras.
+  // ownMatches (utan resultat) → trädet visar deltagarens tips, ej facit.
   const resolved = useMemo(
-    () => resolveBracketFromPreds(matches, teams, preds),
-    [matches, teams, preds]
+    () => resolveBracketFromPreds(ownMatches, teams, preds),
+    [ownMatches, teams, preds]
   )
 
   const resolvedMap = useMemo(() => {

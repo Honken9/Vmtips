@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { resolveBracket } from '../bracket'
-import type { Match, Team } from '../types'
+import { resolveBracket, stripConfirmedResults } from '../bracket'
+import type { Match, Team, Prediction } from '../types'
 
 // Speglar admin-flödet: slutspelslag löses upp från BEKRÄFTADE resultat
 // (result_confirmed=true + scores) och tom preds-array. Detta är precis vad
@@ -119,5 +119,70 @@ describe('Admin-flöde: slutspelslag från bekräftade resultat', () => {
     const [h90, a90] = br.r16Teams[m90idx]
     expect(h90!.id).toBe(h73!.id) // vinnare match 73
     expect(a90!.id).toBe(h75!.id) // vinnare match 75 (1F)
+  })
+})
+
+describe('Personliga trädet: egna tips vinner över bekräftade resultat', () => {
+  const teams = buildTeams()
+  const teamById = new Map(teams.map(t => [t.id, t]))
+  // Alla gruppresultat bekräftade (X1 vinner gruppen)
+  const groupMatches = confirmGroupResults(buildGroupMatches(teams), teamById)
+  const allMatches = [...groupMatches, ...buildKnockoutMatches()]
+
+  // Deltagare som tippat TVÄRTOM i grupp A: A4 slår alla (A4 vinner gruppen)
+  function contrarianPreds(): Prediction[] {
+    return groupMatches.map(m => {
+      const h = teamById.get(m.home_team_id!)!
+      const a = teamById.get(m.away_team_id!)!
+      const hp = Number(h.name.slice(1))
+      const ap = Number(a.name.slice(1))
+      let win: 'h' | 'a'
+      if (m.group_name === 'A') {
+        // Omvänd ordning: högre siffra vinner (A4 > A3 > A2 > A1)
+        win = hp > ap ? 'h' : 'a'
+      } else {
+        win = hp < ap ? 'h' : 'a'
+      }
+      return {
+        id: m.id, user_id: 'contrarian', match_id: m.id,
+        pred_home: win === 'h' ? 2 : 0, pred_away: win === 'h' ? 0 : 2,
+        locked: true, locked_at: null, created_at: '', updated_at: '',
+      }
+    })
+  }
+
+  it('stripConfirmedResults gör att trädet följer tipsen, inte facit', () => {
+    const preds = contrarianPreds()
+    // UTAN stripping: bekräftade resultat vinner → A1 är gruppvinnare
+    const brReal = resolveBracket(allMatches, teams, preds)
+    // MED stripping (som /tips och /slutspel gör): tipsen styr → A4 vinner
+    const brOwn = resolveBracket(stripConfirmedResults(allMatches), teams, preds)
+
+    const idx79 = 79 - 73 // match 79 = 1A vs 3:a
+    const [homeReal] = brReal.r32Teams[idx79]
+    const [homeOwn] = brOwn.r32Teams[idx79]
+    expect(homeReal!.name).toBe('A1') // verkligheten
+    expect(homeOwn!.name).toBe('A4')  // deltagarens tippade gruppvinnare
+  })
+
+  it('två deltagare med olika grupptips får olika träd trots bekräftade resultat', () => {
+    const stripped = stripConfirmedResults(allMatches)
+    // Deltagare 1: tippar som verkligheten (X1 vinner)
+    const conformist: Prediction[] = groupMatches.map(m => {
+      const h = teamById.get(m.home_team_id!)!
+      const a = teamById.get(m.away_team_id!)!
+      const win = Number(h.name.slice(1)) < Number(a.name.slice(1)) ? 'h' : 'a'
+      return {
+        id: m.id, user_id: 'conformist', match_id: m.id,
+        pred_home: win === 'h' ? 1 : 0, pred_away: win === 'h' ? 0 : 1,
+        locked: true, locked_at: null, created_at: '', updated_at: '',
+      }
+    })
+    const br1 = resolveBracket(stripped, teams, conformist)
+    const br2 = resolveBracket(stripped, teams, contrarianPreds())
+
+    const teams1 = br1.r32Teams.flatMap(([h, a]) => [h?.name, a?.name])
+    const teams2 = br2.r32Teams.flatMap(([h, a]) => [h?.name, a?.name])
+    expect(teams1).not.toEqual(teams2)
   })
 })

@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { Flag } from '@/components/Flag'
 import type { Match, Team, Prediction } from '@/lib/types'
-import { resolveBracket } from '@/lib/bracket'
+import { resolveBracket, stripConfirmedResults } from '@/lib/bracket'
 import { Crown, Trophy } from 'lucide-react'
 
 interface Props {
@@ -35,7 +35,13 @@ const LEFT_SF   = [0]
 const RIGHT_SF  = [1]
 
 export function BracketView({ matches, teams, predictions, displayName }: Props) {
-  const b = useMemo(() => resolveBracket(matches, teams, predictions), [matches, teams, predictions])
+  // "Mitt slutspel" = trädet enligt användarens EGNA tips från början.
+  // Bekräftade resultat strippas – annars kollapsar allas träd till samma
+  // (verkliga) träd så fort gruppresultaten matats in.
+  const b = useMemo(
+    () => resolveBracket(stripConfirmedResults(matches), teams, predictions),
+    [matches, teams, predictions]
+  )
   const predByMatch = useMemo(() => {
     const map: Record<number, { home: number | null; away: number | null }> = {}
     predictions.forEach(p => {
