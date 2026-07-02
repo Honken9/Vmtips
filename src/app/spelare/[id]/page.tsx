@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { BonusPrediction, BonusResults, LeaderboardEntry, Match, Prediction, Profile, Settings, Team, STAGE_LABELS, Stage } from '@/lib/types'
 import { Flag } from '@/components/Flag'
 import { stockholmDateTime } from '@/lib/dates'
+import { resolveBracket, stripConfirmedResults } from '@/lib/bracket'
+import { calcKnockoutPoints, TEAM_POINTS_PER_ROUND, CHAMPION_POINTS, KNOCKOUT_ROUNDS } from '@/lib/knockout-points'
 import {
   ArrowLeft, Crown, Trophy, Target, CheckCircle, XCircle, Clock,
   Star, Award, User as UserIcon, ShieldCheck,
@@ -65,9 +67,7 @@ export default async function SpelarePage({
     meIsAdmin
       ? supabase.from('bonus_results').select('*').eq('id', 1).maybeSingle()
       : Promise.resolve({ data: null }),
-    meIsAdmin
-      ? supabase.from('teams').select('*')
-      : Promise.resolve({ data: [] }),
+    supabase.from('teams').select('*'),
   ])
 
   const leaderboard = (leaderboardRaw ?? []) as LeaderboardEntry[]
@@ -98,7 +98,9 @@ export default async function SpelarePage({
       let pts = 0
       let isExact = false
       let isCorrect = false
-      if (m.result_confirmed && m.home_score != null && m.away_score != null) {
+      // Tecken-/exaktpoäng gäller bara gruppspelet. Slutspel = lagpoäng
+      // per omgång (visas i egen sammanfattning, inte per match).
+      if (m.stage === 'group' && m.result_confirmed && m.home_score != null && m.away_score != null) {
         if (p.pred_home === m.home_score && p.pred_away === m.away_score) {
           pts = s?.points_exact_score ?? 5
           isExact = true
@@ -146,6 +148,21 @@ export default async function SpelarePage({
   const bonusResults = bonusResultsRaw as BonusResults | null
   const teams = (teamsRaw ?? []) as Team[]
   const teamById = new Map(teams.map(t => [t.id, t]))
+
+  // Spelarens eget slutspelsträd (från deras tips) + slutspelspoäng
+  const ownBracket = resolveBracket(stripConfirmedResults(matches), teams, predictions)
+  const tippedByMatch = new Map<number, [Team | null, Team | null]>()
+  ownBracket.r32Matches.forEach((m, i) => tippedByMatch.set(m.id, ownBracket.r32Teams[i]))
+  ownBracket.r16Matches.forEach((m, i) => tippedByMatch.set(m.id, ownBracket.r16Teams[i]))
+  ownBracket.qfMatches.forEach((m, i) => tippedByMatch.set(m.id, ownBracket.qfTeams[i]))
+  ownBracket.sfMatches.forEach((m, i) => tippedByMatch.set(m.id, ownBracket.sfTeams[i]))
+  if (ownBracket.finalMatch) tippedByMatch.set(ownBracket.finalMatch.id, ownBracket.finalTeams)
+  if (ownBracket.thirdMatch) tippedByMatch.set(ownBracket.thirdMatch.id, ownBracket.thirdTeams)
+
+  const knockout = calcKnockoutPoints(matches, teams, predictions)
+  const predictedChampion = knockout.breakdown.predictedChampionId != null
+    ? teamById.get(knockout.breakdown.predictedChampionId) ?? null
+    : null
 
   const targetProfile = target as Profile
 
@@ -213,6 +230,43 @@ export default async function SpelarePage({
         <Stat icon={<Star size={18} />} label="Bonuspoäng" value={myEntry?.bonus_points ?? 0} color="purple" />
       </div>
 
+      {/* Slutspelspoäng: 3p per rätt lag per omgång + 5p för mästaren */}
+      <section className="rounded-xl p-4" style={{ background: '#111827', border: '1px solid #1f2937' }}>
+        <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+          <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">
+            Slutspelspoäng
+          </h2>
+          <span className="text-lg font-bold text-amber-400 tabular-nums">
+            {knockout.points} p
+          </span>
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
+          {KNOCKOUT_ROUNDS.map(r => (
+            <div key={r} className="rounded-lg px-2 py-1.5"
+              style={{ background: '#0b1120', border: '1px solid #1f2937' }}>
+              <div className="text-base font-bold text-emerald-400 tabular-nums">
+                {knockout.breakdown.rounds[r]}
+              </div>
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider">
+                {STAGE_LABELS[r]}
+              </div>
+            </div>
+          ))}
+          <div className="rounded-lg px-2 py-1.5"
+            style={{ background: '#0b1120', border: `1px solid ${knockout.breakdown.champion ? 'rgba(245,158,11,0.4)' : '#1f2937'}` }}>
+            <div className={`text-base font-bold tabular-nums ${knockout.breakdown.champion ? 'text-amber-400' : 'text-gray-600'}`}>
+              {knockout.breakdown.champion ? `+${CHAMPION_POINTS}` : '–'}
+            </div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider">Mästare</div>
+          </div>
+        </div>
+        <p className="text-[11px] text-gray-500 mt-2">
+          Rätt lag per omgång × {TEAM_POINTS_PER_ROUND}p
+          {predictedChampion ? ` · Tippad mästare: ${predictedChampion.flag} ${predictedChampion.name}` : ''}
+          {' '}· Se <Link href="/regler" className="underline hover:text-emerald-400">reglerna</Link>
+        </p>
+      </section>
+
       {/* Senaste resultat */}
       <section>
         <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-3">
@@ -226,7 +280,9 @@ export default async function SpelarePage({
         ) : (
           <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1f2937' }}>
             {recentResults.map((r, i) => (
-              <PredictionRow key={r.p.id} row={r} isLast={i === recentResults.length - 1} />
+              <PredictionRow key={r.p.id} row={r} isLast={i === recentResults.length - 1}
+                tippedHome={r.m.stage !== 'group' ? tippedByMatch.get(r.m.id)?.[0] : undefined}
+                tippedAway={r.m.stage !== 'group' ? tippedByMatch.get(r.m.id)?.[1] : undefined} />
             ))}
           </div>
         )}
@@ -240,7 +296,9 @@ export default async function SpelarePage({
           </h2>
           <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1f2937' }}>
             {upcoming.map((r, i) => (
-              <PredictionRow key={r.p.id} row={r} isLast={i === upcoming.length - 1} hideOutcome />
+              <PredictionRow key={r.p.id} row={r} isLast={i === upcoming.length - 1} hideOutcome
+                tippedHome={r.m.stage !== 'group' ? tippedByMatch.get(r.m.id)?.[0] : undefined}
+                tippedAway={r.m.stage !== 'group' ? tippedByMatch.get(r.m.id)?.[1] : undefined} />
             ))}
           </div>
         </section>
@@ -274,7 +332,9 @@ export default async function SpelarePage({
                       key={r.p.id}
                       row={r}
                       isLast={i === stageRows.length - 1}
-                      hideOutcome={!r.m.result_confirmed}
+                      hideOutcome={!r.m.result_confirmed || r.m.stage !== 'group'}
+                      tippedHome={r.m.stage !== 'group' ? tippedByMatch.get(r.m.id)?.[0] : undefined}
+                      tippedAway={r.m.stage !== 'group' ? tippedByMatch.get(r.m.id)?.[1] : undefined}
                     />
                   ))}
                 </div>
@@ -362,17 +422,22 @@ function Stat({
 }
 
 function PredictionRow({
-  row, isLast, hideOutcome,
+  row, isLast, hideOutcome, tippedHome, tippedAway,
 }: {
   row: { p: import('@/lib/types').Prediction; m: import('@/lib/types').Match; pts: number; isExact: boolean; isCorrect: boolean }
   isLast: boolean
   hideOutcome?: boolean
+  /** Slutspel: laget spelaren själv tippade fram till den här matchen */
+  tippedHome?: import('@/lib/types').Team | null
+  tippedAway?: import('@/lib/types').Team | null
 }) {
   const m = row.m
-  const home = m.home_team?.name ?? m.home_placeholder ?? '?'
-  const away = m.away_team?.name ?? m.away_placeholder ?? '?'
-  const homeFlag = m.home_team?.flag ?? ''
-  const awayFlag = m.away_team?.flag ?? ''
+  // Slutspelsrader visar spelarens TIPPADE lag (deras eget träd), inte de
+  // verkliga – poängen räknas per rätt lag per omgång, se /regler.
+  const home = tippedHome?.name ?? m.home_team?.name ?? m.home_placeholder ?? '?'
+  const away = tippedAway?.name ?? m.away_team?.name ?? m.away_placeholder ?? '?'
+  const homeFlag = tippedHome?.flag ?? m.home_team?.flag ?? ''
+  const awayFlag = tippedAway?.flag ?? m.away_team?.flag ?? ''
   const date = stockholmDateTime(m.kickoff_at)
 
   return (

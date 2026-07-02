@@ -47,6 +47,34 @@ export default async function ReglerPage() {
         </div>
         <p className="text-xs text-gray-500 mt-3">
           Exakt resultat ger bara den högre poängen – ingen dubbelräkning.
+          Tecken- och exaktpoäng gäller <strong>gruppspelsmatcherna</strong>.
+        </p>
+      </Section>
+
+      {/* Slutspelspoäng */}
+      <Section icon={<Trophy size={18} />} title="Slutspelspoäng">
+        <p className="text-sm text-gray-300 mb-3">
+          I slutspelet räknas poäng per <strong>rätt lag i varje omgång</strong> – inte
+          per matchresultat:
+        </p>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <PointBox
+            label="Rätt lag i en omgång"
+            value="3 p"
+            description="För varje lag du har med i rätt omgång (16-delsfinal, åttondelsfinal, kvartsfinal, semifinal, final) får du 3p. Laget behöver inte stå i exakt rätt match – rätt omgång räcker. Ett lag du tippat hela vägen ger alltså poäng i varje omgång det faktiskt når."
+          />
+          <PointBox
+            label="Rätt världsmästare"
+            value="5 p"
+            description="Har du tippat rätt VM-vinnare i ditt slutspelsträd får du 5p extra utöver lagpoängen."
+            gold
+          />
+        </div>
+        <p className="text-xs text-gray-500 mt-3">
+          Dina tippade resultat i slutspelsmatcherna styr vilka lag som går vidare
+          i <strong>ditt</strong> träd – de ger inga egna tecken-/exaktpoäng.
+          Exempel: 20 rätt lag i 16-delarna, 10 i åttondelarna och rätt mästare
+          ger 20×3 + 10×3 + 5 = 95p från slutspelet.
         </p>
       </Section>
 

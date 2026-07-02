@@ -168,6 +168,8 @@ export default function AdminResultsPage() {
 
       // Lås automatiskt tips för matchen (läge B)
       await supabase.rpc('lock_predictions_at_kickoff')
+      // Slutspelspoängen (3p/lag/omgång) beror på resultaten – räkna om
+      fetch('/api/admin/recompute-knockout-points', { method: 'POST' }).catch(() => {})
       // Auto-backup (server gör rate limiting)
       fetch('/api/backup?reason=admin-result-save', { method: 'POST' }).catch(() => {})
     }
@@ -200,6 +202,8 @@ export default function AdminResultsPage() {
     } catch {
       setMatches(cleared)
     }
+    // Slutspelspoängen påverkas också av rensningen
+    fetch('/api/admin/recompute-knockout-points', { method: 'POST' }).catch(() => {})
     setSaving(null)
   }
 
@@ -241,6 +245,8 @@ export default function AdminResultsPage() {
         } catch {
           setMatches(m)
         }
+        // Slutspelspoängen beror på resultaten – räkna om efter synk
+        fetch('/api/admin/recompute-knockout-points', { method: 'POST' }).catch(() => {})
       }
     } catch (err) {
       setSyncMessage({ type: 'err', text: String(err) })
