@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { Users } from 'lucide-react'
+import { Users, Download } from 'lucide-react'
 import { AdminUsersTable } from '../AdminUsersTable'
 
 export const dynamic = 'force-dynamic'
@@ -121,14 +121,25 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Users size={22} className="text-indigo-400" />
-        <div>
-          <h1 className="text-2xl font-bold text-white">Deltagare</h1>
-          <p className="text-gray-400 text-sm mt-0.5">
-            Alla användare. Lås upp AI-bild, ta bort konto eller se betalstatus.
-          </p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Users size={22} className="text-indigo-400" />
+          <div>
+            <h1 className="text-2xl font-bold text-white">Deltagare</h1>
+            <p className="text-gray-400 text-sm mt-0.5">
+              Alla användare. Lås upp AI-bild, ta bort konto eller se betalstatus.
+            </p>
+          </div>
         </div>
+        <a
+          href="/api/admin/export-tips"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all shrink-0"
+          style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}
+          title="Ladda ner alla deltagares tips (gruppspel, slutspel, bonus) som CSV"
+        >
+          <Download size={14} />
+          Exportera alla tips (CSV)
+        </a>
       </div>
 
       <AdminUsersTable users={users} meUserId={me?.id ?? ''} />
