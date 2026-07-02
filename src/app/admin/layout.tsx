@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { ShieldCheck, BarChart2, Settings, ListChecks, Star, Activity, Users, Archive, User, Mail, Images } from 'lucide-react'
+import { ShieldCheck, BarChart2, Settings, ListChecks, Star, Activity, Users, Archive, User, Mail, Images, History } from 'lucide-react'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -27,6 +27,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     { href: '/admin/email', label: 'Mejl', icon: Mail },
     { href: '/admin/avatars', label: 'Bildcollage', icon: Images },
     { href: '/admin/users', label: 'Deltagare', icon: User },
+    { href: '/admin/snapshots', label: 'Snapshots', icon: History },
   ]
 
   return (
