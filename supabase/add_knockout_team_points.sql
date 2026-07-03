@@ -121,4 +121,5 @@ from public.profiles p
 left join public.predictions pred on pred.user_id = p.id
 left join public.matches m on pred.match_id = m.id
 left join pool_pts pp on pp.user_id = p.id
-group by p.id, p.display_name, p.pool_id, p.tips_locked;
+group by p.id, p.display_name, p.pool_id, p.tips_locked
+order by total_points desc, exact_scores desc, correct_results desc;
