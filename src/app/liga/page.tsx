@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { LeaderboardEntry, Pool, PoolPayment, PoolMemberTag, Profile } from '@/lib/types'
+import { sortLeaderboard, type LeaderboardEntry, type Pool, type PoolPayment, type PoolMemberTag, type Profile } from '@/lib/types'
 import { LigaClient } from './LigaClient'
 
 export const dynamic = 'force-dynamic'
@@ -66,7 +66,7 @@ export default async function LigaPage() {
     : { data: [] }
   const profiles = (memberProfilesRaw ?? []) as MemberProfile[]
   const payments = (paymentsRaw ?? []) as PoolPayment[]
-  const ranking = ((leaderboardRaw ?? []) as LeaderboardEntry[]).filter(e => e.pool_id === poolId)
+  const ranking = sortLeaderboard(((leaderboardRaw ?? []) as LeaderboardEntry[]).filter(e => e.pool_id === poolId))
   const allLigor = ((membershipsRaw ?? [])
     .flatMap(m => {
       const p = (m as unknown as { pool: Pool | Pool[] | null }).pool

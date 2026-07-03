@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { BonusPrediction, BonusResults, LeaderboardEntry, Match, Prediction, Profile, Settings, Team, STAGE_LABELS, Stage } from '@/lib/types'
+import { BonusPrediction, BonusResults, LeaderboardEntry, Match, Prediction, Profile, Settings, Team, STAGE_LABELS, Stage, sortLeaderboard } from '@/lib/types'
 import { Flag } from '@/components/Flag'
 import { stockholmDateTime } from '@/lib/dates'
 import { resolveBracket, stripConfirmedResults } from '@/lib/bracket'
@@ -71,7 +71,7 @@ export default async function SpelarePage({
   ])
 
   const leaderboard = (leaderboardRaw ?? []) as LeaderboardEntry[]
-  const poolEntries = leaderboard.filter(e => e.pool_id === myPoolId)
+  const poolEntries = sortLeaderboard(leaderboard.filter(e => e.pool_id === myPoolId))
   const myEntry = poolEntries.find(e => e.user_id === id) ?? null
   const myRank = myEntry
     ? poolEntries.findIndex(e => e.user_id === id) + 1

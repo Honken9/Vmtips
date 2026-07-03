@@ -6,7 +6,7 @@ import { MatchCountdown } from '@/components/MatchCountdown'
 import { Flag } from '@/components/Flag'
 import { UserAvatar } from '@/components/UserAvatar'
 import { HeroAvatar } from '@/components/HeroAvatar'
-import { LeaderboardEntry, Match, Prediction, Settings, Profile, Pool } from '@/lib/types'
+import { LeaderboardEntry, Match, Prediction, Settings, Profile, Pool, sortLeaderboard } from '@/lib/types'
 import { stockholmToday, isMatchOnStockholmDate } from '@/lib/stats'
 import { stockholmTime, stockholmWeekdayDateTime } from '@/lib/dates'
 import { fetchNews } from '@/lib/rss'
@@ -68,7 +68,7 @@ export default async function HomePage() {
 
   // Filtrera leaderboard till medlemmar i samma pool (eller all data om utloggad)
   const allEntries = (leaderboardRaw ?? []) as LeaderboardEntry[]
-  const entries = poolId ? allEntries.filter(e => e.pool_id === poolId) : allEntries
+  const entries = sortLeaderboard(poolId ? allEntries.filter(e => e.pool_id === poolId) : allEntries)
 
   const s: Settings = settings ?? {
     id: 1, tournament_mode: 'B', mode_a_global_lock: false,
@@ -90,17 +90,17 @@ export default async function HomePage() {
   const myPredByMatch = new Map(myPreds.map(p => [p.match_id, p]))
   const myEntry = user ? entries.find(e => e.user_id === user.id) ?? null : null
   const myRank = myEntry ? entries.findIndex(e => e.user_id === user!.id) + 1 : null
-  const top3 = entries.slice(0, 3)
+  const top5 = entries.slice(0, 5)
 
   // Hämta avatarer för topp 3 (separat query för att slippa joinen på leaderboard-vyn)
-  const top3UserIds = top3.map(e => e.user_id)
-  const { data: top3ProfilesRaw } =
-    top3UserIds.length > 0
-      ? await supabase.from('profiles').select('id, avatar_url').in('id', top3UserIds)
+  const top5UserIds = top5.map(e => e.user_id)
+  const { data: top5ProfilesRaw } =
+    top5UserIds.length > 0
+      ? await supabase.from('profiles').select('id, avatar_url').in('id', top5UserIds)
       : { data: [] as { id: string; avatar_url: string | null }[] }
-  const top3Avatars: Record<string, string | null> = {}
-  for (const p of (top3ProfilesRaw ?? []) as { id: string; avatar_url: string | null }[]) {
-    top3Avatars[p.id] = p.avatar_url
+  const top5Avatars: Record<string, string | null> = {}
+  for (const p of (top5ProfilesRaw ?? []) as { id: string; avatar_url: string | null }[]) {
+    top5Avatars[p.id] = p.avatar_url
   }
 
   return (
@@ -299,27 +299,27 @@ export default async function HomePage() {
             </section>
           )}
 
-          {/* Topp 3 – endast för inloggade */}
+          {/* Topp 5 – endast för inloggade */}
           {user && (
             <section>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
                   <Trophy size={18} className="text-emerald-400" />
-                  Topp 3
+                  Topp 5
                 </h2>
                 <Link href="/tabell" className="text-xs text-gray-400 hover:text-emerald-400 transition-colors">
                   Hela tabellen →
                 </Link>
               </div>
-              {top3.length === 0 ? (
+              {top5.length === 0 ? (
                 <div className="rounded-xl p-6 text-center text-sm text-gray-500"
                   style={{ background: '#111827', border: '1px solid #1f2937' }}>
                   Inga deltagare ännu
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {top3.map((entry, i) => (
-                    <Top3Row key={entry.user_id} entry={entry} rank={i} avatarUrl={top3Avatars[entry.user_id]} />
+                  {top5.map((entry, i) => (
+                    <Top3Row key={entry.user_id} entry={entry} rank={i} avatarUrl={top5Avatars[entry.user_id]} />
                   ))}
                 </div>
               )}
@@ -350,14 +350,18 @@ function Top3Row({ entry, rank, avatarUrl }: { entry: LeaderboardEntry; rank: nu
     ? 'rgba(245,158,11,0.08)'
     : rank === 1
       ? 'rgba(156,163,175,0.06)'
-      : 'rgba(251,146,60,0.05)'
+      : rank === 2
+        ? 'rgba(251,146,60,0.05)'
+        : '#111827'
   return (
     <Link
       href={`/spelare/${entry.user_id}`}
       className="flex items-center gap-3 rounded-xl px-4 py-3 hover:brightness-125 transition-all"
       style={{ background: bg, border: '1px solid #1f2937' }}
     >
-      <div className="shrink-0">{icons[rank]}</div>
+      <div className="shrink-0 w-5 text-center">
+        {icons[rank] ?? <span className="text-sm font-bold text-gray-500">{rank + 1}</span>}
+      </div>
       <UserAvatar src={avatarUrl} name={entry.display_name} size="md" />
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-white truncate">{entry.display_name}</div>

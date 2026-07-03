@@ -132,6 +132,21 @@ export interface LeaderboardEntry {
   total_points: number
 }
 
+/**
+ * Kanonisk tabellsortering: poäng → exakta → rätt tecken → namn.
+ * Använd ALLTID denna på leaderboard-data – lita aldrig på vyns
+ * radordning.
+ */
+export function sortLeaderboard<T extends Pick<LeaderboardEntry,
+  'total_points' | 'exact_scores' | 'correct_results' | 'display_name'>>(entries: T[]): T[] {
+  return [...entries].sort((a, b) =>
+    b.total_points - a.total_points ||
+    b.exact_scores - a.exact_scores ||
+    b.correct_results - a.correct_results ||
+    a.display_name.localeCompare(b.display_name, 'sv')
+  )
+}
+
 export interface BonusPrediction {
   user_id: string
   top_scorer: string | null
