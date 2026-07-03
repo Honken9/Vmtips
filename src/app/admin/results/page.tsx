@@ -113,11 +113,15 @@ export default function AdminResultsPage() {
     try {
       const { next, changed } = await fillKnockoutTeams(matches)
       if (changed > 0) setMatches(next)
+      // Räkna även om slutspelspoängen (3p/lag/omgång) i samma klick
+      const rc = await fetch('/api/admin/recompute-knockout-points', { method: 'POST' })
+        .then(r => r.json()).catch(() => null)
+      const rcInfo = rc?.ok ? ` · poäng omräknade för ${rc.users} deltagare` : ''
       setSyncMessage({
         type: 'ok',
-        text: changed > 0
+        text: (changed > 0
           ? `${changed} slutspelsmatch${changed === 1 ? '' : 'er'} uppdaterad med rätt lag`
-          : 'Alla avgjorda slutspelslag är redan ifyllda',
+          : 'Alla avgjorda slutspelslag är redan ifyllda') + rcInfo,
       })
     } catch (err) {
       setSyncMessage({ type: 'err', text: `Kunde inte fylla i lag: ${String(err)}` })
