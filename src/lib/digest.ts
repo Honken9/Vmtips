@@ -80,7 +80,14 @@ export async function gatherDigestData(
 
   // Aktuell leaderboard för ligan
   const { data: lbRaw } = await admin.from('leaderboard').select('*')
-  const lb = ((lbRaw ?? []) as LeaderRow[]).filter(r => r.pool_id === poolId)
+  const lb = ((lbRaw ?? []) as LeaderRow[])
+    .filter(r => r.pool_id === poolId)
+    .sort((a, b) =>
+      b.total_points - a.total_points ||
+      b.exact_scores - a.exact_scores ||
+      b.correct_results - a.correct_results ||
+      a.display_name.localeCompare(b.display_name, 'sv')
+    )
 
   // Snapshot för delta-beräkning: använd email_log för att hitta förra digest
   // (om vi inte har snapshot, antar vi delta = nuvarande poäng)

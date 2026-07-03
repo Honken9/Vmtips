@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { LeaderboardEntry, Match, Prediction, Profile, Settings, Team } from '@/lib/types'
+import { LeaderboardEntry, Match, Prediction, Profile, Settings, Team , sortLeaderboard } from '@/lib/types'
 import { fetchTopScorers } from '@/lib/wc-stats'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
@@ -47,7 +47,7 @@ export default async function StatistikPage() {
   ])
 
   const allEntries = (leaderboardRaw ?? []) as LeaderboardEntry[]
-  const entries = allEntries.filter(e => e.pool_id === poolId)
+  const entries = sortLeaderboard(allEntries.filter(e => e.pool_id === poolId))
   const matches = (matchesRaw ?? []) as Match[]
   const allPredictions = (predictionsRaw ?? []) as Prediction[]
   const allProfiles = (profilesRaw ?? []) as Pick<Profile, 'id' | 'display_name' | 'pool_id'>[]

@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { LeaderboardTable } from '@/components/LeaderboardTable'
 import { CategorySummary } from '@/components/CategorySummary'
-import { LeaderboardEntry, Match, Settings, Profile, Pool, PoolMemberTag } from '@/lib/types'
+import { LeaderboardEntry, Match, Settings, Profile, Pool, PoolMemberTag, sortLeaderboard } from '@/lib/types'
 import { stockholmToday, isMatchOnStockholmDate } from '@/lib/stats'
 import { calcPot, calcPayouts, formatKr } from '@/lib/payments'
 import { Flag } from '@/components/Flag'
@@ -61,8 +61,8 @@ export default async function LeaderboardPage() {
   const tags = (tagsRaw ?? []) as PoolMemberTag[]
 
   // Filtrera leaderboard till samma pool
-  const leaderboard = (leaderboardRaw ?? []).filter(
-    (e: LeaderboardEntry) => e.pool_id === poolId
+  const leaderboard = sortLeaderboard(
+    ((leaderboardRaw ?? []) as LeaderboardEntry[]).filter(e => e.pool_id === poolId)
   )
 
   void settings
