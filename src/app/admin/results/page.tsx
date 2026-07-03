@@ -113,11 +113,15 @@ export default function AdminResultsPage() {
     try {
       const { next, changed } = await fillKnockoutTeams(matches)
       if (changed > 0) setMatches(next)
+      // Räkna även om slutspelspoängen (3p/lag/omgång) i samma klick
+      const rc = await fetch('/api/admin/recompute-knockout-points', { method: 'POST' })
+        .then(r => r.json()).catch(() => null)
+      const rcInfo = rc?.ok ? ` · poäng omräknade för ${rc.users} deltagare` : ''
       setSyncMessage({
         type: 'ok',
-        text: changed > 0
+        text: (changed > 0
           ? `${changed} slutspelsmatch${changed === 1 ? '' : 'er'} uppdaterad med rätt lag`
-          : 'Alla avgjorda slutspelslag är redan ifyllda',
+          : 'Alla avgjorda slutspelslag är redan ifyllda') + rcInfo,
       })
     } catch (err) {
       setSyncMessage({ type: 'err', text: `Kunde inte fylla i lag: ${String(err)}` })
@@ -168,6 +172,8 @@ export default function AdminResultsPage() {
 
       // Lås automatiskt tips för matchen (läge B)
       await supabase.rpc('lock_predictions_at_kickoff')
+      // Slutspelspoängen (3p/lag/omgång) beror på resultaten – räkna om
+      fetch('/api/admin/recompute-knockout-points', { method: 'POST' }).catch(() => {})
       // Auto-backup (server gör rate limiting)
       fetch('/api/backup?reason=admin-result-save', { method: 'POST' }).catch(() => {})
     }
@@ -200,6 +206,8 @@ export default function AdminResultsPage() {
     } catch {
       setMatches(cleared)
     }
+    // Slutspelspoängen påverkas också av rensningen
+    fetch('/api/admin/recompute-knockout-points', { method: 'POST' }).catch(() => {})
     setSaving(null)
   }
 
@@ -241,6 +249,8 @@ export default function AdminResultsPage() {
         } catch {
           setMatches(m)
         }
+        // Slutspelspoängen beror på resultaten – räkna om efter synk
+        fetch('/api/admin/recompute-knockout-points', { method: 'POST' }).catch(() => {})
       }
     } catch (err) {
       setSyncMessage({ type: 'err', text: String(err) })
