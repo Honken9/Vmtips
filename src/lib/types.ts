@@ -136,11 +136,16 @@ export interface LeaderboardEntry {
   knockout_points?: number
 }
 
-/** Grupp-/slutspelspoäng med fallback om vyn inte exponerar kolumnerna än. */
-export function splitPoints(e: LeaderboardEntry): { group: number; knockout: number } {
-  const knockout = e.knockout_points ?? 0
-  const group = e.group_points ?? Math.max(0, e.total_points - e.bonus_points - knockout)
-  return { group, knockout }
+/**
+ * Grupp-/slutspelspoäng ur leaderboard-vyn. Returnerar null om vyn
+ * inte exponerar kolumnerna än (uppdaterad add_knockout_team_points.sql
+ * ej körd) – visa då "–" hellre än en gissad, felaktig uppdelning.
+ */
+export function splitPoints(e: LeaderboardEntry): { group: number | null; knockout: number | null } {
+  if (e.group_points == null || e.knockout_points == null) {
+    return { group: null, knockout: null }
+  }
+  return { group: e.group_points, knockout: e.knockout_points }
 }
 
 /**
