@@ -164,6 +164,13 @@ export default async function SpelarePage({
     ? teamById.get(knockout.breakdown.predictedChampionId) ?? null
     : null
 
+  // Gruppspelspoäng räknas direkt från de rättade gruppmatcherna på
+  // sidan (samma pts som visas per rad) – inte härlett ur totalen,
+  // som kan släpa efter tills vyn/omräkningen uppdaterats.
+  const groupPoints = rows
+    .filter(r => r.m.stage === 'group')
+    .reduce((sum, r) => sum + r.pts, 0)
+
   const targetProfile = target as Profile
 
   return (
@@ -225,9 +232,7 @@ export default async function SpelarePage({
       {/* Statistik */}
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-4">
         <Stat icon={<Trophy size={18} />} label="Poäng totalt" value={myEntry?.total_points ?? 0} color="gold" />
-        <Stat icon={<Target size={18} />} label="Gruppspel"
-          value={myEntry ? Math.max(0, myEntry.total_points - myEntry.bonus_points - knockout.points) : 0}
-          color="green" />
+        <Stat icon={<Target size={18} />} label="Gruppspel" value={groupPoints} color="green" />
         <Stat icon={<Award size={18} />} label="Slutspel" value={knockout.points} color="purple" />
         <Stat icon={<Target size={18} />} label="Exakta" value={myEntry?.exact_scores ?? 0} color="green" />
         <Stat icon={<CheckCircle size={18} />} label="Rätt tecken" value={myEntry?.correct_results ?? 0} color="blue" />

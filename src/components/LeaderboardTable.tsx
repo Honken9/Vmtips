@@ -106,10 +106,10 @@ export function LeaderboardTable({ entries, tags = [], avatars = {} }: Props) {
                   <span className="text-amber-400 text-sm font-medium">{entry.exact_scores}</span>
                 </td>
                 <td className="px-4 py-3.5 text-right hidden md:table-cell">
-                  <span className="text-gray-300 text-sm">{splitPoints(entry).group}</span>
+                  <span className="text-gray-300 text-sm">{splitPoints(entry).group ?? '–'}</span>
                 </td>
                 <td className="px-4 py-3.5 text-right hidden md:table-cell">
-                  <span className="text-indigo-300 text-sm">{splitPoints(entry).knockout}</span>
+                  <span className="text-indigo-300 text-sm">{splitPoints(entry).knockout ?? '–'}</span>
                 </td>
                 <td className="px-4 py-3.5 text-right">
                   <span className={`text-lg font-bold ${i === 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
