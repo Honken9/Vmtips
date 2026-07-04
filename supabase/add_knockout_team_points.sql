@@ -113,6 +113,23 @@ select
           end
         else 0
       end
+    ), 0) as group_points,
+  coalesce((select ukp.points from public.user_knockout_points ukp where ukp.user_id = p.id), 0) as knockout_points,
+  coalesce(
+    sum(
+      case
+        when m.result_confirmed = true and pred.locked = true and m.stage = 'group' then
+          case
+            when pred.pred_home = m.home_score and pred.pred_away = m.away_score then pp.pes
+            when (
+              (pred.pred_home > pred.pred_away and m.home_score > m.away_score) or
+              (pred.pred_home = pred.pred_away and m.home_score = m.away_score) or
+              (pred.pred_home < pred.pred_away and m.home_score < m.away_score)
+            ) then pp.pcr
+            else 0
+          end
+        else 0
+      end
     ), 0)
   + coalesce((select bp.bonus_points from bonus_pts bp where bp.user_id = p.id), 0)
   + coalesce((select ukp.points from public.user_knockout_points ukp where ukp.user_id = p.id), 0)
