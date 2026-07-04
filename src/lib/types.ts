@@ -130,6 +130,17 @@ export interface LeaderboardEntry {
   exact_scores: number
   bonus_points: number
   total_points: number
+  /** Poäng från gruppspelet (tecken/exakt). Kräver uppdaterad leaderboard-vy. */
+  group_points?: number
+  /** Poäng från slutspelet (3p/lag/omgång + mästare). Kräver uppdaterad vy. */
+  knockout_points?: number
+}
+
+/** Grupp-/slutspelspoäng med fallback om vyn inte exponerar kolumnerna än. */
+export function splitPoints(e: LeaderboardEntry): { group: number; knockout: number } {
+  const knockout = e.knockout_points ?? 0
+  const group = e.group_points ?? Math.max(0, e.total_points - e.bonus_points - knockout)
+  return { group, knockout }
 }
 
 /**

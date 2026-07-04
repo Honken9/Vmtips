@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { LeaderboardEntry, PoolMemberTag } from '@/lib/types'
+import { LeaderboardEntry, PoolMemberTag, splitPoints } from '@/lib/types'
 import { Lock } from 'lucide-react'
 import { UserAvatar } from '@/components/UserAvatar'
 import { TAG_COLOR_HEX } from '@/lib/tag-colors'
@@ -36,6 +36,8 @@ export function LeaderboardTable({ entries, tags = [], avatars = {} }: Props) {
             <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Namn</th>
             <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden sm:table-cell">Rätt</th>
             <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden sm:table-cell">Exakt</th>
+            <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden md:table-cell">Grupp</th>
+            <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider hidden md:table-cell">Slutspel</th>
             <th className="text-right px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Poäng</th>
           </tr>
         </thead>
@@ -103,6 +105,12 @@ export function LeaderboardTable({ entries, tags = [], avatars = {} }: Props) {
                 <td className="px-4 py-3.5 text-right hidden sm:table-cell">
                   <span className="text-amber-400 text-sm font-medium">{entry.exact_scores}</span>
                 </td>
+                <td className="px-4 py-3.5 text-right hidden md:table-cell">
+                  <span className="text-gray-300 text-sm">{splitPoints(entry).group}</span>
+                </td>
+                <td className="px-4 py-3.5 text-right hidden md:table-cell">
+                  <span className="text-indigo-300 text-sm">{splitPoints(entry).knockout}</span>
+                </td>
                 <td className="px-4 py-3.5 text-right">
                   <span className={`text-lg font-bold ${i === 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
                     {entry.total_points}
@@ -121,6 +129,7 @@ export function LeaderboardTable({ entries, tags = [], avatars = {} }: Props) {
       >
         <span><span className="text-gray-300 font-medium">Rätt</span> = rätt tecken (1/X/2)</span>
         <span><span className="text-amber-400 font-medium">Exakt</span> = rätt resultat</span>
+        <span className="hidden md:inline"><span className="text-indigo-300 font-medium">Slutspel</span> = 3p/lag &amp; omgång + 5p mästare</span>
       </div>
     </div>
   )
