@@ -6,7 +6,7 @@ import { BonusPrediction, BonusResults, LeaderboardEntry, Match, Prediction, Pro
 import { Flag } from '@/components/Flag'
 import { stockholmDateTime } from '@/lib/dates'
 import { resolveBracket, stripConfirmedResults } from '@/lib/bracket'
-import { calcKnockoutPoints, TEAM_POINTS_PER_ROUND, CHAMPION_POINTS, KNOCKOUT_ROUNDS } from '@/lib/knockout-points'
+import { calcKnockoutPoints, teamIdsPerRound, TEAM_POINTS_PER_ROUND, CHAMPION_POINTS, KNOCKOUT_ROUNDS } from '@/lib/knockout-points'
 import {
   ArrowLeft, Crown, Trophy, Target, CheckCircle, XCircle, Clock,
   Star, Award, User as UserIcon, ShieldCheck,
@@ -82,6 +82,12 @@ export default async function SpelarePage({
   const s = settings as Settings | null
 
   const matchById = new Map(matches.map(m => [m.id, m]))
+  const teamsEarly = (teamsRaw ?? []) as Team[]
+
+  // Spelarens eget slutspelsträd behövs redan här: slutspelsradernas
+  // poäng är lagpoäng (3p per rätt lag i matchens omgång), inte tecken.
+  const ownBracketEarly = resolveBracket(stripConfirmedResults(matches), teamsEarly, predictions)
+  const ownRoundSets = teamIdsPerRound(ownBracketEarly)
 
   // Räkna ut poäng per tipps
   type Row = {
@@ -90,6 +96,8 @@ export default async function SpelarePage({
     pts: number
     isExact: boolean
     isCorrect: boolean
+    /** Slutspel: lagpoäng för matchen (0/3/6), null = lag ej kända än */
+    knockoutPts: number | null
   }
   const rows: Row[] = predictions
     .map(p => {
@@ -98,9 +106,9 @@ export default async function SpelarePage({
       let pts = 0
       let isExact = false
       let isCorrect = false
-      // Tecken-/exaktpoäng gäller bara gruppspelet. Slutspel = lagpoäng
-      // per omgång (visas i egen sammanfattning, inte per match).
+      let knockoutPts: number | null = null
       if (m.stage === 'group' && m.result_confirmed && m.home_score != null && m.away_score != null) {
+        // Gruppspel: tecken-/exaktpoäng på siffrorna
         if (p.pred_home === m.home_score && p.pred_away === m.away_score) {
           pts = s?.points_exact_score ?? 5
           isExact = true
@@ -113,8 +121,21 @@ export default async function SpelarePage({
             isCorrect = true
           }
         }
+      } else if (m.stage !== 'group' && m.stage !== '3rd') {
+        // Slutspel: 3p per lag i den verkliga matchen som spelaren har
+        // med i samma omgång i sitt träd. Poängen finns så fort de
+        // verkliga lagen är kända – matchen behöver inte vara spelad.
+        const set = ownRoundSets[m.stage as keyof typeof ownRoundSets]
+        if (m.home_team_id != null && m.away_team_id != null && set) {
+          knockoutPts =
+            ([m.home_team_id, m.away_team_id].filter(id => set.has(id)).length) *
+            TEAM_POINTS_PER_ROUND
+          pts = knockoutPts
+          isCorrect = knockoutPts > 0
+          isExact = knockoutPts >= TEAM_POINTS_PER_ROUND * 2
+        }
       }
-      return { p, m, pts, isExact, isCorrect }
+      return { p, m, pts, isExact, isCorrect, knockoutPts }
     })
     .filter((x): x is Row => x !== null)
 
@@ -146,11 +167,11 @@ export default async function SpelarePage({
 
   const bonus = bonusRaw as BonusPrediction | null
   const bonusResults = bonusResultsRaw as BonusResults | null
-  const teams = (teamsRaw ?? []) as Team[]
+  const teams = teamsEarly
   const teamById = new Map(teams.map(t => [t.id, t]))
 
   // Spelarens eget slutspelsträd (från deras tips) + slutspelspoäng
-  const ownBracket = resolveBracket(stripConfirmedResults(matches), teams, predictions)
+  const ownBracket = ownBracketEarly
   const tippedByMatch = new Map<number, [Team | null, Team | null]>()
   ownBracket.r32Matches.forEach((m, i) => tippedByMatch.set(m.id, ownBracket.r32Teams[i]))
   ownBracket.r16Matches.forEach((m, i) => tippedByMatch.set(m.id, ownBracket.r16Teams[i]))
@@ -305,7 +326,7 @@ export default async function SpelarePage({
           </h2>
           <div className="rounded-xl overflow-hidden" style={{ border: '1px solid #1f2937' }}>
             {upcoming.map((r, i) => (
-              <PredictionRow key={r.p.id} row={r} isLast={i === upcoming.length - 1} hideOutcome
+              <PredictionRow key={r.p.id} row={r} isLast={i === upcoming.length - 1} hideOutcome={r.m.stage === 'group'}
                 tippedHome={r.m.stage !== 'group' ? tippedByMatch.get(r.m.id)?.[0] : undefined}
                 tippedAway={r.m.stage !== 'group' ? tippedByMatch.get(r.m.id)?.[1] : undefined} />
             ))}
@@ -341,7 +362,7 @@ export default async function SpelarePage({
                       key={r.p.id}
                       row={r}
                       isLast={i === stageRows.length - 1}
-                      hideOutcome={!r.m.result_confirmed || r.m.stage !== 'group'}
+                      hideOutcome={r.m.stage === 'group' && !r.m.result_confirmed}
                       tippedHome={r.m.stage !== 'group' ? tippedByMatch.get(r.m.id)?.[0] : undefined}
                       tippedAway={r.m.stage !== 'group' ? tippedByMatch.get(r.m.id)?.[1] : undefined}
                     />
@@ -433,7 +454,14 @@ function Stat({
 function PredictionRow({
   row, isLast, hideOutcome, tippedHome, tippedAway,
 }: {
-  row: { p: import('@/lib/types').Prediction; m: import('@/lib/types').Match; pts: number; isExact: boolean; isCorrect: boolean }
+  row: {
+    p: import('@/lib/types').Prediction
+    m: import('@/lib/types').Match
+    pts: number
+    isExact: boolean
+    isCorrect: boolean
+    knockoutPts?: number | null
+  }
   isLast: boolean
   hideOutcome?: boolean
   /** Slutspel: laget spelaren själv tippade fram till den här matchen */
@@ -488,7 +516,9 @@ function PredictionRow({
         </div>
         {!hideOutcome && (
           <div className="shrink-0 w-12 text-right">
-            {m.result_confirmed ? (
+            {/* Grupp: poäng när matchen är rättad. Slutspel: lagpoäng så
+                fort de verkliga lagen i matchen är kända (0/+3/+6). */}
+            {(m.stage === 'group' ? m.result_confirmed : row.knockoutPts != null) ? (
               row.isExact ? (
                 <div className="flex flex-col items-center text-amber-400">
                   <Award size={16} />

@@ -34,7 +34,7 @@ export interface KnockoutPointsResult {
   breakdown: KnockoutBreakdown
 }
 
-function teamIdsPerRound(b: BracketResolution): Record<KnockoutRound, Set<number>> {
+export function teamIdsPerRound(b: BracketResolution): Record<KnockoutRound, Set<number>> {
   const ids = (pairs: [Team | null, Team | null][]): Set<number> =>
     new Set(
       pairs
