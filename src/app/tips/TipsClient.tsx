@@ -620,7 +620,9 @@ function MatchRow({
 
   const kickoff = stockholmDateTime(match.kickoff_at)
 
-  const result = match.result_confirmed
+  // Rätt/fel-färgning gäller bara gruppspelet – i slutspelet ger siffrorna
+  // inga tecken-/exaktpoäng (lagpoäng räknas per omgång, se /regler).
+  const result = match.result_confirmed && match.stage === 'group'
     ? calcPredictionResult(
         { pred_home: parseInt(value.home || '-1'), pred_away: parseInt(value.away || '-1') },
         match
