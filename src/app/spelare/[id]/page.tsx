@@ -275,23 +275,29 @@ export default async function SpelarePage({
             <div key={r} className="rounded-lg px-2 py-1.5"
               style={{ background: '#0b1120', border: '1px solid #1f2937' }}>
               <div className="text-base font-bold text-emerald-400 tabular-nums">
-                {knockout.breakdown.rounds[r]}
+                {knockout.breakdown.rounds[r] * TEAM_POINTS_PER_ROUND}p
               </div>
               <div className="text-[10px] text-gray-500 uppercase tracking-wider">
                 {STAGE_LABELS[r]}
+              </div>
+              <div className="text-[10px] text-gray-600">
+                {knockout.breakdown.rounds[r]} rätt lag
               </div>
             </div>
           ))}
           <div className="rounded-lg px-2 py-1.5"
             style={{ background: '#0b1120', border: `1px solid ${knockout.breakdown.champion ? 'rgba(245,158,11,0.4)' : '#1f2937'}` }}>
             <div className={`text-base font-bold tabular-nums ${knockout.breakdown.champion ? 'text-amber-400' : 'text-gray-600'}`}>
-              {knockout.breakdown.champion ? `+${CHAMPION_POINTS}` : '–'}
+              {knockout.breakdown.champion ? `+${CHAMPION_POINTS}p` : '–'}
             </div>
             <div className="text-[10px] text-gray-500 uppercase tracking-wider">Mästare</div>
+            <div className="text-[10px] text-gray-600">
+              {knockout.breakdown.champion ? 'rätt tippad' : 'avgörs i finalen'}
+            </div>
           </div>
         </div>
         <p className="text-[11px] text-gray-500 mt-2">
-          Rätt lag per omgång × {TEAM_POINTS_PER_ROUND}p
+          {TEAM_POINTS_PER_ROUND}p per rätt lag i varje omgång
           {predictedChampion ? ` · Tippad mästare: ${predictedChampion.flag} ${predictedChampion.name}` : ''}
           {' '}· Se <Link href="/regler" className="underline hover:text-emerald-400">reglerna</Link>
         </p>
