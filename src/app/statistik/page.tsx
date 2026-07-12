@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { LeaderboardEntry, Match, Prediction, Profile, Settings, Team , sortLeaderboard } from '@/lib/types'
 import { fetchTopScorers } from '@/lib/wc-stats'
+import { fetchAllRows } from '@/lib/fetch-all'
 import { format } from 'date-fns'
 import { sv } from 'date-fns/locale'
 import {
@@ -28,7 +29,7 @@ export default async function StatistikPage() {
   const [
     { data: leaderboardRaw },
     { data: matchesRaw },
-    { data: predictionsRaw },
+    allPredictionsRaw,
     { data: profilesRaw },
     { data: pool },
     { data: settings },
@@ -39,7 +40,8 @@ export default async function StatistikPage() {
       .from('matches')
       .select('*, home_team:teams!matches_home_team_id_fkey(*), away_team:teams!matches_away_team_id_fkey(*)')
       .order('kickoff_at'),
-    supabase.from('predictions').select('*'),
+    // predictions är >5000 rader – vanlig select trunkeras vid 1000
+    fetchAllRows<Prediction>(supabase, 'predictions'),
     supabase.from('profiles').select('id, display_name, pool_id'),
     supabase.from('pools').select('*').eq('id', poolId).single(),
     supabase.from('settings').select('*').single(),
@@ -49,7 +51,7 @@ export default async function StatistikPage() {
   const allEntries = (leaderboardRaw ?? []) as LeaderboardEntry[]
   const entries = sortLeaderboard(allEntries.filter(e => e.pool_id === poolId))
   const matches = (matchesRaw ?? []) as Match[]
-  const allPredictions = (predictionsRaw ?? []) as Prediction[]
+  const allPredictions = allPredictionsRaw
   const allProfiles = (profilesRaw ?? []) as Pick<Profile, 'id' | 'display_name' | 'pool_id'>[]
   const poolMemberIds = new Set(allProfiles.filter(p => p.pool_id === poolId).map(p => p.id))
   const predictions = allPredictions.filter(p => poolMemberIds.has(p.user_id))

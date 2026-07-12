@@ -1,4 +1,5 @@
 import { createAdminClient } from './supabase/admin'
+import { fetchAllRows } from './fetch-all'
 
 const BUCKET = 'backups'
 const PREFIX = 'snapshots/'
@@ -33,11 +34,12 @@ export interface SnapshotInfo {
 export async function gatherBackupData(reason: string): Promise<BackupData> {
   const admin = createAdminClient()
   const [
-    profiles, predictions, bonusPreds, bonusResults, matches, teams, settings,
+    profiles, predictionsAll, bonusPreds, bonusResults, matches, teams, settings,
     pools, memberships, payments, memberTags, squadOverrides,
   ] = await Promise.all([
     admin.from('profiles').select('*'),
-    admin.from('predictions').select('*'),
+    // >1000 rader – vanlig select trunkeras tyst av PostgREST
+    fetchAllRows(admin, 'predictions'),
     admin.from('bonus_predictions').select('*'),
     admin.from('bonus_results').select('*'),
     admin.from('matches').select('*'),
@@ -54,7 +56,7 @@ export async function gatherBackupData(reason: string): Promise<BackupData> {
     created_at: new Date().toISOString(),
     reason,
     profiles: profiles.data ?? [],
-    predictions: predictions.data ?? [],
+    predictions: predictionsAll,
     bonus_predictions: bonusPreds.data ?? [],
     bonus_results: bonusResults.data ?? [],
     matches: matches.data ?? [],

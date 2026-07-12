@@ -30,18 +30,36 @@ export async function POST() {
   const [
     { data: matchesRaw },
     { data: teamsRaw },
-    { data: predsRaw },
     { data: profilesRaw },
   ] = await Promise.all([
     admin.from('matches').select('*'),
     admin.from('teams').select('*'),
-    admin.from('predictions').select('*'),
     admin.from('profiles').select('id'),
   ])
 
+  // predictions är >5000 rader och PostgREST returnerar max 1000 per
+  // fråga – hämta ALLTID med paginering. Utan detta når bara en bråkdel
+  // av tipsen poängmotorn och träden slutar propagera efter R32.
+  const allPreds: Prediction[] = []
+  const PAGE = 1000
+  for (let from = 0; ; from += PAGE) {
+    const { data: page, error: pageErr } = await admin
+      .from('predictions')
+      .select('*')
+      .order('id')
+      .range(from, from + PAGE - 1)
+    if (pageErr) {
+      return NextResponse.json(
+        { error: `Kunde inte hämta tips: ${pageErr.message}` },
+        { status: 500 }
+      )
+    }
+    allPreds.push(...((page ?? []) as Prediction[]))
+    if (!page || page.length < PAGE) break
+  }
+
   const matches = (matchesRaw ?? []) as Match[]
   const teams = (teamsRaw ?? []) as Team[]
-  const allPreds = (predsRaw ?? []) as Prediction[]
   const profiles = (profilesRaw ?? []) as { id: string }[]
 
   const predsByUser = new Map<string, Prediction[]>()
@@ -80,6 +98,7 @@ export async function POST() {
     ok: true,
     users: rows.length,
     withPoints,
+    predictionsLoaded: allPreds.length,
     totalPoints: rows.reduce((s, r) => s + r.points, 0),
   })
 }
