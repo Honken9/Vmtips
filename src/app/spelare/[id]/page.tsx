@@ -477,6 +477,16 @@ function PredictionRow({
   const awayFlag = tippedAway?.flag ?? m.away_team?.flag ?? ''
   const date = stockholmDateTime(m.kickoff_at)
 
+  // Slutspel: visa de VERKLIGA lagen i matchen under resultatet – men
+  // bara när de skiljer sig från spelarens tippade träd (annars vore
+  // parentesen redundant).
+  const isKnockoutRow = m.stage !== 'group'
+  const realKnown = m.home_team != null || m.away_team != null
+  const realDiffers =
+    (tippedHome?.id ?? null) !== (m.home_team?.id ?? null) ||
+    (tippedAway?.id ?? null) !== (m.away_team?.id ?? null)
+  const showRealTeams = isKnockoutRow && realKnown && realDiffers
+
   return (
     <div
       className={`px-3 sm:px-4 py-3 ${!isLast ? 'border-b' : ''}`}
@@ -541,6 +551,21 @@ function PredictionRow({
           </div>
         )}
       </div>
+      {showRealTeams && (
+        <div className="text-center text-[10px] text-gray-500 mt-1.5 flex items-center justify-center gap-1 flex-wrap">
+          <span>(spelas av:</span>
+          {m.home_team?.flag && (
+            <Flag emoji={m.home_team.flag} name={m.home_team.name} width={14} height={10} className="shrink-0" />
+          )}
+          <span className="text-gray-400">{m.home_team?.name ?? '?'}</span>
+          <span>–</span>
+          <span className="text-gray-400">{m.away_team?.name ?? '?'}</span>
+          {m.away_team?.flag && (
+            <Flag emoji={m.away_team.flag} name={m.away_team.name} width={14} height={10} className="shrink-0" />
+          )}
+          <span>)</span>
+        </div>
+      )}
     </div>
   )
 }
